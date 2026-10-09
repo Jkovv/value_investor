@@ -34,17 +34,17 @@ def money(v):
 
 
 def ranking_table(df, top: int) -> Table:
-    t = Table(title=f"Ranking: gate passers by expected yearly return in {config.BASE_CURRENCY}", header_style="bold")
+    t = Table(title="Ranking: gate passers by expected yearly return", header_style="bold")
     for col, justify in [("#", "right"), ("Ticker", "left"), ("Company", "left"), ("Mkt", "left"),
                          ("Quality", "right"), ("Price", "right"), ("Buy below", "right"),
-                         ("Local", "right"), (config.BASE_CURRENCY, "right"), ("Yield", "right")]:
+                         ("Return", "right"), ("Yield", "right")]:
         t.add_column(col, justify=justify)
     for i, r in df.head(top).iterrows():
         ccy = r.get("currency") if isinstance(r.get("currency"), str) else ""
         mkt = r.get("market") if isinstance(r.get("market"), str) else ""
         t.add_row(str(i + 1), r["ticker"] or "", (r["name"] or "")[:30], mkt,
                   f"{r['quality']:.0f}", f"{money(r['price'])} {ccy}", money(r["buy_price"]),
-                  pct(r["expected_return"]), pct(r.get("expected_return_base")), pct(r["dividend_yield"]))
+                  pct(r["expected_return"]), pct(r["dividend_yield"]))
     return t
 
 

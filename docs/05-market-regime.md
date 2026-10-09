@@ -45,13 +45,4 @@ Taiwan has no World Bank series at all and shows as missing.
   the bar a company's earnings yield is compared against on its own page.
 - US **yield curve** (10y less 2y), **Sahm rule** and **VIX**.
 
-## Comparing returns across currencies
-
-A company's expected return is in its own currency. Over ten years exchange rates follow
-inflation differences more than anything else, so the ranking converts each return to the base
-currency (PLN by default) with relative purchasing power parity:
-`(1 + local return) × (1 + base inflation) / (1 + local inflation) − 1`, using the median of
-the last five years of World Bank CPI inflation (the euro uses the euro area's). A 30% return in
-lira is worth less in zloty than a 12% return in francs.
-
 Next: **[06 Roadmap](06-roadmap.md)**.

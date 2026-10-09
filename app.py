@@ -4,8 +4,7 @@
 
 duckdb is opened read-only, so the dashboard can stay up while you browse;
 while ingest.py or main.py screen writes, pages say "busy" until it's done.
-research and questions run in background threads and write files, the
-portfolio writes its own sqlite file.
+research and questions run in background threads and write files.
 """
 
 import json
@@ -23,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import config, llm, macro, markets, peers, portfolio, research, screener, store, track
+from value_investor import config, llm, macro, markets, peers, research, screener, store
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -156,13 +155,11 @@ def ranking(request: Request, q: str = "", all: bool = False, profile: str = "",
     if market:
         df = df[df["market"] == market]
     rows = df.to_dict(orient="records")
-    top = df["expected_return_base"].max(skipna=True) if not df.empty else None
-    home_iso = markets.reference_country(config.BASE_CURRENCY)
-    home = readings.get(home_iso) if home_iso in readings else readings.get("USA")
+    top = df["expected_return"].max(skipna=True) if not df.empty else None
     return templates.TemplateResponse(request, "ranking.html", {
         "rows": rows, "q": q, "all": all, "profile": profile, "market": market, "count": len(rows),
         "markets_present": [(iso, markets.BY_ISO[iso].name) for iso in present if iso in markets.BY_ISO],
-        "readings": readings, "home": home, "top_return": None if _missing(top) else float(top),
+        "readings": readings, "top_return": None if _missing(top) else float(top),
         "n_markets": len(present), "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
     })
 
@@ -236,9 +233,9 @@ def _name(ticker: str) -> "str | None":
         return None
 
 
-def _owner_only(status: int = 403) -> None:
+def _owner_only() -> None:
     if config.PUBLIC_DASHBOARD:
-        raise HTTPException(status_code=status, detail="not on a public dashboard")
+        raise HTTPException(status_code=403, detail="not on a public dashboard")
 
 
 @app.post("/company/{ticker}/research")
@@ -296,57 +293,3 @@ def market(request: Request, m: str = ""):
         "snap": snap, "readings": rows, "chosen": chosen, "reading": reading, "chart": chart,
         "table": table, "bonds": bonds,
     })
-
-
-@app.get("/portfolio", response_class=HTMLResponse)
-def portfolio_page(request: Request, error: str = ""):
-    _owner_only(404)
-    try:
-        with store.connect(read_only=True) as con:
-            held = portfolio.positions(con)
-            readings = _market_readings(con)
-            ranked = screener.ranking(con)
-            plan = portfolio.plan(con, [r for r in held["rows"] if r["shares"] > 1e-9], ranked, readings)
-            names = con.execute("SELECT ticker, name, price_currency FROM companies WHERE ticker IS NOT NULL "
-                                "ORDER BY ticker").fetchall()
-    except duckdb.IOException:
-        return _busy(request, "portfolio")
-    return templates.TemplateResponse(request, "portfolio.html", {
-        "p": held, "plan": plan, "names": names, "readings": readings, "error": error,
-        "today": pd.Timestamp.today().date().isoformat(),
-    })
-
-
-@app.post("/portfolio/add")
-def portfolio_add(ticker: str = Form(...), traded_on: str = Form(...), kind: str = Form("buy"),
-                  shares: float = Form(...), price: float = Form(...), fees: float = Form(0.0), note: str = Form("")):
-    _owner_only()
-    ticker = ticker.strip().upper()
-    try:
-        with store.connect(read_only=True) as con:
-            known = store.find_cik(con, ticker) is not None
-    except duckdb.IOException:
-        known = True
-    if not known:
-        return RedirectResponse(f"/portfolio?error={ticker}+is+not+in+the+database", status_code=303)
-    if kind not in ("buy", "sell") or shares <= 0 or price < 0:
-        return RedirectResponse("/portfolio?error=check+the+numbers", status_code=303)
-    portfolio.add(ticker, traded_on, kind, shares, price, fees, note)
-    return RedirectResponse("/portfolio", status_code=303)
-
-
-@app.post("/portfolio/{tx_id}/delete")
-def portfolio_delete(tx_id: int):
-    _owner_only()
-    portfolio.delete(tx_id)
-    return RedirectResponse("/portfolio", status_code=303)
-
-
-@app.get("/track", response_class=HTMLResponse)
-def track_page(request: Request):
-    try:
-        with store.connect(read_only=True) as con:
-            result = track.record(con)
-    except duckdb.IOException:
-        return _busy(request, "track record")
-    return templates.TemplateResponse(request, "track.html", {"t": result, "top": config.TRACK_TOP})

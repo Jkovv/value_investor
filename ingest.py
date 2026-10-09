@@ -11,26 +11,21 @@ one home listing per company. re-running only fetches what can have changed.
   python ingest.py --tickers KO AAPL        # specific us tickers
   python ingest.py --min-cap 2e9            # higher market-cap floor (usd, outside the us)
   python ingest.py --limit 30               # cap companies per market, for a quick look
-  python ingest.py --insiders               # form 4s only, for ranked us companies and holdings
+  python ingest.py --insiders               # form 4s only, for ranked us companies
   python ingest.py --quarters               # quarters for stored non-us companies that lack them
   python ingest.py --macro-only             # rates, gdp, market cap / gdp, inflation
 """
 
 import argparse
 
-from value_investor import config, ingestion, insiders, macro, markets, portfolio, store
+from value_investor import config, ingestion, insiders, macro, markets, store
 from value_investor.logging_config import configure_logging
 
 
 def insider_targets(con) -> list:
-    """us companies that pass the gate, plus anything held."""
-    ciks = {r[0] for r in con.execute(
-        "SELECT a.cik FROM analyses a JOIN companies c USING (cik) WHERE a.passes_gate AND c.source = 'sec'").fetchall()}
-    for ticker in portfolio.tickers():
-        cik = store.find_cik(con, ticker)
-        if cik and cik > 0:
-            ciks.add(cik)
-    return sorted(ciks)
+    """us companies that pass the gate."""
+    return sorted(r[0] for r in con.execute(
+        "SELECT a.cik FROM analyses a JOIN companies c USING (cik) WHERE a.passes_gate AND c.source = 'sec'").fetchall())
 
 
 def refresh_insiders() -> None:

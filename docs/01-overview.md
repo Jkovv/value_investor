@@ -16,28 +16,23 @@ flowchart LR
     C --> D["Ratios + summary"]
     D --> E["Quality checklist<br/>score + coverage"]
     E -->|passes the gate| F["Valuation in local currency"]
-    F --> G["Ranking by return<br/>in the base currency"]
+    F --> G["Ranking by<br/>expected return"]
     G --> H["Research agents<br/>(filings, competitors,<br/>trends, web)"]
-    G --> K["Track record<br/>(paper top 10)"]
-    G --> L["Portfolio plan"]
     I["World Bank, FRED,<br/>benchmarks"] --> J["Market Cap / GDP<br/>per market"]
-    J --> L
 ```
 
 1. **Pull** statements for every listed company above a size floor, in 44 markets.
 2. **Rebuild** clean annual statements, as they were known on any date.
 3. **Score** each company against the checklist in `knowledge/principles.md`.
-4. **Price** the ones that pass: what today's price returns over ten years in local currency, and
-   the most you can pay for 15% a year.
-5. **Rank** by that return converted to the base currency (PLN by default), so a Turkish 30% and a
-   Swiss 10% are compared on equal terms.
+4. **Price** the ones that pass: what today's price returns over ten years, in the currency the
+   shares trade in, and the most you can pay for 15% a year.
+5. **Rank** by that return. Returns stay in each listing's own currency: that's what you'd pay
+   and be paid in. Keep in mind that 30% in lira and 10% in francs aren't the same thing.
 6. **Check the rest**: the last quarters against a year earlier, the closest peers in the same
    industry from any market, insider buying and selling (US), and the other schools' yardsticks.
 7. **Research** the shortlist with four deep agents (filings, competitors, demand trends, web)
    and ask them questions about any company.
 8. **Read the market**: Market Cap / GDP for each of the 44 markets against its own trend.
-9. **Keep score**: every screen saves the ranking, and its top ten are followed on paper against
-   the world index. Your own trades go in the portfolio, which also suggests sizes.
 
 ## What it deliberately doesn't do
 
@@ -52,12 +47,10 @@ flowchart LR
 |---|---|
 | US data (EDGAR), checklist, valuation, ranking, CLI | done |
 | Dashboard: ranking, company pages, markets | done |
-| Every other market (Yahoo Finance), currencies, ranking in PLN | done |
+| Every other market (Yahoo Finance), quote currencies and subunits | done |
 | Market Cap / GDP for every market | done |
 | Research agents per company, questions, resumable runs | done |
 | Quarters, peers, insiders, other lenses (DDM, Monte Carlo and more) | done |
-| Track record of the ranking (forward test) | done |
-| Portfolio: positions, returns and XIRR in PLN, sizing by independence | done |
 | Deeper official history outside the US (ESEF, EDINET, DART) | planned |
 | Scheduled runs and alerts | planned |
 | Backtest of the quantitative engine | parked |

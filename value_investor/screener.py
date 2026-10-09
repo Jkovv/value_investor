@@ -3,8 +3,8 @@
     facts -> statements -> ratios -> checklist -> score -> valuation, lenses, quarters
 
 only companies that clear the gate get priced. the ranking sorts on expected
-return in the base currency; a us listing of a foreign company is scored but
-ranked through its home listing.
+return in the currency the shares trade in; a us listing of a foreign company is
+scored but ranked through its home listing.
 """
 
 import logging
@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from value_investor import (config, fx, insiders, lenses, markets, metrics, portfolio, prices as px, quarterly,
-                            rules, statements, store, track, valuation)
+from value_investor import (config, fx, insiders, lenses, markets, metrics, prices as px, quarterly, rules,
+                            statements, store, valuation)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,6 @@ class Analysis:
     valuation: dict = field(default_factory=dict)
     flags: list = field(default_factory=list)
     rankable: bool = True
-    expected_return_base: "float | None" = None
     lenses: dict = field(default_factory=dict)
     quarters: dict = field(default_factory=dict)
     insiders: "dict | None" = None
@@ -74,8 +73,6 @@ class Analysis:
             "summary": self.summary,
             "checks": [c.to_dict() for c in self.checks],
             "valuation": self.valuation,
-            "expected_return_base": self.expected_return_base,
-            "base_currency": config.BASE_CURRENCY,
             "flags": self.flags,
             "lenses": self.lenses,
             "quarters": self.quarters,
@@ -95,7 +92,6 @@ class Analysis:
             "buy_price": v.get("buy_price"), "dividend_yield": v.get("dividend_yield"),
             "passes_gate": self.passes_gate, "market": self.market,
             "country": self.company.get("country"), "currency": v.get("currency") or self.currency,
-            "expected_return_base": self.expected_return_base,
             "f_score": (self.lenses.get("piotroski") or {}).get("scaled"),
             "earnings_yield": magic.get("earnings_yield"), "return_on_capital": magic.get("return_on_capital"),
             "payload": self.payload(),
@@ -217,9 +213,6 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
             if bond_yield is None:
                 bond_yield = markets.bond_yield(con, a.market, as_of)
             a.valuation = _value(con, a, priced, bond_yield)
-            if a.valuation.get("available"):
-                a.expected_return_base = markets.to_base(
-                    con, a.expected_return, a.valuation.get("currency"), config.BASE_CURRENCY)
 
     v = a.valuation
     to_quote = (fx.rate(con, a.currency, v["currency"]) or 1.0) if v.get("statement_currency") else 1.0
@@ -245,7 +238,6 @@ def _quarters(con, a: "Analysis", facts: pd.DataFrame, as_of, to_quote: float) -
 
 
 def run(ciks=None, as_of=None, with_prices: "bool | None" = None) -> pd.DataFrame:
-    ciks_given = ciks
     with store.connect() as con:
         if ciks is None:
             ciks = store.companies(con)["cik"].tolist()
@@ -260,23 +252,10 @@ def run(ciks=None, as_of=None, with_prices: "bool | None" = None) -> pd.DataFram
             results.append(a)
             if i % 250 == 0:
                 logger.info("analysed %d / %d", i, len(ciks))
-        _after_run(con, full=ciks_given is None)
+        # peers are matched on size in dollars; the dashboard can't fetch rates itself
+        currencies = [r[0] for r in con.execute("SELECT DISTINCT price_currency FROM companies").fetchall()]
+        fx.ensure_pairs(con, currencies, ["USD"])
     return to_frame(results)
-
-
-def _after_run(con, full: bool) -> None:
-    """prices the dashboard needs but can't fetch itself (it reads the database read-only)."""
-    held = portfolio.tickers()
-    for ticker in held + [config.BENCHMARK]:
-        try:
-            px.ensure(con, ticker)
-        except Exception as exc:
-            logger.warning("price fetch failed for %s: %s", ticker, exc)
-    currencies = [r[0] for r in con.execute("SELECT DISTINCT price_currency FROM companies").fetchall()]
-    fx.ensure_pairs(con, currencies + ["USD"], ["USD", config.BASE_CURRENCY])
-    if full:
-        n = track.take(con, ranking(con))
-        logger.info("snapshot saved: %d ranked companies", n)
 
 
 def to_frame(results: list) -> pd.DataFrame:
@@ -290,10 +269,9 @@ def ranking(con, only_gate: bool = True) -> pd.DataFrame:
         return df
     if only_gate:
         df = df[df["passes_gate"]]
-    key = df["expected_return_base"].fillna(df["expected_return"] - 1.0)
-    df = df.assign(_has=df["expected_return"].notna(), _key=key, magic_rank=magic_rank(df))
-    return (df.sort_values(["_has", "_key", "quality"], ascending=[False, False, False])
-              .drop(columns=["_has", "_key"]).reset_index(drop=True))
+    df = df.assign(_has=df["expected_return"].notna(), magic_rank=magic_rank(df))
+    return (df.sort_values(["_has", "expected_return", "quality"], ascending=[False, False, False])
+              .drop(columns=["_has"]).reset_index(drop=True))
 
 
 def magic_rank(df: pd.DataFrame) -> pd.Series:

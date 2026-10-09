@@ -16,13 +16,12 @@ thing lives here, or why it doesn't.
 | DCF, DDM, Monte Carlo | FinRobot | Owner-earnings DCF, dividend discount model and a 5,000-run Monte Carlo of the ten-year projection. |
 | Piotroski, Altman, Graham, Magic Formula screens | open-source value screeners | **Lenses** tab per company; **F-score** and **Magic #** columns on the ranking, both sortable. |
 | Checklist of a famous investor's rules | open-source value screeners | The full checklist from `knowledge/principles.md`, 20 checks (9 for financials), with the reason for each. |
-| Decision log scored against a benchmark | TradingAgents | The **Track record** page: every screen is saved and its top ten followed against the world index and each pick's own market. |
-| Paper trading and portfolio | ai-hedge-fund, TradingAgents | The **Portfolio** page: your trades in their own currencies, returns and XIRR in PLN, dividends, currency effect, and a sizing plan with caps per position and per cluster of related ones. No order execution. |
+| Decision log, paper trading, portfolio | ai-hedge-fund, TradingAgents | Left out on purpose. This finds and studies companies; what you buy and how much is yours to decide. |
 | Resume an interrupted run | TradingAgents | Research saves after every stage and resumes from there. |
 | Market valuation | rarely | Market Cap / GDP for 44 markets, each against its own trend, with a suggested cash share. |
-| Coverage | TradingAgents covers several markets through Yahoo; most value screeners are US only | 44 markets, one home listing per company, returns converted to one currency with purchasing-power parity. |
+| Coverage | TradingAgents covers several markets through Yahoo; most value screeners are US only | 44 markets, one home listing per company, returns in the currency each listing trades in. |
 | Data and model cost | ai-hedge-fund and FinRobot use paid data APIs and hosted models; TradingAgents can run on free data and Ollama | Free: SEC EDGAR, Yahoo Finance, FRED, World Bank, Wikipedia, GDELT, a local model through Ollama, Groq and Hugging Face only as free fallbacks. |
-| Backtest | ai-hedge-fund, TradingAgents | Parked on purpose; the forward test on the Track record page is the honest substitute. See [06 Roadmap](06-roadmap.md). |
+| Backtest | ai-hedge-fund, TradingAgents | Parked on purpose. See [06 Roadmap](06-roadmap.md) for the limits a free backtest runs into. |
 | Technical, sentiment and social-media analysts | TradingAgents | Left out on purpose. They answer "where will the price go next week", which this method doesn't ask. |
 | Price targets, LBO, crypto | FinRobot, TradingAgents | Left out: a ten-year owner doesn't need a 12-month target, and the rest isn't investing in businesses. |
 
@@ -35,6 +34,5 @@ thing lives here, or why it doesn't.
   a date; here every statement can be rebuilt as of any past date down to the line.
 - A read of the market before a read of the company: the same business is a different buy when
   its market sits far above its own trend.
-- Sizing that keeps positions independent, with cash set by each market's regime.
 
-Next: **[09 Portfolio and track record](09-portfolio-and-track-record.md)**.
+Next: back to **[01 Overview](01-overview.md)**.

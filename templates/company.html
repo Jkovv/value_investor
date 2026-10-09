@@ -29,11 +29,9 @@
   </div>
   <div class="hero-figure">
     {% if v.available %}
-      <span class="hero-value">{{ (p.expected_return_base if p.expected_return_base is number else v.expected_return.mid) | pct }}</span>
-      <span class="hero-label">a year over 10 years, in {{ (p.base_currency or config.BASE_CURRENCY) if p.expected_return_base is number else v.currency }}</span>
-      <span class="hero-range">
-        {% if p.expected_return_base is number and v.currency != p.base_currency %}{{ v.expected_return.mid | pct }} in {{ v.currency }} · {% endif %}{{ v.expected_return.low | pct }} to {{ v.expected_return.high | pct }} locally
-      </span>
+      <span class="hero-value">{{ v.expected_return.mid | pct }}</span>
+      <span class="hero-label">a year over 10 years, in {{ v.currency }}</span>
+      <span class="hero-range">{{ v.expected_return.low | pct }} to {{ v.expected_return.high | pct }} across its usual P/E range</span>
     {% else %}
       <span class="hero-value muted">n/a</span>
       <span class="hero-label">{{ v.reason or "not priced yet" }}</span>

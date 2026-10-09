@@ -89,8 +89,6 @@ def company_numbers(ticker: str) -> str:
             f"Expected yearly return: {er.get('mid', 0) * 100:.1f}% local "
             f"(range {er.get('low', 0) * 100:.1f}% to {er.get('high', 0) * 100:.1f}%)",
         ]
-        if p.get("expected_return_base") is not None:
-            lines.append(f"Expected yearly return in {p.get('base_currency')}: {p['expected_return_base'] * 100:.1f}%")
     elif v:
         lines.append(f"No valuation: {v.get('reason')}")
     lines += lens_lines(p.get("lenses") or {}, v.get("currency") or p.get("currency"))

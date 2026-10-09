@@ -21,7 +21,7 @@ METRICS = [
     ("eps_cagr_smoothed", "EPS growth", "pct"),
     ("debt_years", "Debt years", "times"),
     ("pe_now", "P/E", "num"),
-    ("expected_return_base", "Return", "pct"),
+    ("expected_return", "Return", "pct"),
 ]
 LOWER_IS_BETTER = {"debt_years", "pe_now"}
 
@@ -41,7 +41,7 @@ def _cap_usd(con, cap, currency) -> "float | None":
 def candidates(con, cik: int) -> "tuple[dict, pd.DataFrame]":
     rows = con.execute("""
         SELECT c.cik, c.ticker, c.name, c.market, c.industry, c.sector, c.sic, c.market_cap,
-               c.price_currency, a.quality, a.f_score, a.passes_gate, a.expected_return_base
+               c.price_currency, a.quality, a.f_score, a.passes_gate, a.expected_return
         FROM companies c JOIN analyses a USING (cik)""").df()
     me = rows[rows["cik"] == cik]
     if me.empty:
@@ -98,5 +98,5 @@ def _row(con, r: dict, is_me: bool) -> dict:
     for key in ("gross_margin", "operating_margin", "roe", "revenue_cagr", "eps_cagr_smoothed", "debt_years"):
         out[key] = s.get(key)
     out["pe_now"] = v.get("pe_now") if v.get("available") else None
-    out["expected_return_base"] = r.get("expected_return_base")
+    out["expected_return"] = r.get("expected_return")
     return {k: (None if isinstance(val, float) and math.isnan(val) else val) for k, val in out.items()}

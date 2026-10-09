@@ -26,8 +26,6 @@
     24 quarterly       the last quarters against a year earlier
     25 insiders        form 4 buys and sells
     26 peers           the closest companies in the same industry
-    27 track           forward test of the ranking
-    28 portfolio       positions, returns, sizing
 
 entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
 """

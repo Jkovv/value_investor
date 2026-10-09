@@ -67,20 +67,3 @@ def test_every_market_has_a_region_currency_and_iso2():
     for m in markets.MARKETS:
         assert m.currency and m.iso3 in markets.ISO2
 
-
-def test_euro_inflation_comes_from_the_euro_area():
-    assert markets.reference_country("EUR") == markets.EURO_AREA
-    assert markets.reference_country("PLN") == "POL"
-    assert markets.reference_country("XYZ") is None
-
-
-def test_returns_in_high_inflation_currencies_shrink_in_the_base_currency(monkeypatch):
-    rates = {"TRY": 0.40, "PLN": 0.04, "CHF": 0.01}
-    monkeypatch.setattr(markets, "inflation", lambda con, ccy, years=5: rates.get(ccy))
-    assert markets.to_base(None, 0.15, "PLN", "PLN") == 0.15
-    in_pln_from_try = markets.to_base(None, 0.30, "TRY", "PLN")
-    in_pln_from_chf = markets.to_base(None, 0.10, "CHF", "PLN")
-    assert in_pln_from_try == pytest.approx(1.30 * 1.04 / 1.40 - 1)
-    assert in_pln_from_try < 0
-    assert in_pln_from_chf > 0.10
-    assert markets.to_base(None, 0.10, "XYZ", "PLN") is None

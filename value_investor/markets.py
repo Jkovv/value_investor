@@ -90,25 +90,14 @@ ISO2 = {
     "PHL": "PH", "VNM": "VN", "AUS": "AU", "NZL": "NZ",
 }
 
-WB_CPI = "FP.CPI.TOTL.ZG"
 FRED_BOND = "IRLTLT01{iso2}M156N"   # OECD long-term government bond yields, monthly
-EURO_AREA = "EMU"
 
-
-def reference_country(currency: "str | None") -> "str | None":
-    """whose inflation describes a currency. the euro gets the euro area as a whole."""
-    if currency == "EUR":
-        return EURO_AREA
-    for m in MARKETS:
-        if m.currency == currency:
-            return m.iso3
-    return None
 
 
 def _world_bank(indicator: str) -> pd.DataFrame:
     resp = requests.get(WB_URL.format(indicator=indicator), timeout=60)
     resp.raise_for_status()
-    wanted = set(BY_ISO) | {EURO_AREA}
+    wanted = set(BY_ISO)
     rows = [
         (r["countryiso3code"], f"{r['date']}-12-31", r["value"])
         for r in resp.json()[1] or []
@@ -118,7 +107,7 @@ def _world_bank(indicator: str) -> pd.DataFrame:
 
 
 def refresh(con) -> None:
-    series = ((WB_MCAP, "mcap_gdp", 0.01), (WB_GDP_LCU, "gdp_lcu", 1.0), (WB_CPI, "cpi", 0.01))
+    series = ((WB_MCAP, "mcap_gdp", 0.01), (WB_GDP_LCU, "gdp_lcu", 1.0))
     for indicator, prefix, scale in series:
         try:
             frame = _world_bank(indicator)
@@ -150,32 +139,6 @@ def bond_yield(con, iso3: "str | None", as_of=None) -> "float | None":
     if value is None or (pd.Timestamp(as_of or pd.Timestamp.today()) - when).days > 400:
         return None
     return value / 100.0
-
-
-def inflation(con, currency: "str | None", years: int = 5) -> "float | None":
-    country = reference_country(currency)
-    if country is None:
-        return None
-    s = store.load_macro(con, f"cpi:{country}").tail(years)
-    return None if s.empty else float(s.median())
-
-
-def to_base(con, expected: "float | None", currency: "str | None", base: str) -> "float | None":
-    """a local-currency yearly return re-expressed in the base currency.
-
-    over ten years exchange rates track inflation differences more than
-    anything else (relative purchasing power parity), so a 20% return in a
-    currency losing 15% a year to inflation is worth far less in zloty than
-    a 12% return in francs.
-    """
-    if expected is None or currency is None:
-        return None
-    if currency == base:
-        return expected
-    local, home = inflation(con, currency), inflation(con, base)
-    if local is None or home is None:
-        return None
-    return (1 + expected) * (1 + home) / (1 + local) - 1
 
 
 def _proxy_in_local(con, m: Market) -> pd.Series:

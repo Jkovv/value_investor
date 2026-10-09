@@ -121,19 +121,6 @@ CREATE TABLE IF NOT EXISTS insider_trades (
     planned BOOLEAN
 );
 
-CREATE TABLE IF NOT EXISTS snapshots (
-    taken_on DATE,
-    rank INTEGER,
-    cik INTEGER,
-    ticker VARCHAR,
-    name VARCHAR,
-    market VARCHAR,
-    currency VARCHAR,
-    price DOUBLE,
-    buy_price DOUBLE,
-    expected_return_base DOUBLE,
-    quality DOUBLE
-);
 """
 
 # added after the first release; ALTER keeps existing databases working.
@@ -146,10 +133,10 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS summary VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS market_cap DOUBLE;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_quarter_filed DATE;
+DROP TABLE IF EXISTS snapshots;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS market VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS country VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS currency VARCHAR;
-ALTER TABLE analyses ADD COLUMN IF NOT EXISTS expected_return_base DOUBLE;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS f_score INTEGER;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS earnings_yield DOUBLE;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS return_on_capital DOUBLE;
@@ -290,7 +277,7 @@ def load_macro(con, series: str) -> pd.Series:
 ANALYSIS_COLUMNS = [
     "cik", "ticker", "name", "as_of", "profile", "quality", "completeness", "history_years", "price",
     "expected_return", "buy_price", "dividend_yield", "passes_gate", "market", "country", "currency",
-    "expected_return_base", "f_score", "earnings_yield", "return_on_capital",
+    "f_score", "earnings_yield", "return_on_capital",
 ]
 
 
@@ -312,17 +299,3 @@ def analysis_payload(con, cik: int) -> "dict | None":
     row = con.execute("SELECT payload FROM analyses WHERE cik = ?", [cik]).fetchone()
     return None if row is None else json.loads(row[0])
 
-
-def save_snapshot(con, taken_on, rows: list) -> None:
-    con.execute("DELETE FROM snapshots WHERE taken_on = ?", [taken_on])
-    if rows:
-        con.executemany("INSERT INTO snapshots VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        [[taken_on] + list(r) for r in rows])
-
-
-def snapshots(con) -> pd.DataFrame:
-    try:
-        return con.execute("SELECT * FROM snapshots ORDER BY taken_on, rank").df()
-    except (duckdb.CatalogException, duckdb.InvalidInputException):
-        # a database from before snapshots existed, opened read-only by the dashboard
-        return pd.DataFrame()

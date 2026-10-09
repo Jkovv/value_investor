@@ -71,8 +71,8 @@ TAVILY_MONTHLY_CREDITS = int(os.getenv("TAVILY_MONTHLY_CREDITS", "900"))
 
 ## DASHBOARD
 
-# true when other people can open the dashboard: no research runs, no questions,
-# no portfolio. those spend api credits or show private data.
+# true when other people can open the dashboard: no research runs and no questions,
+# since those spend your api credits.
 PUBLIC_DASHBOARD = os.getenv("PUBLIC_DASHBOARD", "false").strip().lower() == "true"
 
 ## LANGSMITH (optional tracing)
@@ -80,10 +80,6 @@ PUBLIC_DASHBOARD = os.getenv("PUBLIC_DASHBOARD", "false").strip().lower() == "tr
 LANGSMITH_TRACING = os.getenv("LANGSMITH_TRACING", "false")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT", "value-investor")
-
-## PORTFOLIO
-
-BASE_CURRENCY = os.getenv("BASE_CURRENCY", "PLN")
 
 ## SCREENING: history
 
@@ -155,19 +151,6 @@ FINANCIAL_SIC_RANGE = (6000, 6799)
 QUARTERS_SHOWN = 12
 PEERS_SHOWN = 8
 INSIDER_DAYS = 365
-
-## TRACK RECORD
-
-TRACK_TOP = 10                 # the paper portfolio bought from each snapshot
-BENCHMARK = "ACWI"             # MSCI All Country World ETF, in USD
-
-## PORTFOLIO
-
-PORTFOLIO_PATH = Path(os.getenv("PORTFOLIO_PATH", DATA_DIR / "portfolio.sqlite"))
-POSITION_CAP = 0.10
-CLUSTER_CAP = 0.25             # related positions together
-CORRELATION_LINK = 0.6         # weekly returns this correlated count as related
-MIN_RETURN_TO_HOLD = 0.08      # expected yearly return in the base currency
 
 
 def check_sec_user_agent() -> None:
