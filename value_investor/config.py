@@ -66,7 +66,14 @@ LLM_TEMPERATURE = 0
 ## WEB SEARCH (research agents)
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
-TAVILY_MONTHLY_CREDITS = int(os.getenv("TAVILY_MONTHLY_CREDITS", "1000"))
+# counted here and kept under tavily's free 1,000 a month; 0 means never use tavily
+TAVILY_MONTHLY_CREDITS = int(os.getenv("TAVILY_MONTHLY_CREDITS", "900"))
+
+## DASHBOARD
+
+# true when other people can open the dashboard: no research runs, no questions,
+# no portfolio. those spend api credits or show private data.
+PUBLIC_DASHBOARD = os.getenv("PUBLIC_DASHBOARD", "false").strip().lower() == "true"
 
 ## LANGSMITH (optional tracing)
 

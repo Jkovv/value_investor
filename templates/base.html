@@ -25,7 +25,7 @@
       <nav class="tabs">
         <a href="/" {% if request.url.path == '/' or request.url.path.startswith('/company') %}aria-current="page"{% endif %}>Ranking</a>
         <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Markets</a>
-        <a href="/portfolio" {% if request.url.path == '/portfolio' %}aria-current="page"{% endif %}>Portfolio</a>
+        {% if not config.PUBLIC_DASHBOARD %}<a href="/portfolio" {% if request.url.path == '/portfolio' %}aria-current="page"{% endif %}>Portfolio</a>{% endif %}
         <a href="/track" {% if request.url.path == '/track' %}aria-current="page"{% endif %}>Track record</a>
       </nav>
       <button class="icon-button theme-toggle" type="button" aria-label="Switch to dark theme">

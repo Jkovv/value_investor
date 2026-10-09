@@ -582,18 +582,21 @@
 
 <div class="tab-panel" data-panel="research">
   {% set asking = questions and questions[0].state == "running" %}
+  {% if not config.PUBLIC_DASHBOARD or questions %}
   <section class="card section ask-card" data-ticker="{{ c.ticker }}" data-state="{{ 'running' if asking else 'idle' }}">
     <div class="card-head">
       <h2>Ask about {{ c.ticker }}</h2>
       <span class="hint">an agent looks it up, then answers with sources</span>
     </div>
     <div class="card-body">
+      {% if not config.PUBLIC_DASHBOARD %}
       <form class="ask-form" method="post" action="/company/{{ c.ticker }}/ask">
         <textarea class="input" name="question" rows="2" maxlength="500" required
                   placeholder="Who are the main competitors in Europe, and are they gaining share?"
                   aria-label="Question" {% if asking %}disabled{% endif %}></textarea>
         <button class="button" type="submit" {% if asking %}disabled{% endif %}>Ask</button>
       </form>
+      {% endif %}
       {% for q in questions %}
       <article class="qa">
         <p class="qa-question">{{ q.question }}</p>
@@ -611,12 +614,14 @@
       {% endfor %}
     </div>
   </section>
+  {% endif %}
 
   {% set st = research_status or {} %}
   {% set running = st.state in ("queued", "running") %}
   <section class="card research-card" data-ticker="{{ c.ticker }}" data-state="{{ st.state or 'none' }}">
     <div class="card-head">
       <h2>Research brief</h2>
+      {% if not config.PUBLIC_DASHBOARD %}
       <div class="button-row">
         {% if st.resumable and not running %}
         <form method="post" action="/company/{{ c.ticker }}/research">
@@ -636,6 +641,7 @@
         </form>
         {% endif %}
       </div>
+      {% endif %}
     </div>
     <div class="card-body">
       <p class="research-meta">

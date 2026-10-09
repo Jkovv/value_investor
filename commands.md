@@ -100,6 +100,9 @@ Questions about a company are asked on its Research tab.
 ```bash
 uvicorn app:app --port 8001
 # http://127.0.0.1:8001: ranking, company pages, markets, portfolio, track record
+
+# Showing it to other people: PUBLIC_DASHBOARD=true in .env turns off research runs,
+# questions and the portfolio, so nobody else can spend your API credits or see your trades
 ```
 
 ## Tests

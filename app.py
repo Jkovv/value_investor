@@ -16,7 +16,7 @@ from pathlib import Path
 import duckdb
 import markdown
 import pandas as pd
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -236,14 +236,21 @@ def _name(ticker: str) -> "str | None":
         return None
 
 
+def _owner_only(status: int = 403) -> None:
+    if config.PUBLIC_DASHBOARD:
+        raise HTTPException(status_code=status, detail="not on a public dashboard")
+
+
 @app.post("/company/{ticker}/research")
 def start_research(ticker: str, mode: str = Form("resume")):
+    _owner_only()
     research.start_in_background(ticker, _name(ticker), resume=mode == "resume")
     return RedirectResponse(f"/company/{ticker}#research", status_code=303)
 
 
 @app.post("/company/{ticker}/ask")
 def ask(ticker: str, question: str = Form("")):
+    _owner_only()
     research.start_question(ticker, question, _name(ticker))
     return RedirectResponse(f"/company/{ticker}#research", status_code=303)
 
@@ -293,6 +300,7 @@ def market(request: Request, m: str = ""):
 
 @app.get("/portfolio", response_class=HTMLResponse)
 def portfolio_page(request: Request, error: str = ""):
+    _owner_only(404)
     try:
         with store.connect(read_only=True) as con:
             held = portfolio.positions(con)
@@ -312,6 +320,7 @@ def portfolio_page(request: Request, error: str = ""):
 @app.post("/portfolio/add")
 def portfolio_add(ticker: str = Form(...), traded_on: str = Form(...), kind: str = Form("buy"),
                   shares: float = Form(...), price: float = Form(...), fees: float = Form(0.0), note: str = Form("")):
+    _owner_only()
     ticker = ticker.strip().upper()
     try:
         with store.connect(read_only=True) as con:
@@ -328,6 +337,7 @@ def portfolio_add(ticker: str = Form(...), traded_on: str = Form(...), kind: str
 
 @app.post("/portfolio/{tx_id}/delete")
 def portfolio_delete(tx_id: int):
+    _owner_only()
     portfolio.delete(tx_id)
     return RedirectResponse("/portfolio", status_code=303)
 
