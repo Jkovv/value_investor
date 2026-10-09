@@ -1,4 +1,4 @@
-"""10 · metrics — yearly ratios, then one summary over the last ten years.
+"""10 · metrics: yearly ratios, then one summary over the last ten years.
 
 Per-share figures are rebuilt from totals (net income / diluted shares)
 rather than taken as filed, and every share count is moved into today's

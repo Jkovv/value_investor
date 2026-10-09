@@ -1,4 +1,4 @@
-"""07 · statements — raw facts -> one row per fiscal year.
+"""07 · statements: raw facts -> one row per fiscal year.
 
 Two traps in companyfacts drive the design:
 
@@ -30,7 +30,7 @@ def _taxonomy_order(facts: pd.DataFrame) -> list:
     if anchors.empty:
         anchors = facts
     latest = anchors.sort_values("filed").iloc[-1]["taxonomy"]
-    others = [t for t in ("us-gaap", "ifrs-full") if t != latest]
+    others = [t for t in ("us-gaap", "ifrs-full", "yahoo") if t != latest]
     return [latest] + others
 
 

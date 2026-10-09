@@ -1,12 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="intro">
+<div class="page-head">
   <h1>{{ ticker }} isn't analysed yet</h1>
-  <p class="lede">
-    Pull its filings and score it from the command line:
-  </p>
-  <pre><code>python ingest.py --tickers {{ ticker }}
+  <p class="sub">Pull its filings and score it from the command line:</p>
+</div>
+<pre><code>python ingest.py --tickers {{ ticker }}
 python main.py screen --tickers {{ ticker }}</code></pre>
-  <p><a href="/">Back to the ranking</a></p>
-</section>
+<p><a href="/">Back to the ranking</a></p>
 {% endblock %}

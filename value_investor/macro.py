@@ -1,8 +1,8 @@
-"""09 · macro — rates, Market Cap / GDP and the cash regime.
+"""09 · macro: rates, Market Cap / GDP and the cash regime.
 
 Market Cap / GDP decides how much cash to hold, never what to buy. The
 ratio has drifted up for decades (more foreign profits, lower rates), so it
-is read against its own long-run log trend rather than a fixed threshold —
+is read against its own long-run log trend rather than a fixed threshold;
 a fixed 140% line would have kept the portfolio in cash for most of the
 last ten years.
 

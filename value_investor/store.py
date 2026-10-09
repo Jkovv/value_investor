@@ -1,4 +1,4 @@
-"""04 · store — the DuckDB file everything reads from and writes to.
+"""04 · store: the DuckDB file everything reads from and writes to.
 
 Raw facts are kept with their filing date and accession number, so any
 statement can be rebuilt as it looked on a past date (see statements.py).
@@ -81,7 +81,35 @@ CREATE TABLE IF NOT EXISTS analyses (
     payload JSON,
     analysed_at TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS entity_ids (
+    source_key VARCHAR PRIMARY KEY,
+    id INTEGER
+);
 """
+
+# Added after the first release; ALTER keeps existing databases working.
+MIGRATIONS = """
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS market VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS price_currency VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS summary VARCHAR;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS market_cap DOUBLE;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS market VARCHAR;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS country VARCHAR;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS currency VARCHAR;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS expected_return_base DOUBLE;
+UPDATE companies SET source = 'sec', market = 'USA', price_currency = 'USD', sector = sic_description
+    WHERE source IS NULL AND cik > 0;
+"""
+
+COMPANY_COLUMNS = [
+    "cik", "ticker", "name", "exchange", "sic", "sic_description", "country", "fiscal_year_end",
+    "category", "currency", "last_annual_filed", "source", "market", "price_currency", "sector",
+    "industry", "summary", "market_cap",
+]
 
 
 @contextmanager
@@ -91,6 +119,7 @@ def connect(read_only: bool = False):
     try:
         if not read_only:
             con.execute(SCHEMA)
+            con.execute(MIGRATIONS)
         yield con
     finally:
         con.close()
@@ -101,16 +130,24 @@ def init() -> None:
         pass
 
 
+def entity_id(con, source_key: str) -> int:
+    """Companies without an SEC CIK get a stable negative id, so CIKs never collide."""
+    row = con.execute("SELECT id FROM entity_ids WHERE source_key = ?", [source_key]).fetchone()
+    if row:
+        return int(row[0])
+    lowest = con.execute("SELECT coalesce(min(id), 0) FROM entity_ids").fetchone()[0]
+    new_id = min(int(lowest), 0) - 1
+    con.execute("INSERT INTO entity_ids VALUES (?, ?)", [source_key, new_id])
+    return new_id
+
+
 def upsert_company(con, profile: dict) -> None:
     con.execute("DELETE FROM companies WHERE cik = ?", [profile["cik"]])
+    columns = COMPANY_COLUMNS + ["facts_updated_at"]
+    values = [profile.get(c) for c in COMPANY_COLUMNS]
     con.execute(
-        """INSERT INTO companies VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())""",
-        [
-            profile["cik"], profile.get("ticker"), profile.get("name"), profile.get("exchange"),
-            profile.get("sic"), profile.get("sic_description"), profile.get("country"),
-            profile.get("fiscal_year_end"), profile.get("category"), profile.get("currency"),
-            profile.get("last_annual_filed"),
-        ],
+        f"INSERT INTO companies ({', '.join(columns)}) VALUES ({', '.join('?' * len(COMPANY_COLUMNS))}, now())",
+        values,
     )
 
 
@@ -182,16 +219,20 @@ def load_macro(con, series: str) -> pd.Series:
     return df.set_index(pd.to_datetime(df["date"]))["value"]
 
 
+ANALYSIS_COLUMNS = [
+    "cik", "ticker", "name", "as_of", "profile", "quality", "completeness", "history_years", "price",
+    "expected_return", "buy_price", "dividend_yield", "passes_gate", "market", "country", "currency",
+    "expected_return_base",
+]
+
+
 def save_analysis(con, row: dict) -> None:
     con.execute("DELETE FROM analyses WHERE cik = ?", [row["cik"]])
+    columns = ANALYSIS_COLUMNS + ["payload", "analysed_at"]
+    values = [row.get(c) for c in ANALYSIS_COLUMNS] + [json.dumps(row["payload"], default=str)]
     con.execute(
-        """INSERT INTO analyses VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())""",
-        [
-            row["cik"], row["ticker"], row["name"], row["as_of"], row["profile"], row["quality"],
-            row["completeness"], row["history_years"], row["price"], row["expected_return"],
-            row["buy_price"], row["dividend_yield"], row["passes_gate"],
-            json.dumps(row["payload"], default=str),
-        ],
+        f"INSERT INTO analyses ({', '.join(columns)}) VALUES ({', '.join('?' * len(values))}, now())",
+        values,
     )
 
 

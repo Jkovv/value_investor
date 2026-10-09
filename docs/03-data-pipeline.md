@@ -48,15 +48,46 @@ filing comes from yfinance.
 from 2024). When a share count disagrees badly with net income / reported
 EPS, the implied count wins and the company page says so.
 
+## Every other market (`yahoo.py`)
+
+Outside the US there is no free, uniform source of filings, so all 43 other markets go through
+Yahoo Finance the same way: no region gets better treatment than another.
+
+1. **Universe.** Yahoo's screener, market by market, above a market-cap floor
+   (`WORLD_MIN_CAP_USD`, $1B by default, converted to local currency).
+2. **One listing per company.** The same company trades in many places: NVIDIA in Warsaw,
+   Santander in London, a Brazilian receipt on TSMC. A listing is kept only if:
+   - it trades in the local currency or the company reports in it;
+   - it isn't on a foreign-share segment (London's `.IL` order book, Brazilian `..34.SA` receipts);
+   - the company doesn't report in another covered market's own currency (CHF, TWD, CNY...);
+   - its headquarters isn't in another covered market whose currency it reports in (Allianz is
+     German, wherever it's quoted);
+   - and of the listings that survive with the same message-board id, or the same name in one
+     country (India's NSE and BSE), the home-currency, most traded one wins.
+   US companies are left to EDGAR, which goes back further.
+3. **Statements.** Yahoo's annual income statement, balance sheet and cash flow, usually four to
+   five years, stored as facts with taxonomy `yahoo` and mapped in `concepts.YAHOO` onto the same
+   fields EDGAR uses. From there the pipeline can't tell them apart. Yahoo gives no filing date,
+   so one is estimated at period end + 120 days.
+4. **Currencies.** Valuation runs in the statement currency. If shares trade in another one (a
+   Polish company reporting in euros), prices are converted day by day with Yahoo's FX pairs, and
+   price and buy-below are shown in the trading currency. Quotes in subunits (pence, South African
+   cents, agorot) are moved to the major unit first.
+5. **Refresh.** A company is refetched after 30 days; stored listings that the rules above now say
+   belong elsewhere are pruned on every run.
+
 ## Known gaps
 
 - **Several share classes** (Visa, Hershey, Berkshire): EPS is filed per
   class only, which companyfacts drops. Quality is still scored; valuation
   waits for dimensional XBRL parsing.
-- **Foreign filers reporting in their own currency** (TSMC in TWD) are scored
-  but not valued yet — that needs the FX rate and the ADR ratio.
+- **US listings of foreign companies reporting in their own currency** (TSMC in TWD) are scored
+  but kept out of the ranking; their home listing (2330.TW) is valued instead.
+- **History outside the US** is four to five years, so ten-year consistency checks run on a shorter
+  window there. The coverage figure and a flag on the company page say so. Official sources
+  (ESEF for Europe, EDINET for Japan, DART for Korea) can deepen it later.
 - **No cost of sales filed** (payment networks, many services): operating
   margin stands in for gross margin, R&D and depreciation are measured
   against revenue.
 
-Next: **[04 — Checklist & valuation](04-checklist-and-valuation.md)**.
+Next: **[04 Checklist & valuation](04-checklist-and-valuation.md)**.

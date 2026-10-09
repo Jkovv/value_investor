@@ -1,4 +1,4 @@
-"""12 · valuation — what today's price buys over the next ten years.
+"""12 · valuation: what today's price buys over the next ten years.
 
 The share is treated as a bond whose coupon is EPS and whose coupon grows.
 Ten years of growth at a conservative rate, times the P/E the market has

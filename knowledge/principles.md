@@ -16,24 +16,24 @@ over ten years.
 
 Three kinds of business tend to have one:
 
-1. **A unique product** that owns a piece of the customer's mind — people ask for it
+1. **A unique product** that owns a piece of the customer's mind: people ask for it
    by name and pay more for it.
-2. **A unique service** that is institution-specific rather than people-specific — the
+2. **A unique service** that is institution-specific rather than people-specific: the
    customer can't easily leave, and the value doesn't walk out with a star employee.
-3. **The low-cost buyer and seller** of something the public keeps needing — winning
+3. **The low-cost buyer and seller** of something the public keeps needing, winning
    on volume, not margin.
 
 ## Income statement
 
 | Measure | Good | Grey | Poor | Why |
 |---|---|---|---|---|
-| Gross margin | > 40% | 20–40% | < 20% | Pricing power. Under 20% usually means a commodity fight. |
-| Gross margin swing (std dev) | < 5 pp | 5–10 pp | > 10 pp | The advantage has to hold every year, not on average. |
-| SG&A / gross profit | < 30% | 30–80% | > 80% | Near 100% means the business has to shout to sell. |
-| R&D / gross profit | < 10% | 10–30% | > 30% | An edge that must be re-invented every year isn't durable. |
-| Depreciation / gross profit | < 10% | 10–20% | > 20% | Heavy plant that wears out eats the margin. |
-| Interest / operating income | < 15% | 15–30% | > 30% | In any industry, the lowest ratio usually marks the strongest company. |
-| Net margin | > 20% | 10–20% | < 10% | For banks a high margin can mean high risk — read it differently. |
+| Gross margin | > 40% | 20-40% | < 20% | Pricing power. Under 20% usually means a commodity fight. |
+| Gross margin swing (std dev) | < 5 pp | 5-10 pp | > 10 pp | The advantage has to hold every year, not on average. |
+| SG&A / gross profit | < 30% | 30-80% | > 80% | Near 100% means the business has to shout to sell. |
+| R&D / gross profit | < 10% | 10-30% | > 30% | An edge that must be re-invented every year isn't durable. |
+| Depreciation / gross profit | < 10% | 10-20% | > 20% | Heavy plant that wears out eats the margin. |
+| Interest / operating income | < 15% | 15-30% | > 30% | In any industry, the lowest ratio usually marks the strongest company. |
+| Net margin | > 20% | 10-20% | < 10% | For banks a high margin can mean high risk, so read it differently. |
 | EPS | rising in ≥ 70% of years, no losses | | | Look at net earnings too: buybacks can lift EPS on their own. |
 
 When a company files no cost of sales (payment networks, many service firms),
@@ -44,7 +44,7 @@ depreciation are measured against revenue at half the thresholds.
 profit to shareholders and a much smaller one to the tax office is probably being
 creative with one of them.
 
-**One-offs** — gains or losses on selling assets, restructuring charges — are not
+**One-offs** (gains or losses on selling assets, restructuring charges) are not
 earning power. Look through them.
 
 ## Balance sheet
@@ -75,7 +75,7 @@ earning power. Look through them.
   own earnings.
 - **Free cash flow should roughly match net income.** Earnings that never turn into
   cash are a warning.
-- **Buybacks over dividends** as the way surplus cash comes back — but only when the
+- **Buybacks over dividends** as the way surplus cash comes back, but only when the
   price is below what the business is worth.
 - **Owner earnings** = net income + depreciation − the capital spending needed just to
   stand still. Maintenance capex is estimated: total capex minus what new sales needed.
@@ -94,10 +94,10 @@ Treat the share as a bond whose coupon is EPS and whose coupon grows.
    ROE × (1 − payout ratio) can sustain. Capped at 15%.
 3. **EPS in ten years** = EPS × (1 + growth)¹⁰.
 4. **Price in ten years** = that EPS × the P/E the market historically paid for this
-   company — low, average and high, which gives a range rather than a point.
+   company: low, average and high, which gives a range rather than a point.
 5. **Expected annual return** = ((future price + dividends collected) / price today)^(1/10) − 1.
    The ranking sorts on this.
-6. **Buy below** = (future price + dividends) / 1.15¹⁰ — the most we can pay and
+6. **Buy below** = (future price + dividends) / 1.15¹⁰, the most we can pay and
    still compound at 15% a year.
 
 ## When to buy
@@ -126,13 +126,13 @@ decades, read it against its own long-run trend, not against a fixed line.
 Other context worth watching: the 10-year minus 2-year yield (an inverted curve has
 preceded most recessions), the Sahm rule (unemployment rising fast), the VIX, and the
 trend in public debt. Corrections of 10% come roughly every two years and bear markets
-of 25%+ every six or so — have cash ready for them.
+of 25%+ every six or so. Have cash ready for them.
 
 ## Building the portfolio
 
 - **Independence over count.** Positions should not depend on each other: different
   industries, countries, currencies, customers and suppliers. Price correlation alone
-  is not enough — in a crash correlations go to one.
+  is not enough: in a crash correlations go to one.
 - A handful to fifteen positions. A small portfolio can be very concentrated if each
   business is understood; ten to thirty is the textbook range for spreading risk.
 - Mix types of business (steady compounders, fast growers, turnarounds) so they don't
@@ -159,7 +159,7 @@ of 25%+ every six or so — have cash ready for them.
 These don't enter the score. They shape how the app asks you to act.
 
 - Write the thesis down before buying; it's the only defence against "I knew it all along".
-- Before selling, ask whether the thesis changed or only the price did — people sell
+- Before selling, ask whether the thesis changed or only the price did. People sell
   winners too early and hold losers too long.
 - Trading more makes results worse. The app warns when turnover climbs.
 - When nearly every analyst says buy, the trade is crowded.

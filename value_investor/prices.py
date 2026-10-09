@@ -1,4 +1,4 @@
-"""08 · prices — daily prices, dividends and splits from yfinance.
+"""08 · prices: daily prices, dividends and splits from yfinance.
 
 Close is split-adjusted but not dividend-adjusted, which is what P/E needs:
 the same share units as today's EPS, without dividends folded into price.

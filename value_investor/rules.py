@@ -1,4 +1,4 @@
-"""11 · rules — the quality checklist, one check per principle.
+"""11 · rules: the quality checklist, one check per principle.
 
 Each check lands on pass / warn / fail, or n/a when the data isn't there.
 The score is the weighted share of points over the checks that could run;
@@ -34,11 +34,11 @@ class Check:
 
 
 def _pct(v):
-    return "–" if v is None else f"{v * 100:.0f}%"
+    return "-" if v is None else f"{v * 100:.0f}%"
 
 
 def _x(v):
-    return "–" if v is None else f"{v:.1f}×"
+    return "-" if v is None else f"{v:.1f}×"
 
 
 def _higher(v, good, poor):
@@ -79,7 +79,7 @@ def _gross_margin_stability(s):
         key, label = "operating_margin_std", "Operating margin consistency"
     v = s.get(key) if _enough_history(s) else None
     status = _lower(v, c.GROSS_MARGIN_MAX_SWING, 2 * c.GROSS_MARGIN_MAX_SWING)
-    shown = "–" if v is None else f"±{v * 100:.1f} pp"
+    shown = "-" if v is None else f"±{v * 100:.1f} pp"
     return Check("gross_margin_stability", "income", label, 2.0, status, v, shown,
                  "Standard deviation of the yearly margin.")
 
@@ -87,7 +87,7 @@ def _gross_margin_stability(s):
 def _sga(s):
     v = s.get("sga_to_gp")
     return Check("sga", "income", "SG&A / gross profit", 2.0, _lower(v, c.SGA_TO_GROSS_PROFIT_GOOD, c.SGA_TO_GROSS_PROFIT_POOR),
-                 v, _pct(v), "Under 30% is excellent, 30–80% is common, near 100% means a crowded market.")
+                 v, _pct(v), "Under 30% is excellent, 30-80% is common, near 100% means a crowded market.")
 
 
 def _per_gp_or_revenue(s, name):
@@ -121,7 +121,7 @@ def _interest(s):
 def _net_margin(s):
     v = s.get("net_margin")
     return Check("net_margin", "income", "Net margin", 2.0, _higher(v, c.NET_MARGIN_GOOD, c.NET_MARGIN_POOR), v, _pct(v),
-                 "Above 20% is strong, 10–20% grey, below 10% competitive.")
+                 "Above 20% is strong, 10-20% grey, below 10% competitive.")
 
 
 def _eps_consistency(s):
@@ -134,7 +134,7 @@ def _eps_consistency(s):
         status = "warn"
     else:
         status = "fail"
-    shown = "–" if share is None else f"{share * 100:.0f}% up, {losses} loss"
+    shown = "-" if share is None else f"{share * 100:.0f}% up, {losses} loss"
     return Check("eps_consistency", "income", "Earnings consistency", 3.0, status, share, shown,
                  "Share of years EPS rose; any loss year counts against it.")
 
@@ -149,7 +149,7 @@ def _eps_growth(s):
         status = "warn"
     else:
         status = "pass"
-    shown = "–" if g is None else f"{g * 100:.1f}% / 5y {_pct(g5)}"
+    shown = "-" if g is None else f"{g * 100:.1f}% / 5y {_pct(g5)}"
     return Check("eps_growth", "income", "EPS growth (10y / 5y)", 2.0, status, g, shown,
                  "The recent rate shouldn't be falling behind the long one.")
 
@@ -175,7 +175,7 @@ def _roe(s):
     status = _higher(v, c.ROE_GOOD, c.ROE_POOR)
     if status == "pass" and share is not None and share < c.ROE_CONSISTENT_YEARS:
         status = "warn"
-    shown = "–" if v is None else f"{_pct(v)} ({_pct(share)} of yrs)"
+    shown = "-" if v is None else f"{_pct(v)} ({_pct(share)} of yrs)"
     return Check("roe", "balance", "Return on equity", 3.0, status, v, shown, note)
 
 
@@ -217,7 +217,7 @@ def _retained_earnings(s):
 def _share_count(s):
     v = s.get("share_change")
     status = "na" if v is None else "pass" if v <= 0 else "warn" if v <= c.SHARE_COUNT_DILUTION_POOR else "fail"
-    shown = "–" if v is None else f"{v * 100:+.0f}%"
+    shown = "-" if v is None else f"{v * 100:+.0f}%"
     return Check("share_count", "balance", "Share count over the window", 1.5, status, v, shown,
                  "Falling means buybacks; rising means owners get diluted.")
 
@@ -239,7 +239,7 @@ def _fcf(s):
 def _buybacks(s):
     v = s.get("buyback_years_share")
     status = "na" if v is None else "pass" if v >= 0.5 else "warn"
-    return Check("buybacks", "cash", "Buyback history", 1.0, status, v, _pct(v) + " of yrs" if v is not None else "–",
+    return Check("buybacks", "cash", "Buyback history", 1.0, status, v, _pct(v) + " of yrs" if v is not None else "-",
                  "Repurchases are the preferred way to hand back surplus cash.")
 
 

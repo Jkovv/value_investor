@@ -1,4 +1,4 @@
-"""01 · config — every setting, read from .env. Everything imports this.
+"""01 · config: every setting, read from .env. Everything imports this.
 
 Thresholds come from knowledge/principles.md. If you change one here,
 change the principle there too, so the docs and the score never disagree.
@@ -28,6 +28,10 @@ SEC_WORKERS = int(os.getenv("SEC_WORKERS", "6"))
 
 DEFAULT_EXCHANGES = ("NYSE", "Nasdaq")
 
+## WORLD (Yahoo Finance, every market outside the US)
+
+WORLD_MIN_CAP_USD = float(os.getenv("WORLD_MIN_CAP_USD", "1e9"))
+
 ## MACRO (FRED, no key needed for the CSV endpoint)
 
 FRED_SERIES = {
@@ -46,6 +50,9 @@ LLM_PRIMARY = os.getenv("LLM_PRIMARY", "ollama")  # ollama | groq | huggingface
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
+# Qwen3 "thinks" before answering. On a laptop CPU that costs minutes per call
+# at ~7 tokens/s, so it's off unless asked for.
+OLLAMA_THINK = os.getenv("OLLAMA_THINK", "false").strip().lower() == "true"
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
@@ -71,12 +78,12 @@ LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT", "value-investor")
 
 BASE_CURRENCY = os.getenv("BASE_CURRENCY", "PLN")
 
-## SCREENING — history
+## SCREENING: history
 
 HISTORY_YEARS = 10           # the window every consistency check looks at
-MIN_HISTORY_YEARS = 5        # below this, consistency checks report "n/a"
+MIN_HISTORY_YEARS = 4        # below this, consistency checks report "n/a"; Yahoo gives four or five years
 
-## SCREENING — income statement
+## SCREENING: income statement
 
 GROSS_MARGIN_GOOD = 0.40
 GROSS_MARGIN_POOR = 0.20
@@ -98,7 +105,7 @@ EPS_UP_YEARS_POOR = 0.50
 TAX_RATE_LOW = 0.10                # effective rates outside this band get a second look
 TAX_RATE_HIGH = 0.35
 
-## SCREENING — balance sheet
+## SCREENING: balance sheet
 
 ROE_GOOD = 0.15
 ROE_POOR = 0.10
@@ -109,7 +116,7 @@ ADJ_DEBT_TO_EQUITY_GOOD = 0.80
 ADJ_DEBT_TO_EQUITY_POOR = 2.0
 SHARE_COUNT_DILUTION_POOR = 0.10   # +10% shares over the window
 
-## SCREENING — cash flow
+## SCREENING: cash flow
 
 CAPEX_TO_EARNINGS_GOOD = 0.25
 CAPEX_TO_EARNINGS_POOR = 0.50

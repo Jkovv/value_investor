@@ -1,4 +1,4 @@
-"""main.py — command line: screen, rank, look at one company, check the market.
+"""main.py: command line: screen, rank, look at one company, check the market.
 
 Run `python ingest.py` first, then:
 
@@ -26,23 +26,25 @@ STATUS_STYLE = {"pass": "green", "warn": "yellow", "fail": "red", "na": "dim"}
 
 
 def pct(v, digits=1):
-    return "–" if v is None or v != v else f"{v * 100:.{digits}f}%"
+    return "-" if v is None or v != v else f"{v * 100:.{digits}f}%"
 
 
 def money(v):
-    return "–" if v is None or v != v else f"{v:,.2f}"
+    return "-" if v is None or v != v else f"{v:,.2f}"
 
 
 def ranking_table(df, top: int) -> Table:
-    t = Table(title="Ranking — gate passers by expected annual return", header_style="bold")
-    for col, justify in [("#", "right"), ("Ticker", "left"), ("Company", "left"), ("Quality", "right"),
-                         ("Data", "right"), ("Price", "right"), ("Buy below", "right"),
-                         ("Exp. return", "right"), ("Div. yield", "right")]:
+    t = Table(title=f"Ranking: gate passers by expected yearly return in {config.BASE_CURRENCY}", header_style="bold")
+    for col, justify in [("#", "right"), ("Ticker", "left"), ("Company", "left"), ("Mkt", "left"),
+                         ("Quality", "right"), ("Price", "right"), ("Buy below", "right"),
+                         ("Local", "right"), (config.BASE_CURRENCY, "right"), ("Yield", "right")]:
         t.add_column(col, justify=justify)
     for i, r in df.head(top).iterrows():
-        t.add_row(str(i + 1), r["ticker"] or "", (r["name"] or "")[:34], f"{r['quality']:.0f}",
-                  pct(r["completeness"], 0), money(r["price"]), money(r["buy_price"]),
-                  pct(r["expected_return"]), pct(r["dividend_yield"]))
+        ccy = r.get("currency") if isinstance(r.get("currency"), str) else ""
+        mkt = r.get("market") if isinstance(r.get("market"), str) else ""
+        t.add_row(str(i + 1), r["ticker"] or "", (r["name"] or "")[:30], mkt,
+                  f"{r['quality']:.0f}", f"{money(r['price'])} {ccy}", money(r["buy_price"]),
+                  pct(r["expected_return"]), pct(r.get("expected_return_base")), pct(r["dividend_yield"]))
     return t
 
 
@@ -52,7 +54,7 @@ def cmd_screen(args):
             ciks = [store.find_cik(con, t) for t in args.tickers]
             missing = [t for t, c in zip(args.tickers, ciks) if c is None]
             if missing:
-                console.print(f"[yellow]Not ingested yet: {', '.join(missing)} — run ingest.py --tickers ...[/]")
+                console.print(f"[yellow]Not ingested yet: {', '.join(missing)}. Run ingest.py --tickers ...[/]")
             ciks = [c for c in ciks if c is not None]
         else:
             ciks = None
@@ -113,7 +115,7 @@ def cmd_show(args):
             f"Growth used {pct(v['growth'])} (history {pct(v['growth_inputs']['historical'])}, "
             f"ROE×retention {pct(v['growth_inputs']['sustainable'])}) · "
             f"P/E {v['pe']['low']:.1f}/{v['pe']['mid']:.1f}/{v['pe']['high']:.1f} ({v['pe_source']})\n"
-            f"Expected annual return [bold]{pct(er['mid'])}[/] (range {pct(er['low'])} – {pct(er['high'])}) · "
+            f"Expected annual return [bold]{pct(er['mid'])}[/] (range {pct(er['low'])} to {pct(er['high'])}) · "
             f"buy below [bold]{money(v['buy_price'])}[/] for {config.HURDLE_RATE:.0%} a year · "
             f"dividend yield {pct(v['dividend_yield'])}"
         )
@@ -125,7 +127,7 @@ def cmd_show(args):
     years = Table(header_style="bold", title="By year")
     cols = [("fiscal_year", "FY", str), ("gross_margin", "GM", pct), ("sga_to_gp", "SGA/GP", pct),
             ("net_margin", "Net", pct), ("roe", "ROE", pct), ("eps", "EPS", money), ("dps", "DPS", money),
-            ("debt_years", "Debt yrs", lambda v: "–" if v != v else f"{v:.1f}"),
+            ("debt_years", "Debt yrs", lambda v: "-" if v != v else f"{v:.1f}"),
             ("capex_to_ni", "Capex/NI", pct)]
     for _, title, _ in cols:
         years.add_column(title, justify="right")
@@ -140,9 +142,9 @@ def cmd_macro(args):
             macro.refresh(con)
         snap = macro.snapshot(con)
     mc = snap["market_cap_to_gdp"]
-    sahm = "–" if snap["sahm"] is None else f"{snap['sahm']:.2f}"
-    console.print(f"10y Treasury {pct(snap['treasury_10y'], 2)} · 10y–2y {pct(snap['yield_curve'], 2)} · "
-                  f"VIX {snap['vix'] or '–'} · Sahm rule {sahm}")
+    sahm = "-" if snap["sahm"] is None else f"{snap['sahm']:.2f}"
+    console.print(f"10y Treasury {pct(snap['treasury_10y'], 2)} · 10y-2y {pct(snap['yield_curve'], 2)} · "
+                  f"VIX {snap['vix'] or '-'} · Sahm rule {sahm}")
     if mc:
         console.print(f"Market Cap / GDP {mc['value']:.0%} (trend {mc['trend']:.0%}, z {mc['z']:+.2f}) → "
                       f"[bold]{mc['regime']}[/], suggested cash {mc['suggested_cash']:.0%}")

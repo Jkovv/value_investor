@@ -28,16 +28,26 @@ python -m value_investor.llm
 ## Data
 
 ```bash
-# A handful of companies, to try things out
+# A handful of US companies, to try things out
 python ingest.py --tickers KO PG MA AAPL MSFT
 
-# The 400 largest, a good first real run (~1 minute)
-python ingest.py --limit 400
+# A quick look at a few markets: the 50 largest companies in each
+python ingest.py --markets USA POL DEU JPN IND --limit 50
 
-# Everything on NYSE + Nasdaq (~25 minutes the first time, ~12 after)
+# Only US companies (EDGAR; ~25 minutes the first time, ~12 after)
+python ingest.py --us
+
+# Every market outside the US above $1B (Yahoo Finance; a few hours the first time,
+# runs politely in the background and only refetches after 30 days)
+python ingest.py --world
+
+# Smaller companies too
+python ingest.py --world --min-cap 3e8
+
+# Everything
 python ingest.py
 
-# Only refresh rates, GDP, VIX
+# Only macro: FRED, World Bank, benchmarks, FX
 python ingest.py --macro-only
 ```
 
@@ -59,6 +69,18 @@ python main.py show KO
 
 # Market regime
 python main.py macro
+```
+
+## Research
+
+```bash
+# A brief for one company (tens of minutes on the local model)
+python research.py KO
+
+# The top five of the ranking, one after another
+python research.py --top 5
+
+# Much faster with Groq: set GROQ_API_KEY and LLM_PRIMARY=groq in .env
 ```
 
 ## Dashboard

@@ -18,6 +18,12 @@ Modules are numbered in reading order, starting at config.py (01):
     14 screener        one company end to end, and the ranking
     15 llm             model router: local Ollama, Groq / Hugging Face fallback
     16 tracing         optional LangSmith tracing
+    17 fx              exchange rates and quote subunits (pence, cents, agorot)
+    18 yahoo           every non-US market: universe, home listings, statements
+    19 markets         44 markets, Market Cap / GDP each, inflation and bond yields
+    20 research_tools  what the research agents may read
+    21 prompts         the agents' briefs
+    22 research        the deep research agent
 
-Entry points live at the repo root: ingest.py, main.py, app.py.
+Entry points live at the repo root: ingest.py, main.py, research.py, app.py.
 """

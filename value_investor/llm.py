@@ -1,4 +1,4 @@
-"""15 · llm — every model call goes through get_llm().
+"""15 · llm: every model call goes through get_llm().
 
 It returns a LangChain chat model backed by a LiteLLM Router running in
 process. The caller always asks for one logical model; the Router decides
@@ -62,6 +62,14 @@ def _get_router() -> "tuple[Router, str]":
         )
         _primary = names[0]
     return _router, _primary
+
+
+def tune(prompt: str) -> str:
+    """Qwen3's soft switch: '/no_think' at the end of a prompt skips the thinking phase."""
+    first = backends()[0] if backends() else None
+    if first == "ollama" and config.OLLAMA_MODEL.startswith("qwen3") and not config.OLLAMA_THINK:
+        return f"{prompt}\n/no_think"
+    return prompt
 
 
 def get_llm():

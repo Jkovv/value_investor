@@ -1,37 +1,57 @@
-# 05. Market regime
+# 05. Markets
 
-Market Cap / GDP answers one question: **how much cash should be on hand?**
+Market Cap / GDP answers one question per market: **how much cash should be on hand there?**
 It never decides which company to buy.
 
-## Why not a fixed threshold
+## Every market against its own trend
 
-The ratio has drifted upward for decades — more profits earned abroad by US
-companies, lower rates for most of the period. Against a fixed "overvalued
-above 140%" line, the market has looked overvalued for most of the last ten
-years, and a rule built on that line would have sat in cash through one of
-the best decades on record.
+Levels can't be compared across countries. Hong Kong sits above 1,000% and Switzerland above 200%
+because of who chooses to list there, not because they are always expensive; Germany sits low
+because many large German companies are family or state owned. So `markets.py` reads each market
+only against itself: it fits a straight line to the *log* of that market's own history and measures
+how many standard deviations today is above or below it.
 
-So `macro.py` fits a straight line to the *log* of the ratio since 1947 and
-measures how many standard deviations today sits above or below it:
-
-| Distance from trend | Regime | Suggested cash |
+| Distance from own trend | Reading | Suggested cash |
 |---|---|---|
 | below −1.0 σ | cheap | 0% |
 | −1.0 to +0.5 σ | fair | 10% |
 | +0.5 to +1.5 σ | expensive | 20% |
 | above +1.5 σ | very expensive | 35% |
 
-## Inputs
+## Where the numbers come from
 
-- **Corporate equities** (FRED `NCBEILQ027S`, Fed Z.1) over **GDP** (`GDP`).
-  Z.1 is a quarter-end level published with a lag, so the latest value is
-  rolled forward with the S&P 500's move since that quarter ended.
-- **10y − 2y Treasury spread** — an inverted curve preceded most US recessions.
-- **Sahm rule** — the 3-month average unemployment rate against its low of
-  the previous 12 months; 0.50 or more has marked the start of recessions.
-- **VIX** — spikes near 30 have historically been better moments to buy than to sell.
+- **United States:** the Fed's Z.1 corporate equities over GDP (FRED), quarterly since 1947, rolled
+  forward with the S&P 500 since the last quarter end.
+- **The other 43 markets:** the World Bank's *market capitalization of listed domestic companies
+  (% of GDP)*, annual. The last annual point is rolled forward to today with the local benchmark
+  index (or a country ETF converted to local currency where Yahoo has no index: Poland's WIG20 ETF,
+  and US-listed country ETFs for Chile, Saudi Arabia, Thailand, the Philippines and Vietnam) and
+  divided by nominal GDP growth since then.
 
-The cash bands are a starting point. The backtest stage will check them on
-index data back to the late 1940s before anything relies on them.
+Each reading carries a confidence label shown in the dashboard:
 
-Next: **[06 — Roadmap](06-roadmap.md)**.
+| Label | Meaning |
+|---|---|
+| current | last World Bank figure is at most two years old |
+| since 20xx, rolled | two to five years old, rolled forward |
+| since 20xx, rough | the World Bank stopped publishing for this market years ago (France, Italy, the Netherlands, Belgium, Ireland, Portugal, Norway); rolled forward a long way |
+| stale | old and nothing to roll it forward with (Sweden, Denmark, Finland) |
+
+Taiwan has no World Bank series at all and shows as missing.
+
+## Also on the page
+
+- Local **10-year government bond yields** from the OECD series on FRED where they exist; they're
+  the bar a company's earnings yield is compared against on its own page.
+- US **yield curve** (10y less 2y), **Sahm rule** and **VIX**.
+
+## Comparing returns across currencies
+
+A company's expected return is in its own currency. Over ten years exchange rates follow
+inflation differences more than anything else, so the ranking converts each return to the base
+currency (PLN by default) with relative purchasing power parity:
+`(1 + local return) × (1 + base inflation) / (1 + local inflation) − 1`, using the median of
+the last five years of World Bank CPI inflation (the euro uses the euro area's). A 30% return in
+lira is worth less in zloty than a 12% return in francs.
+
+Next: **[06 Roadmap](06-roadmap.md)**.

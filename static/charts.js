@@ -124,7 +124,7 @@
         const key = document.createElement("b");
         key.style.background = colors[si];
         const strong = document.createElement("strong");
-        strong.textContent = v === null ? "–" : fmt(v);
+        strong.textContent = v === null ? "-" : fmt(v);
         const name = document.createElement("span");
         name.textContent = s.name;
         row.append(key, strong, name);

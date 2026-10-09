@@ -1,42 +1,36 @@
-// Auto -> Light -> Dark. "Auto" follows the operating system.
+// Sun in light mode, moon in dark mode. Until clicked, it follows the system.
 
 (function () {
   const root = document.documentElement;
   const button = document.querySelector(".theme-toggle");
-  const order = ["auto", "light", "dark"];
-  const names = { auto: "Auto", light: "Light", dark: "Dark" };
+  const system = window.matchMedia("(prefers-color-scheme: dark)");
 
-  function current() {
-    return root.dataset.theme || "auto";
+  function effective() {
+    return root.dataset.theme || (system.matches ? "dark" : "light");
   }
 
-  function apply(theme) {
-    if (theme === "auto") delete root.dataset.theme;
-    else root.dataset.theme = theme;
-    try {
-      if (theme === "auto") localStorage.removeItem("theme");
-      else localStorage.setItem("theme", theme);
-    } catch (e) {}
-    label();
-    document.dispatchEvent(new Event("themechange"));
-  }
-
-  function label() {
+  function sync() {
     if (!button) return;
-    button.replaceChildren(document.createTextNode("Theme: "));
-    const b = document.createElement("b");
-    b.textContent = names[current()];
-    button.appendChild(b);
+    const mode = effective();
+    button.dataset.mode = mode;
+    button.setAttribute("aria-label", mode === "dark" ? "Switch to light theme" : "Switch to dark theme");
   }
 
   if (button) {
     button.addEventListener("click", () => {
-      const next = order[(order.indexOf(current()) + 1) % order.length];
-      apply(next);
+      const next = effective() === "dark" ? "light" : "dark";
+      root.dataset.theme = next;
+      try { localStorage.setItem("theme", next); } catch (e) {}
+      sync();
+      document.dispatchEvent(new Event("themechange"));
     });
   }
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-    if (current() === "auto") document.dispatchEvent(new Event("themechange"));
+
+  system.addEventListener("change", () => {
+    if (root.dataset.theme) return;
+    sync();
+    document.dispatchEvent(new Event("themechange"));
   });
-  label();
+
+  sync();
 })();

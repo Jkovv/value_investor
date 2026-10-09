@@ -1,31 +1,39 @@
-"""app.py — the dashboard.
+"""app.py: the dashboard.
 
   uvicorn app:app --reload        then open http://127.0.0.1:8000
 
 Reads the DuckDB file read-only, so it can stay open while you browse.
 While ingest.py or `main.py screen` is writing, DuckDB locks the file and
-pages show a "busy" notice until the run finishes.
+pages show a "busy" notice until the run finishes. Research runs started
+from a company page run in a background thread and write files, not rows.
 """
 
 import json
 import math
 import re
+import time
 from pathlib import Path
 
 import duckdb
+import markdown
 import pandas as pd
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
+from markupsafe import Markup
 
-from value_investor import config, macro, screener, store
+from value_investor import config, llm, macro, markets, research, screener, store
+from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
 app = FastAPI(title="Value Investor")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "templates")
+
+# Appended to static URLs so a browser never runs yesterday's CSS or JS.
+ASSET_VERSION = str(int(max(p.stat().st_mtime for p in (ROOT / "static").iterdir())))
 
 
 def _missing(v) -> bool:
@@ -36,7 +44,7 @@ def _missing(v) -> bool:
 
 def pct(v, digits=1, signed=False):
     if _missing(v):
-        return "–"
+        return "-"
     v = round(v * 100, digits) + 0.0
     return f"{v:+.{digits}f}%" if signed and v != 0 else f"{v:.{digits}f}%"
 
@@ -53,12 +61,12 @@ def nice_name(name):
 
 
 def money(v, digits=2):
-    return "–" if _missing(v) else f"{v:,.{digits}f}"
+    return "-" if _missing(v) else f"{v:,.{digits}f}"
 
 
 def compact(v):
     if _missing(v):
-        return "–"
+        return "-"
     for size, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
         if abs(v) >= size:
             return f"{v / size:.1f}{suffix}"
@@ -66,11 +74,19 @@ def compact(v):
 
 
 def times(v):
-    return "–" if _missing(v) else f"{v:.1f}×"
+    return "-" if _missing(v) else f"{v:.1f}×"
 
 
-templates.env.filters.update(pct=pct, money=money, compact=compact, times=times, nice_name=nice_name)
-templates.env.globals.update(config=config)
+def text_or(v, fallback=""):
+    return v if isinstance(v, str) and v else fallback
+
+
+templates.env.filters.update(pct=pct, money=money, compact=compact, times=times, nice_name=nice_name,
+                             text_or=text_or)
+templates.env.globals.update(config=config, asset_version=ASSET_VERSION)
+
+TONE = {"cheap": "pass", "fair": "pass", "expensive": "warn", "very expensive": "fail"}
+templates.env.globals.update(regime_tone=TONE)
 
 
 def _busy(request: Request, page: str):
@@ -81,24 +97,55 @@ def _series(points) -> str:
     return json.dumps([[str(k), None if _missing(v) else float(v)] for k, v in points])
 
 
+_readings_cache: dict = {}
+
+
+def _market_readings(con) -> dict:
+    """All market readings, recomputed at most every ten minutes."""
+    now = time.time()
+    if _readings_cache.get("at", 0) > now - 600:
+        return _readings_cache["data"]
+    data = {r["iso3"]: r for r in markets.all_readings(con)}
+    _readings_cache.update(at=now, data=data)
+    return data
+
+
+def render_report(text: str) -> Markup:
+    """Markdown from the agent, with any raw HTML neutralised and only web links kept."""
+    safe = text.replace("&", "&amp;").replace("<", "&lt;")
+    html = markdown.markdown(safe, extensions=["tables", "sane_lists"])
+    html = re.sub(r'href="(?!https?://)[^"]*"', 'href="#"', html)
+    html = html.replace("<a href=", '<a target="_blank" rel="noopener noreferrer" href=')
+    return Markup(html)
+
+
 @app.get("/", response_class=HTMLResponse)
-def ranking(request: Request, q: str = "", all: bool = False, profile: str = ""):
+def ranking(request: Request, q: str = "", all: bool = False, profile: str = "", market: str = ""):
     try:
         with store.connect(read_only=True) as con:
             df = screener.ranking(con, only_gate=not all)
-            snap = macro.snapshot(con)
+            readings = _market_readings(con)
     except duckdb.IOException:
         return _busy(request, "ranking")
 
+    present = sorted({m for m in df["market"].dropna()}) if not df.empty else []
     if q:
         needle = q.strip().lower()
         df = df[df["ticker"].fillna("").str.lower().str.contains(needle)
                 | df["name"].fillna("").str.lower().str.contains(needle)]
     if profile:
         df = df[df["profile"] == profile]
+    if market:
+        df = df[df["market"] == market]
     rows = df.to_dict(orient="records")
+    top = df["expected_return_base"].max(skipna=True) if not df.empty else None
+    home_iso = markets.reference_country(config.BASE_CURRENCY)
+    home = readings.get(home_iso) if home_iso in readings else readings.get("USA")
     return templates.TemplateResponse(request, "ranking.html", {
-        "rows": rows, "q": q, "all": all, "profile": profile, "snap": snap, "count": len(rows),
+        "rows": rows, "q": q, "all": all, "profile": profile, "market": market, "count": len(rows),
+        "markets_present": [(iso, markets.BY_ISO[iso].name) for iso in present if iso in markets.BY_ISO],
+        "readings": readings, "home": home, "top_return": None if _missing(top) else float(top),
+        "n_markets": len(present), "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
     })
 
 
@@ -113,6 +160,9 @@ def company(request: Request, ticker: str):
                 found = store.analyses(con)
                 found = found[found["cik"] == cik]
                 row = None if found.empty else found.iloc[0].to_dict()
+            reading = None
+            if payload:
+                reading = _market_readings(con).get(payload["company"].get("market"))
     except duckdb.IOException:
         return _busy(request, "company")
     if payload is None:
@@ -134,29 +184,60 @@ def company(request: Request, ticker: str):
 
     groups = {"income": "Income statement", "balance": "Balance sheet", "cash": "Cash flow"}
     checks = {key: [c for c in payload["checks"] if c["group"] == key] for key in groups}
+    text = research.report(ticker)
     return templates.TemplateResponse(request, "company.html", {
         "p": payload, "row": row, "v": payload["valuation"], "s": payload["summary"],
         "c": payload["company"], "checks": checks, "groups": groups, "charts": charts,
-        "yearly": payload["yearly"][-12:],
+        "yearly": payload["yearly"][-12:], "reading": reading,
+        "report": render_report(text) if text else None,
+        "research_status": research.status(ticker), "research_busy": research.busy(),
+        "backends": llm.backends(),
     })
 
 
-@app.get("/market", response_class=HTMLResponse)
-def market(request: Request):
+@app.post("/company/{ticker}/research")
+def start_research(ticker: str):
+    name = None
     try:
         with store.connect(read_only=True) as con:
+            cik = store.find_cik(con, ticker)
+            name = (store.company(con, cik) or {}).get("name") if cik else None
+    except duckdb.IOException:
+        pass
+    research.start_in_background(ticker, name)
+    return RedirectResponse(f"/company/{ticker}#research", status_code=303)
+
+
+@app.get("/company/{ticker}/research/status")
+def research_status(ticker: str):
+    return JSONResponse(json.loads(json.dumps(research.status(ticker) or {"state": "none"}, default=str)),
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/market", response_class=HTMLResponse)
+def market(request: Request, m: str = ""):
+    try:
+        with store.connect(read_only=True) as con:
+            readings = _market_readings(con)
             snap = macro.snapshot(con)
-            mc = macro.market_cap_to_gdp(con)
+            bonds = {iso: markets.bond_yield(con, iso) for iso in readings}
     except duckdb.IOException:
         return _busy(request, "market")
+    chosen = (m or "USA").upper()
+    reading = readings.get(chosen)
     chart, table = None, []
-    if mc:
-        hist = mc["history"][mc["history"].index >= "1990-01-01"]
-        labels = [d.strftime("%Y-%m") for d in hist.index]
+    if reading and reading.get("value") is not None:
+        hist = reading["history"]
+        hist = hist[hist.index >= "1990-01-01"]
+        labels = [d.strftime("%Y-%m") if chosen == "USA" else d.strftime("%Y") for d in hist.index]
         chart = json.dumps([
             {"name": "Market Cap / GDP", "points": json.loads(_series(zip(labels, hist["ratio"])))},
             {"name": "Long-run trend", "points": json.loads(_series(zip(labels, hist["trend"]))), "muted": True},
         ])
-        table = [{"date": d.strftime("%Y-%m"), "ratio": r, "trend": t}
-                 for d, r, t in zip(hist.index[::-4], hist["ratio"][::-4], hist["trend"][::-4])]
-    return templates.TemplateResponse(request, "market.html", {"snap": snap, "chart": chart, "table": table})
+        table = [{"date": lab, "ratio": r, "trend": t}
+                 for lab, r, t in list(zip(labels, hist["ratio"], hist["trend"]))[::-1]]
+    rows = sorted(readings.values(), key=lambda r: (r.get("z") is None, -(r.get("z") or 0)))
+    return templates.TemplateResponse(request, "market.html", {
+        "snap": snap, "readings": rows, "chosen": chosen, "reading": reading, "chart": chart,
+        "table": table, "bonds": bonds,
+    })

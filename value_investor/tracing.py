@@ -1,4 +1,4 @@
-"""16 · tracing — optional LangSmith tracing.
+"""16 · tracing: optional LangSmith tracing.
 
 LangChain reads LANGSMITH_* straight from the environment (config.py loads
 .env), so there's nothing to wire. This only logs whether a run is traced.

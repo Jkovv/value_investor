@@ -10,28 +10,42 @@
       if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
 </head>
 <body>
-  <header class="masthead">
-    <div class="wrap masthead-row">
-      <a class="wordmark" href="/">Value Investor</a>
-      <nav>
-        <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Ranking</a>
+  <header class="topbar">
+    <div class="wrap topbar-row">
+      <a class="brand" href="/">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+          <rect width="24" height="24" rx="7" fill="currentColor"/>
+          <path d="M6 15.5l3.6-3.6 2.8 2.8L18 9" fill="none" style="stroke: var(--surface)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Value Investor
+      </a>
+      <nav class="tabs">
+        <a href="/" {% if request.url.path == '/' or request.url.path.startswith('/company') %}aria-current="page"{% endif %}>Ranking</a>
         <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Market</a>
       </nav>
-      <button class="theme-toggle" type="button" aria-live="polite">Theme: <b>Auto</b></button>
+      <button class="icon-button theme-toggle" type="button" aria-label="Switch to dark theme">
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
+      </button>
     </div>
   </header>
   <main class="wrap">
     {% block content %}{% endblock %}
   </main>
-  <footer class="wrap colophon">
-    Filings from SEC EDGAR, prices from Yahoo Finance, macro series from FRED.
-    Every number here is computed from those; none of it is advice.
+  <footer class="wrap footer">
+    Filings from SEC EDGAR · prices from Yahoo Finance · macro from FRED. Computed numbers, not advice.
   </footer>
   <div class="tooltip" role="status" hidden></div>
-  <script src="/static/theme.js" defer></script>
-  <script src="/static/charts.js" defer></script>
+  <script src="/static/theme.js?v={{ asset_version }}" defer></script>
+  <script src="/static/charts.js?v={{ asset_version }}" defer></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

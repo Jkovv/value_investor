@@ -1,4 +1,4 @@
-"""05 · edgar — the company list, company profiles and raw XBRL facts.
+"""05 · edgar: the company list, company profiles and raw XBRL facts.
 
 Three endpoints, all free:
     company_tickers_exchange.json   every listed SEC filer with ticker + exchange
