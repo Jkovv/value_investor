@@ -32,8 +32,16 @@ app = FastAPI(title="Value Investor")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "templates")
 
-# Appended to static URLs so a browser never runs yesterday's CSS or JS.
-ASSET_VERSION = str(int(max(p.stat().st_mtime for p in (ROOT / "static").iterdir())))
+class _AssetVersion:
+    """Appended to static URLs so a browser never runs yesterday's CSS or JS.
+
+    Read on every render, so editing a static file needs no server restart."""
+
+    def __str__(self) -> str:
+        return str(int(max(p.stat().st_mtime for p in (ROOT / "static").iterdir())))
+
+
+ASSET_VERSION = _AssetVersion()
 
 
 def _missing(v) -> bool:

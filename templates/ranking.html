@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
 {% block content %}
 <div class="page-head">
   <h1>Ranking</h1>
@@ -68,19 +69,19 @@
   {% if rows %}
   {% set top = top_return or 0 %}
   <div class="table-scroll">
-  <table class="data ranking">
+  <table class="data ranking sortable" id="ranking">
     <thead>
       <tr>
-        <th class="num rank">#</th>
-        <th>Company</th>
-        <th>Market</th>
-        <th class="num">Quality</th>
-        <th class="num">Price</th>
-        <th class="num">Buy below</th>
-        <th class="num">Discount</th>
-        <th class="num">Local return</th>
-        <th class="num">Return in {{ config.BASE_CURRENCY }}</th>
-        <th class="num">Yield</th>
+        {{ sort_head("#", align="num rank", first="ascending") }}
+        {{ sort_head("Company", "text", "") }}
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Quality") }}
+        {{ sort_head("Price") }}
+        {{ sort_head("Buy below") }}
+        {{ sort_head("Discount") }}
+        {{ sort_head("Local return") }}
+        {{ sort_head("Return in " ~ config.BASE_CURRENCY, initial="descending") }}
+        {{ sort_head("Yield") }}
       </tr>
     </thead>
     <tbody>
@@ -88,8 +89,8 @@
       {% set mos = (r.buy_price / r.price - 1) if r.buy_price and r.price else none %}
       {% set mkt = r.market | text_or %}
       <tr {% if not r.passes_gate %}class="below-gate"{% endif %}>
-        <td class="num rank">{{ loop.index }}</td>
-        <td>
+        <td class="num rank" data-value="{{ loop.index }}">{{ loop.index }}</td>
+        <td data-value="{{ r.name | nice_name }}">
           <a class="company-cell" href="/company/{{ r.ticker }}">
             <span class="ticker">{{ r.ticker }}</span>
             <span class="company-name">{{ r.name | nice_name }}</span>
@@ -98,7 +99,7 @@
             {% endif %}
           </a>
         </td>
-        <td>
+        <td data-value="{{ mkt }}">
           {% if mkt %}
           {% set rd = readings.get(mkt) %}
           <span class="market-chip" title="{{ rd.name if rd else mkt }}">
@@ -106,17 +107,17 @@
           </span>
           {% endif %}
         </td>
-        <td class="num">
+        <td class="num" data-value="{{ r.quality }}">
           <span class="bar-cell">
             <span class="bar" aria-hidden="true"><span style="width: {{ r.quality }}%"></span></span>
             {{ "%.0f" | format(r.quality) }}
           </span>
         </td>
-        <td class="num">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
-        <td class="num">{{ r.buy_price | money }}</td>
-        <td class="num {% if mos is not none and mos > 0 %}good{% else %}muted{% endif %}">{{ mos | pct(0, signed=True) }}</td>
-        <td class="num muted">{{ r.expected_return | pct }}</td>
-        <td class="num">
+        <td class="num" data-value="{{ r.price }}">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
+        <td class="num" data-value="{{ r.buy_price }}">{{ r.buy_price | money }}</td>
+        <td class="num {% if mos is not none and mos > 0 %}good{% else %}muted{% endif %}" data-value="{{ mos if mos is not none else '' }}">{{ mos | pct(0, signed=True) }}</td>
+        <td class="num muted" data-value="{{ r.expected_return }}">{{ r.expected_return | pct }}</td>
+        <td class="num" data-value="{{ r.expected_return_base }}">
           {% if r.expected_return_base is number and r.expected_return_base == r.expected_return_base %}
           <span class="bar-cell">
             <span class="bar" aria-hidden="true"><span style="width: {{ [0, (r.expected_return_base / top * 100) if top and top > 0 else 0] | max }}%"></span></span>
@@ -124,7 +125,7 @@
           </span>
           {% else %}-{% endif %}
         </td>
-        <td class="num">{{ r.dividend_yield | pct }}</td>
+        <td class="num" data-value="{{ r.dividend_yield }}">{{ r.dividend_yield | pct }}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -135,3 +136,5 @@
   {% endif %}
 </section>
 {% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}

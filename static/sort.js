@@ -1,5 +1,6 @@
 // Click a column header to sort its table, click again to flip the order.
-// Numbers start high-to-low, text starts A-to-Z. Rows without data stay at the bottom.
+// Numbers start high-to-low, text starts A-to-Z (a header can override with data-first).
+// Rows without data stay at the bottom.
 // The choice survives reloads (clicking a market reloads the page), per table id.
 
 (function () {
@@ -46,7 +47,7 @@
       if (!button) return;
       button.addEventListener("click", () => {
         const current = th.getAttribute("aria-sort");
-        const first = th.dataset.sort === "text" ? "ascending" : "descending";
+        const first = th.dataset.first || (th.dataset.sort === "text" ? "ascending" : "descending");
         const dir = current === "none" ? first : current === "descending" ? "ascending" : "descending";
         apply(th, dir, true);
       });

@@ -58,14 +58,7 @@
 {% endif %}
 {% endif %}
 
-{% macro sort_head(label, kind="num", align="num", initial="none") -%}
-<th class="{{ align }}" data-sort="{{ kind }}" aria-sort="{{ initial }}">
-  <button type="button" class="sort-btn">
-    {{ label }}
-    <svg class="sort-icon" viewBox="0 0 10 14" aria-hidden="true"><path class="up" d="M5 1 9 5.5H1z"/><path class="down" d="M5 13 1 8.5h8z"/></svg>
-  </button>
-</th>
-{%- endmacro %}
+{% from "_macros.html" import sort_head %}
 
 {% set confidence_rank = {"high": 0, "medium": 1, "low": 2, "stale": 3} %}
 <section class="card section">

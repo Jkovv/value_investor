@@ -1,0 +1,8 @@
+{% macro sort_head(label, kind="num", align="num", initial="none", first="") -%}
+<th class="{{ align }}" data-sort="{{ kind }}" aria-sort="{{ initial }}" {% if first %}data-first="{{ first }}"{% endif %}>
+  <button type="button" class="sort-btn">
+    {{ label }}
+    <svg class="sort-icon" viewBox="0 0 10 14" aria-hidden="true"><path class="up" d="M5 1 9 5.5H1z"/><path class="down" d="M5 13 1 8.5h8z"/></svg>
+  </button>
+</th>
+{%- endmacro %}
