@@ -1,16 +1,10 @@
 """14 · screener: one company end to end, then the ranking.
 
-    facts -> statements -> yearly ratios -> summary -> checklist -> score
-    summary + prices -> valuation (in the currency the shares trade in)
+    facts -> statements -> ratios -> checklist -> score -> valuation, lenses, quarters
 
-Prices are only fetched for companies that clear the quality gate, unless
-asked otherwise: there's no point pricing a business we wouldn't own.
-
-Expected returns are in local currency, which can't be compared across
-countries as they are, so the ranking sorts on the same return expressed in
-the base currency (markets.to_base). A US listing of a foreign company that
-reports in its own currency is scored but left out of the ranking; its home
-listing carries the valuation.
+only companies that clear the gate get priced. the ranking sorts on expected
+return in the base currency; a us listing of a foreign company is scored but
+ranked through its home listing.
 """
 
 import logging
@@ -19,7 +13,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from value_investor import config, fx, lenses, markets, metrics, prices as px, rules, statements, store, valuation
+from value_investor import (config, fx, insiders, lenses, markets, metrics, portfolio, prices as px, quarterly,
+                            rules, statements, store, track, valuation)
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +44,8 @@ class Analysis:
     rankable: bool = True
     expected_return_base: "float | None" = None
     lenses: dict = field(default_factory=dict)
+    quarters: dict = field(default_factory=dict)
+    insiders: "dict | None" = None
 
     @property
     def market(self) -> "str | None":
@@ -81,6 +78,8 @@ class Analysis:
             "base_currency": config.BASE_CURRENCY,
             "flags": self.flags,
             "lenses": self.lenses,
+            "quarters": self.quarters,
+            "insiders": self.insiders,
             "yearly": yearly,
         }
 
@@ -104,7 +103,7 @@ class Analysis:
 
 
 def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of) -> pd.Series:
-    """Splits from the filings, plus any newer split the filings can't know about yet."""
+    """splits from the filings, plus any newer split the filings can't know about yet."""
     found = statements.inferred_splits(facts, as_of)
     if not priced.empty and not facts.empty:
         filed = pd.to_datetime(facts["filed"])
@@ -124,7 +123,7 @@ def _name_key(name: "str | None") -> str:
 
 
 def _home_listing(con, name: "str | None") -> "str | None":
-    """The Yahoo home listing of a company we also hold through an SEC filing, if any."""
+    """the Yahoo home listing of a company we also hold through an SEC filing, if any."""
     key = _name_key(name)
     if not key:
         return None
@@ -136,7 +135,7 @@ def _home_listing(con, name: "str | None") -> "str | None":
 
 
 def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield) -> dict:
-    """Valuation in statement currency, then price and buy price back in the quote currency."""
+    """valuation in statement currency, then price and buy price back in the quote currency."""
     quoted, quote_ccy = fx.to_major(priced, a.company.get("price_currency") or "USD")
     work = quoted
     if quote_ccy and a.currency and quote_ccy != a.currency:
@@ -225,10 +224,28 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
     v = a.valuation
     to_quote = (fx.rate(con, a.currency, v["currency"]) or 1.0) if v.get("statement_currency") else 1.0
     a.lenses = lenses.compute(table, a.yearly, a.summary, v, profile, comp.get("sector"), comp.get("sic"), to_quote)
+    a.quarters = _quarters(con, a, facts, as_of, to_quote)
+    if source == "sec" and as_of is None:
+        a.insiders = insiders.summary(con, cik)
     return a
 
 
+def _quarters(con, a: "Analysis", facts: pd.DataFrame, as_of, to_quote: float) -> dict:
+    qt = quarterly.table(store.load_quarterly_facts(con, a.cik), facts, a.currency, as_of)
+    if qt.empty:
+        return {}
+    summary = quarterly.summary(qt, a.summary.get("net_income"))
+    v, shares = a.valuation, a.summary.get("shares")
+    ttm = summary.get("ttm_net_income")
+    if v.get("available") and ttm and ttm > 0 and shares:
+        summary["pe_ttm"] = v["price"] / to_quote / (ttm / shares)
+    if summary.get("trend") == "slipping" and not summary.get("stale"):
+        a.flags.append("sales or profit fell against a year earlier in each of the last two quarters")
+    return {"summary": summary, "rows": quarterly.rows(qt, config.QUARTERS_SHOWN)}
+
+
 def run(ciks=None, as_of=None, with_prices: "bool | None" = None) -> pd.DataFrame:
+    ciks_given = ciks
     with store.connect() as con:
         if ciks is None:
             ciks = store.companies(con)["cik"].tolist()
@@ -243,7 +260,23 @@ def run(ciks=None, as_of=None, with_prices: "bool | None" = None) -> pd.DataFram
             results.append(a)
             if i % 250 == 0:
                 logger.info("analysed %d / %d", i, len(ciks))
+        _after_run(con, full=ciks_given is None)
     return to_frame(results)
+
+
+def _after_run(con, full: bool) -> None:
+    """prices the dashboard needs but can't fetch itself (it reads the database read-only)."""
+    held = portfolio.tickers()
+    for ticker in held + [config.BENCHMARK]:
+        try:
+            px.ensure(con, ticker)
+        except Exception as exc:
+            logger.warning("price fetch failed for %s: %s", ticker, exc)
+    currencies = [r[0] for r in con.execute("SELECT DISTINCT price_currency FROM companies").fetchall()]
+    fx.ensure_pairs(con, currencies + ["USD"], ["USD", config.BASE_CURRENCY])
+    if full:
+        n = track.take(con, ranking(con))
+        logger.info("snapshot saved: %d ranked companies", n)
 
 
 def to_frame(results: list) -> pd.DataFrame:
@@ -264,8 +297,8 @@ def ranking(con, only_gate: bool = True) -> pd.DataFrame:
 
 
 def magic_rank(df: pd.DataFrame) -> pd.Series:
-    """Greenblatt's ranking: place on earnings yield plus place on return on
-    capital, lowest total first. Only companies with both numbers take part."""
+    """greenblatt's ranking: place on earnings yield plus place on return on
+    capital, lowest total first. only companies with both numbers take part."""
     if "earnings_yield" not in df:
         return pd.Series(pd.NA, index=df.index, dtype="Int64")
     both = df["earnings_yield"].notna() & df["return_on_capital"].notna()

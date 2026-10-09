@@ -3,11 +3,8 @@
 {% block content %}
 <div class="page-head">
   <h1>Ranking</h1>
-  <p class="sub">
-    Companies from every market that clear the quality checklist, sorted by the yearly return today's price
-    implies over ten years, converted to {{ config.BASE_CURRENCY }} so markets compare fairly.
-    Buy below is the highest price that still compounds at {{ config.HURDLE_RATE | pct(0) }} locally.
-  </p>
+  <p class="sub">Quality businesses from every market, by the yearly return today's price implies, in {{ config.BASE_CURRENCY }}.
+    Buy below compounds at {{ config.HURDLE_RATE | pct(0) }} locally.</p>
 </div>
 
 {% set ranked = readings.values() | selectattr("z", "defined") | selectattr("z", "number") | list %}
@@ -18,7 +15,7 @@
     <span class="stat-value">{{ home.value | pct(0) if home else "-" }}</span>
     <span class="stat-note">
       {% if home and home.regime %}
-        <span class="pill pill-{{ regime_tone[home.regime] }}"><i></i>{{ home.regime | capitalize }}</span>
+        <span class="pill pill-{{ regime_tone[home.regime] }}">{{ home.regime | capitalize }}</span>
         hold {{ home.suggested_cash | pct(0) }} cash
       {% endif %}
     </span>

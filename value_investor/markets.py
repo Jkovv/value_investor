@@ -1,15 +1,8 @@
-"""19 · markets: every market we screen, and Market Cap / GDP for each one.
+"""19 · markets: the 44 markets we screen and Market Cap / GDP for each.
 
-History comes from the World Bank (listed domestic companies' market value
-over GDP, annual). The last annual point is rolled forward with the local
-benchmark (or a country ETF converted to local currency) and with nominal
-GDP growth, so the reading is current rather than a year old.
-
-Each market is judged against its own log trend. Switzerland or Hong Kong
-look enormous next to Germany because of who lists there, not because they
-are permanently overpriced, so cross-country levels are never compared.
-
-The United States uses the quarterly Fed series from macro.py instead.
+world bank history, rolled forward with the local benchmark and gdp growth.
+each market is judged against its own trend only: Switzerland looks huge next
+to Germany because of who lists there, not because it is always expensive.
 """
 
 import logging
@@ -103,7 +96,7 @@ EURO_AREA = "EMU"
 
 
 def reference_country(currency: "str | None") -> "str | None":
-    """Whose inflation describes a currency. The euro gets the euro area as a whole."""
+    """whose inflation describes a currency. the euro gets the euro area as a whole."""
     if currency == "EUR":
         return EURO_AREA
     for m in MARKETS:
@@ -149,7 +142,7 @@ def refresh(con) -> None:
 
 
 def bond_yield(con, iso3: "str | None", as_of=None) -> "float | None":
-    """Local 10-year government yield as a fraction, if a reasonably fresh one exists."""
+    """local 10-year government yield as a fraction, if a reasonably fresh one exists."""
     if iso3 == "USA":
         value, _ = macro.latest(con, "treasury_10y", as_of)
         return None if value is None else value / 100.0
@@ -168,9 +161,9 @@ def inflation(con, currency: "str | None", years: int = 5) -> "float | None":
 
 
 def to_base(con, expected: "float | None", currency: "str | None", base: str) -> "float | None":
-    """A local-currency yearly return re-expressed in the base currency.
+    """a local-currency yearly return re-expressed in the base currency.
 
-    Over ten years exchange rates track inflation differences more than
+    over ten years exchange rates track inflation differences more than
     anything else (relative purchasing power parity), so a 20% return in a
     currency losing 15% a year to inflation is worth far less in zloty than
     a 12% return in francs.

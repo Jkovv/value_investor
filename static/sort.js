@@ -1,7 +1,7 @@
-// Click a column header to sort its table, click again to flip the order.
-// Numbers start high-to-low, text starts A-to-Z (a header can override with data-first).
-// Rows without data stay at the bottom.
-// The choice survives reloads (clicking a market reloads the page), per table id.
+// click a column header to sort its table, click again to flip the order.
+// numbers start high-to-low, text starts A-to-Z (a header can override with data-first).
+// rows without data stay at the bottom.
+// the choice survives reloads (clicking a market reloads the page), per table id.
 
 (function () {
   document.querySelectorAll("table.sortable").forEach((table) => {

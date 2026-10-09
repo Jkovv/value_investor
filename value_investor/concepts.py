@@ -1,14 +1,8 @@
-"""06 · concepts: which XBRL tags feed which line of the statements.
+"""06 · concepts: which xbrl tags feed which statement line.
 
-Companies tag the same line differently, and the same company changes tags
-over time (revenue moved to RevenueFromContractWithCustomer... in 2018).
-Each field lists its tags in order of preference; the first one present for
-a given year wins, so a mid-history tag change doesn't drop years.
-
-An alternative can also be ("sum", [...]): added up from whatever parts
-were filed, for lines like SG&A that some companies only report in pieces.
-
-ifrs-full covers foreign filers (20-F) today and ESEF filings later.
+tags are listed in order of preference and the first one filed for a period
+wins, so a tag change mid-history (revenue in 2018) doesn't drop years.
+("sum", [...]) adds up parts, for lines like SG&A that some report in pieces.
 """
 
 DURATION = "duration"
@@ -157,8 +151,8 @@ FIELDS = {
     }),
 }
 
-# Values the statements always show as positive amounts, whatever sign the filer used.
-# Yahoo Finance rows, used for every company outside the US. Same fields,
+# values the statements always show as positive amounts, whatever sign the filer used.
+# Yahoo Finance rows, used for every company outside the US. same fields,
 # same preference order rules, so the rest of the pipeline can't tell the
 # difference apart from the shorter history.
 Y = "yahoo"

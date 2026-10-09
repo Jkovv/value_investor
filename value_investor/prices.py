@@ -1,8 +1,8 @@
 """08 · prices: daily prices, dividends and splits from yfinance.
 
-Close is split-adjusted but not dividend-adjusted, which is what P/E needs:
+close is split-adjusted but not dividend-adjusted, which is what P/E needs:
 the same share units as today's EPS, without dividends folded into price.
-Prices are cached in DuckDB and refetched at most once a day.
+prices are cached in DuckDB and refetched at most once a day.
 """
 
 import logging

@@ -1,6 +1,6 @@
-"""01 · config: every setting, read from .env. Everything imports this.
+"""01 · config: every setting, read from .env. everything imports this.
 
-Thresholds come from knowledge/principles.md. If you change one here,
+thresholds come from knowledge/principles.md. if you change one here,
 change the principle there too, so the docs and the score never disagree.
 """
 
@@ -20,9 +20,9 @@ DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "value_investor.duckdb"))
 
 ## SEC EDGAR
 
-# The SEC rejects anonymous traffic. Use "Your Name your@email.com".
+# the SEC rejects anonymous traffic. use "Your Name your@email.com".
 SEC_USER_AGENT = os.getenv("SEC_USER_AGENT", "")
-# Their fair-access limit is 10 requests/second; stay a bit under it.
+# their fair-access limit is 10 requests/second; stay a bit under it.
 SEC_REQUESTS_PER_SECOND = float(os.getenv("SEC_REQUESTS_PER_SECOND", "8"))
 SEC_WORKERS = int(os.getenv("SEC_WORKERS", "6"))
 
@@ -44,13 +44,13 @@ FRED_SERIES = {
 }
 
 ## LLM
-# Local first. Groq and Hugging Face only kick in if their keys are set.
+# local first. Groq and Hugging Face only kick in if their keys are set.
 
 LLM_PRIMARY = os.getenv("LLM_PRIMARY", "ollama")  # ollama | groq | huggingface
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:8b")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_NUM_CTX = int(os.getenv("OLLAMA_NUM_CTX", "16384"))
-# Qwen3 "thinks" before answering. On a laptop CPU that costs minutes per call
+# qwen3 "thinks" before answering. on a laptop CPU that costs minutes per call
 # at ~7 tokens/s, so it's off unless asked for.
 OLLAMA_THINK = os.getenv("OLLAMA_THINK", "false").strip().lower() == "true"
 
@@ -139,9 +139,28 @@ SELL_PE = 40.0
 MIN_QUALITY = float(os.getenv("MIN_QUALITY", "70"))
 MIN_COMPLETENESS = 0.60
 
-# SIC 6000-6799: banks, insurers, brokers, REITs. Leverage and margin rules
+# SIC 6000-6799: banks, insurers, brokers, REITs. leverage and margin rules
 # mean something else there, so they get their own (smaller) checklist.
 FINANCIAL_SIC_RANGE = (6000, 6799)
+
+## QUARTERS, PEERS, INSIDERS
+
+QUARTERS_SHOWN = 12
+PEERS_SHOWN = 8
+INSIDER_DAYS = 365
+
+## TRACK RECORD
+
+TRACK_TOP = 10                 # the paper portfolio bought from each snapshot
+BENCHMARK = "ACWI"             # MSCI All Country World ETF, in USD
+
+## PORTFOLIO
+
+PORTFOLIO_PATH = Path(os.getenv("PORTFOLIO_PATH", DATA_DIR / "portfolio.sqlite"))
+POSITION_CAP = 0.10
+CLUSTER_CAP = 0.25             # related positions together
+CORRELATION_LINK = 0.6         # weekly returns this correlated count as related
+MIN_RETURN_TO_HOLD = 0.08      # expected yearly return in the base currency
 
 
 def check_sec_user_agent() -> None:

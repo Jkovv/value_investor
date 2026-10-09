@@ -1,4 +1,4 @@
-// Sun in light mode, moon in dark mode. Until clicked, it follows the system.
+// sun in light mode, moon in dark mode. until clicked, it follows the system.
 
 (function () {
   const root = document.documentElement;

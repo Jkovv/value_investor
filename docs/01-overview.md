@@ -17,8 +17,11 @@ flowchart LR
     D --> E["Quality checklist<br/>score + coverage"]
     E -->|passes the gate| F["Valuation in local currency"]
     F --> G["Ranking by return<br/>in the base currency"]
-    G --> H["Research agent<br/>(annual report + web)"]
+    G --> H["Research agents<br/>(filings, competitors,<br/>trends, web)"]
+    G --> K["Track record<br/>(paper top 10)"]
+    G --> L["Portfolio plan"]
     I["World Bank, FRED,<br/>benchmarks"] --> J["Market Cap / GDP<br/>per market"]
+    J --> L
 ```
 
 1. **Pull** statements for every listed company above a size floor, in 44 markets.
@@ -28,8 +31,13 @@ flowchart LR
    the most you can pay for 15% a year.
 5. **Rank** by that return converted to the base currency (PLN by default), so a Turkish 30% and a
    Swiss 10% are compared on equal terms.
-6. **Research** the shortlist with a deep agent that reads the annual report and the web.
-7. **Read the market**: Market Cap / GDP for each of the 44 markets against its own trend.
+6. **Check the rest**: the last quarters against a year earlier, the closest peers in the same
+   industry from any market, insider buying and selling (US), and the other schools' yardsticks.
+7. **Research** the shortlist with four deep agents (filings, competitors, demand trends, web)
+   and ask them questions about any company.
+8. **Read the market**: Market Cap / GDP for each of the 44 markets against its own trend.
+9. **Keep score**: every screen saves the ranking, and its top ten are followed on paper against
+   the world index. Your own trades go in the portfolio, which also suggests sizes.
 
 ## What it deliberately doesn't do
 
@@ -46,9 +54,12 @@ flowchart LR
 | Dashboard: ranking, company pages, markets | done |
 | Every other market (Yahoo Finance), currencies, ranking in PLN | done |
 | Market Cap / GDP for every market | done |
-| Research agents per company | done |
+| Research agents per company, questions, resumable runs | done |
+| Quarters, peers, insiders, other lenses (DDM, Monte Carlo and more) | done |
+| Track record of the ranking (forward test) | done |
+| Portfolio: positions, returns and XIRR in PLN, sizing by independence | done |
 | Deeper official history outside the US (ESEF, EDINET, DART) | planned |
-| Portfolio: positions, ROI/XIRR in PLN, sizing by independence | planned |
+| Scheduled runs and alerts | planned |
 | Backtest of the quantitative engine | parked |
 
 Next: **[02 Tech stack](02-tech-stack.md)**.

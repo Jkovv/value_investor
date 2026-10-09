@@ -1,14 +1,7 @@
 """15 · llm: every model call goes through get_llm().
 
-It returns a LangChain chat model backed by a LiteLLM Router running in
-process. The caller always asks for one logical model; the Router decides
-who serves it:
-
-    primary    config.LLM_PRIMARY (local Ollama unless told otherwise)
-    fallbacks  the other backends that have credentials, Groq before Hugging Face
-
-The Hugging Face router speaks the OpenAI API, so it goes in as an
-"openai/" model with a different base URL.
+a LiteLLM router behind a langchain chat model: config.LLM_PRIMARY first
+(local ollama by default), then whichever of groq and hugging face have keys.
 """
 
 import litellm

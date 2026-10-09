@@ -1,6 +1,6 @@
 """02 · logging_config: readable console logging for the entry points.
 
-Library modules log through `logging`; scripts call configure_logging()
+library modules log through `logging`; scripts call configure_logging()
 once. print() is only for a script's own output.
 """
 

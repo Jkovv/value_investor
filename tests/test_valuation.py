@@ -16,7 +16,7 @@ def yearly_with_eps(eps_values):
 
 
 def test_projection_matches_the_worked_example():
-    # Workbook-style example: EPS 1.18 growing 9.6% for 10 years at P/E 17.5 from a price of 14.80.
+    # workbook-style example: EPS 1.18 growing 9.6% for 10 years at P/E 17.5 from a price of 14.80.
     future_eps = 1.18 * 1.096 ** 10
     assert future_eps == pytest.approx(2.95, abs=0.01)
     future_price = future_eps * 17.5

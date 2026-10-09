@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import lens_tests, versus_price %}
+{% from "_macros.html" import lens_tests, versus_price, sort_head %}
 {% block title %}{{ c.ticker }} · Value Investor{% endblock %}
 {% block content %}
 <a class="back" href="/">
@@ -9,33 +9,30 @@
 
 <section class="card hero">
   <div class="hero-id">
-    <span class="avatar" aria-hidden="true">{{ (c.ticker or "?")[:2] }}</span>
-    <div>
-      <h1>{{ c.name | nice_name }}</h1>
-      <div class="chips">
-        <span class="ticker">{{ c.ticker }}</span>
-        {% if c.exchange %}<span class="chip">{{ c.exchange }}</span>{% endif %}
-        {% if c.industry and c.industry != "None" %}<span class="chip">{{ c.industry }}</span>
-        {% elif c.sic_description and c.sic_description != "None" %}<span class="chip">{{ c.sic_description | title }}</span>{% endif %}
-        {% if c.country and c.country != "None" %}<span class="chip">{{ c.country }}</span>{% endif %}
-        {% if reading and reading.regime %}
-          <a class="chip chip-link" href="/market?m={{ reading.iso3 }}" title="Market Cap / GDP for {{ reading.name }}">
-            <i class="dot dot-{{ regime_tone[reading.regime] }}"></i>{{ reading.name }} market: {{ reading.regime }}
-          </a>
-        {% endif %}
-        {% if row %}
-          {% if row.passes_gate %}<span class="pill pill-pass"><i></i>Passes the gate</span>
-          {% else %}<span class="pill pill-na"><i></i>Below the gate</span>{% endif %}
-        {% endif %}
-      </div>
+    <h1>{{ c.name | nice_name }}</h1>
+    <div class="chips">
+      <span class="ticker">{{ c.ticker }}</span>
+      {% if c.exchange %}<span class="chip">{{ c.exchange }}</span>{% endif %}
+      {% if c.industry and c.industry != "None" %}<span class="chip">{{ c.industry }}</span>
+      {% elif c.sic_description and c.sic_description != "None" %}<span class="chip">{{ c.sic_description | title }}</span>{% endif %}
+      {% if c.country and c.country != "None" %}<span class="chip">{{ c.country }}</span>{% endif %}
+      {% if reading and reading.regime %}
+        <a class="chip chip-link" href="/market?m={{ reading.iso3 }}" title="Market Cap / GDP for {{ reading.name }}">
+          <i class="dot dot-{{ regime_tone[reading.regime] }}"></i>{{ reading.name }}: {{ reading.regime }}
+        </a>
+      {% endif %}
+      {% if row %}
+        {% if row.passes_gate %}<span class="pill pill-pass">Passes the gate</span>
+        {% else %}<span class="pill pill-na">Below the gate</span>{% endif %}
+      {% endif %}
     </div>
   </div>
   <div class="hero-figure">
     {% if v.available %}
       <span class="hero-value">{{ (p.expected_return_base if p.expected_return_base is number else v.expected_return.mid) | pct }}</span>
-      <span class="hero-label">expected yearly return in {{ (p.base_currency or config.BASE_CURRENCY) if p.expected_return_base is number else v.currency }}, next 10 years</span>
+      <span class="hero-label">a year over 10 years, in {{ (p.base_currency or config.BASE_CURRENCY) if p.expected_return_base is number else v.currency }}</span>
       <span class="hero-range">
-        {% if p.expected_return_base is number and v.currency != p.base_currency %}{{ v.expected_return.mid | pct }} in {{ v.currency }} · {% endif %}range {{ v.expected_return.low | pct }} to {{ v.expected_return.high | pct }} locally
+        {% if p.expected_return_base is number and v.currency != p.base_currency %}{{ v.expected_return.mid | pct }} in {{ v.currency }} · {% endif %}{{ v.expected_return.low | pct }} to {{ v.expected_return.high | pct }} locally
       </span>
     {% else %}
       <span class="hero-value muted">n/a</span>
@@ -46,10 +43,10 @@
 
 <section class="stats">
   <div class="stat">
-    <span class="stat-label">Quality score</span>
+    <span class="stat-label">Quality</span>
     <span class="stat-value">{{ "%.0f" | format(row.quality) if row else "-" }}<small>/100</small></span>
     <span class="bar wide" aria-hidden="true"><span style="width: {{ row.quality if row else 0 }}%"></span></span>
-    <span class="stat-note">{{ row.completeness | pct(0) if row else "-" }} coverage · {{ s.history_years }} years of data</span>
+    <span class="stat-note">{{ row.completeness | pct(0) if row else "-" }} coverage · {{ s.history_years }} years</span>
   </div>
   <div class="stat">
     <span class="stat-label">Price</span>
@@ -61,8 +58,8 @@
     <span class="stat-value">{{ v.buy_price | money }}</span>
     <span class="stat-note">
       {% if v.available %}
-        {% if v.margin_of_safety > 0 %}<span class="pill pill-pass"><i></i>{{ v.margin_of_safety | pct(0) }}</span> margin of safety
-        {% else %}<span class="pill pill-warn"><i></i>{{ (v.price / v.buy_price - 1) | pct(0, signed=True) }}</span> over buy price{% endif %}
+        {% if v.margin_of_safety > 0 %}<span class="pill pill-pass">{{ v.margin_of_safety | pct(0) }} margin</span>
+        {% else %}<span class="pill pill-warn">{{ (v.price / v.buy_price - 1) | pct(0, signed=True) }} over</span>{% endif %}
       {% endif %}
     </span>
   </div>
@@ -70,8 +67,9 @@
     <span class="stat-label">P/E</span>
     <span class="stat-value">{{ "%.1f" | format(v.pe_now) if v.available else "-" }}</span>
     <span class="stat-note">
-      {% if v.available and v.sell_signal %}<span class="pill pill-fail"><i></i>Sell signal</span>
-      {% elif v.available %}sell signal at {{ config.SELL_PE | int }}{% endif %}
+      {% if v.available and v.sell_signal %}<span class="pill pill-fail">Sell signal</span>
+      {% elif quarters.summary and quarters.summary.pe_ttm %}{{ "%.1f" | format(quarters.summary.pe_ttm) }} on trailing 12 months
+      {% elif v.available %}sell at {{ config.SELL_PE | int }}{% endif %}
     </span>
   </div>
   <div class="stat">
@@ -94,47 +92,12 @@
 
 <div class="segmented" role="tablist" aria-label="Company sections">
   <button role="tab" type="button" data-tab="overview" aria-selected="true">Overview</button>
+  <button role="tab" type="button" data-tab="quarters" aria-selected="false">Quarters</button>
+  <button role="tab" type="button" data-tab="peers" aria-selected="false">Peers</button>
   <button role="tab" type="button" data-tab="checklist" aria-selected="false">Checklist</button>
   <button role="tab" type="button" data-tab="lenses" aria-selected="false">Lenses</button>
   <button role="tab" type="button" data-tab="financials" aria-selected="false">Financials</button>
   <button role="tab" type="button" data-tab="research" aria-selected="false">Research</button>
-</div>
-
-<div class="tab-panel" data-panel="research">
-  {% set st = research_status or {} %}
-  {% set running = st.state in ("queued", "running") %}
-  <section class="card research-card" data-ticker="{{ c.ticker }}" data-state="{{ st.state or 'none' }}">
-    <div class="card-head">
-      <h2>Research brief</h2>
-      <form method="post" action="/company/{{ c.ticker }}/research">
-        <button class="button" type="submit" {% if running or research_busy %}disabled{% endif %}>
-          {% if running %}Running...{% elif report %}Run again{% else %}Run research{% endif %}
-        </button>
-      </form>
-    </div>
-    <div class="card-body">
-      <p class="research-meta">
-        {% if running %}
-          <span class="spinner" aria-hidden="true"></span>
-          Working since {{ st.started_at | string | truncate(19, True, "") }}, step <span data-steps>{{ st.steps or 0 }}</span>
-          <span class="muted" data-last>{{ st.last_step or "" }}</span>
-        {% elif st.state == "error" %}
-          <span class="pill pill-fail"><i></i>Failed</span> {{ st.error }}
-        {% elif st.state == "stalled" %}
-          <span class="pill pill-warn"><i></i>Stalled</span> The last run stopped reporting progress; start it again.
-        {% elif st.state == "done" %}
-          Written {{ st.finished_at | string | truncate(16, True, "") }} in {{ st.minutes }} min by {{ (st.backends or backends) | join(", ") }}.
-        {% elif research_busy %}
-          Another company ({{ research_busy }}) is being researched; one run at a time.
-        {% else %}
-          An agent reads the annual report and the web, then writes a sourced brief: what the business does,
-          what kind of advantage it has, competitors, management, risks and why it might be cheap.
-          Runs on {{ backends | join(", then ") }}.
-        {% endif %}
-      </p>
-      {% if report %}<article class="report">{{ report }}</article>{% endif %}
-    </div>
-  </section>
 </div>
 
 <div class="tab-panel" data-panel="overview">
@@ -142,7 +105,7 @@
   <section class="card section">
     <div class="card-head">
       <h2>How the return is built</h2>
-      <span class="hint">10-year projection</span>
+      <span class="hint">10 years</span>
     </div>
     <div class="card-body">
       <ol class="steps">
@@ -150,8 +113,8 @@
           <span class="step-n">1</span>
           <span class="step-value">{{ v.initial_return | pct }}</span>
           <span class="step-title">Initial return</span>
-          Earnings over today's price, vs {{ v.bond_yield | pct(2) }} on the 10-year Treasury.
-          {% if v.pretax_yield %}Pre-tax: {{ v.pretax_yield | pct }}.{% endif %}
+          Earnings over price. The 10-year bond pays {{ v.bond_yield | pct(2) }}.
+          {% if v.pretax_yield %}Pre-tax {{ v.pretax_yield | pct }}.{% endif %}
         </li>
         <li class="step">
           <span class="step-n">2</span>
@@ -172,9 +135,49 @@
           <span class="step-n">4</span>
           <span class="step-value">{{ v.future_value.mid | money }}</span>
           <span class="step-title">Value in year ten</span>
-          Against {{ v.price | money }} today, that's {{ v.expected_return.mid | pct }} a year.
+          Against {{ v.price | money }} today: {{ v.expected_return.mid | pct }} a year.
         </li>
       </ol>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if insiders %}
+  <section class="card section">
+    <div class="card-head">
+      <h2>Insiders</h2>
+      <span class="hint">form 4, open market, last {{ insiders.days }} days</span>
+    </div>
+    <div class="card-body">
+      <div class="mini-stats">
+        <div><span class="stat-label">Bought</span><strong>${{ insiders.buy_value | compact }}</strong><span class="muted">{{ insiders.buyers }} {{ "person" if insiders.buyers == 1 else "people" }}</span></div>
+        <div><span class="stat-label">Sold</span><strong>${{ insiders.sell_value | compact }}</strong><span class="muted">{{ insiders.sellers }} {{ "person" if insiders.sellers == 1 else "people" }}</span></div>
+        <div><span class="stat-label">Sold outside 10b5-1 plans</span><strong>${{ insiders.unplanned_sell_value | compact }}</strong><span class="muted">&nbsp;</span></div>
+        <div><span class="stat-label">Reading</span>
+          <span class="pill pill-{{ {'buying': 'pass', 'selling': 'warn', 'routine': 'na', 'quiet': 'na'}[insiders.signal] }}">{{ insiders.signal | capitalize }}{% if insiders.cluster %}, cluster{% endif %}</span>
+        </div>
+      </div>
+      {% if insiders.recent %}
+      <div class="table-scroll">
+      <table class="data compact-table">
+        <thead><tr><th>Date</th><th>Who</th><th>Role</th><th></th><th class="num">Shares</th><th class="num">Price</th><th class="num">Value</th><th>Plan</th></tr></thead>
+        <tbody>
+        {% for t in insiders.recent %}
+          <tr>
+            <td class="mono">{{ t.date }}</td>
+            <td>{{ t.owner }}</td>
+            <td class="muted">{{ t.role }}</td>
+            <td>{% if t.code == "P" %}<span class="pill pill-pass">Bought</span>{% else %}<span class="pill pill-na">Sold</span>{% endif %}</td>
+            <td class="num">{{ t.shares | compact }}</td>
+            <td class="num">{{ t.price | money }}</td>
+            <td class="num">${{ t.value | compact }}</td>
+            <td class="muted">{{ "10b5-1" if t.planned else "" }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% endif %}
     </div>
   </section>
   {% endif %}
@@ -189,6 +192,140 @@
     </section>
     {% endfor %}
   </div>
+  {% endif %}
+</div>
+
+<div class="tab-panel" data-panel="quarters">
+  {% set qs = quarters.summary or {} %}
+  {% if qs %}
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-label">Quarter ended {{ qs.last_end }}</span>
+      <span class="stat-value">{{ (qs.trend or "n/a") | capitalize }}</span>
+      <span class="stat-note">
+        {% if qs.stale %}<span class="pill pill-warn">Old</span>{% endif %}
+        last two quarters vs a year earlier
+      </span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Revenue vs a year ago</span>
+      <span class="stat-value {% if qs.revenue_yoy is number and qs.revenue_yoy < 0 %}bad{% endif %}">{{ qs.revenue_yoy | pct(1, signed=True) }}</span>
+      <span class="stat-note">up in {{ qs.revenue_up }} of the last {{ qs.revenue_known }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Net income vs a year ago</span>
+      <span class="stat-value {% if qs.net_income_yoy is number and qs.net_income_yoy < 0 %}bad{% endif %}">{{ qs.net_income_yoy | pct(1, signed=True) }}</span>
+      <span class="stat-note">up in {{ qs.net_income_up }} of the last {{ qs.net_income_known }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Net income, last 12 months</span>
+      <span class="stat-value">{{ qs.ttm_net_income | compact }}<small>{{ p.currency | text_or }}</small></span>
+      <span class="stat-note">{% if qs.ttm_vs_year is number %}{{ qs.ttm_vs_year | pct(0, signed=True) }} on the last fiscal year{% endif %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">P/E, last 12 months</span>
+      <span class="stat-value">{{ "%.1f" | format(qs.pe_ttm) if qs.pe_ttm else "-" }}</span>
+      <span class="stat-note">{% if v.available %}{{ "%.1f" | format(v.pe_now) }} on the last fiscal year{% endif %}</span>
+    </div>
+  </section>
+
+  {% if q_chart %}
+  <section class="card chart-card section">
+    <figure class="chart wide" tabindex="0" data-series='{{ q_chart }}' data-format="compact" data-label-chars="7" aria-label="Revenue and net income by quarter">
+      <figcaption>Revenue and net income by quarter <span class="muted">({{ p.currency }})</span></figcaption>
+    </figure>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="table-scroll">
+    <table class="data years">
+      <thead>
+        <tr><th>Quarter end</th><th class="num">Revenue</th><th class="num">vs year ago</th><th class="num">Gross</th>
+            <th class="num">Operating</th><th class="num">Net income</th><th class="num">vs year ago</th>
+            <th class="num">EPS</th><th class="num">Free cash flow</th></tr>
+      </thead>
+      <tbody>
+      {% for r in quarters.rows | reverse %}
+        <tr>
+          <td class="strong mono">{{ r.end }}</td>
+          <td class="num">{{ r.revenue | compact }}</td>
+          <td class="num {% if r.revenue_yoy is number and r.revenue_yoy < 0 %}bad{% else %}muted{% endif %}">{{ r.revenue_yoy | pct(1, signed=True) }}</td>
+          <td class="num">{{ r.gross_margin | pct }}</td>
+          <td class="num">{{ r.operating_margin | pct }}</td>
+          <td class="num">{{ r.net_income | compact }}</td>
+          <td class="num {% if r.net_income_yoy is number and r.net_income_yoy < 0 %}bad{% else %}muted{% endif %}">{{ r.net_income_yoy | pct(1, signed=True) }}</td>
+          <td class="num">{{ r.eps_diluted | money }}</td>
+          <td class="num">{{ r.fcf | compact }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+  </section>
+  {% else %}
+  <p class="empty">No quarterly figures yet. <code>python ingest.py</code> stores them (<code>--quarters</code> for companies outside the US).</p>
+  {% endif %}
+</div>
+
+<div class="tab-panel" data-panel="peers">
+  {% if peers.rows %}
+  <section class="card">
+    <div class="card-head">
+      <h2>Peers</h2>
+      <span class="hint">{% if peers.basis == "industry" %}{{ peers.industry }}{% else %}same SIC code{% endif %}, closest in size, every market</span>
+    </div>
+    <div class="table-scroll">
+    <table class="data sortable peers-table" id="peers">
+      <thead>
+        <tr>
+          {{ sort_head("Company", "text", "") }}
+          {{ sort_head("Market", "text", "") }}
+          {{ sort_head("Quality") }}
+          {{ sort_head("F") }}
+          {% for key, label, kind in peer_metrics %}{{ sort_head(label, first="ascending" if key in ("debt_years", "pe_now") else "") }}{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in peers.rows %}
+        <tr {% if r.me %}class="me"{% endif %}>
+          <td data-value="{{ r.name | nice_name }}">
+            <a class="company-cell" href="/company/{{ r.ticker }}">
+              <span class="ticker">{{ r.ticker }}</span>
+              <span class="company-name">{{ r.name | nice_name }}</span>
+            </a>
+          </td>
+          <td data-value="{{ r.market | text_or }}"><span class="market-chip">{{ r.market | text_or }}</span></td>
+          <td class="num" data-value="{{ r.quality }}">{{ "%.0f" | format(r.quality) if r.quality is number else "-" }}</td>
+          <td class="num" data-value="{{ r.f_score | whole('') }}">{{ r.f_score | whole }}</td>
+          {% for key, label, kind in peer_metrics %}
+          {% set val = r[key] %}
+          <td class="num" data-value="{{ val if val is number else '' }}">
+            {% if kind == "pct" %}{{ val | pct }}{% elif kind == "times" %}{{ val | times }}{% else %}{{ "%.1f" | format(val) if val is number else "-" }}{% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="median">
+          <td>Median of peers</td><td></td><td></td><td></td>
+          {% for key, label, kind in peer_metrics %}
+          {% set val = peers.medians[key] %}
+          <td class="num">{% if kind == "pct" %}{{ val | pct }}{% elif kind == "times" %}{{ val | times }}{% else %}{{ "%.1f" | format(val) if val is number else "-" }}{% endif %}</td>
+          {% endfor %}
+        </tr>
+      </tfoot>
+    </table>
+    </div>
+    <div class="card-body peer-ranks">
+      {% for key, label, kind in peer_metrics %}{% set rk = peers.ranks.get(key) %}{% if rk %}
+        <span class="chip">{{ label }}: better than {{ rk.beats }} of {{ rk.of }}</span>
+      {% endif %}{% endfor %}
+    </div>
+  </section>
+  {% else %}
+  <p class="empty">No peers found. Industry labels come with <code>python ingest.py</code>.</p>
   {% endif %}
 </div>
 
@@ -224,7 +361,7 @@
             <td class="num value">{{ ch.shown }}</td>
             <td class="num">
               {% set word = {"pass": "Pass", "warn": "Watch", "fail": "Fail", "na": "No data"}[ch.status] %}
-              <span class="pill pill-{{ ch.status }}"><i></i>{{ word }}</span>
+              <span class="pill pill-{{ ch.status }}">{{ word }}</span>
             </td>
           </tr>
           {% endfor %}
@@ -241,22 +378,55 @@
   {% set ccy = v.currency if v.available else p.currency %}
   {% set price = v.price if v.available else none %}
   {% if L %}
-  <p class="lens-intro">
-    The checklist is one school of thought. These are the other yardsticks value investors use, worked out from
-    the same statements. They don't feed the quality score; where they disagree with it is worth a closer look.
-  </p>
+  <p class="lens-intro">Other yardsticks, worked out from the same statements. They don't feed the quality score.</p>
   <div class="lens-grid">
+    {% if L.monte_carlo %}{% set mc = L.monte_carlo %}
+    <section class="card lens lens-wide">
+      <div class="lens-head">
+        <h3>Monte Carlo, {{ "{:,}".format(mc.draws) }} runs of the 10-year projection</h3>
+        <span class="pill pill-{{ 'pass' if mc.prob_hurdle >= 0.5 else 'warn' if mc.prob_hurdle >= 0.25 else 'fail' }}">{{ mc.prob_hurdle | pct(0) }} reach {{ config.HURDLE_RATE | pct(0) }}</span>
+      </div>
+      <dl class="lens-pair">
+        <div><dt>Middle</dt><dd>{{ mc.p50 | pct }}</dd></div>
+        <div><dt>Bad case (1 in 10)</dt><dd>{{ mc.p10 | pct }}</dd></div>
+        <div><dt>Good case (1 in 10)</dt><dd>{{ mc.p90 | pct }}</dd></div>
+        <div><dt>Chance of a loss</dt><dd>{{ mc.prob_loss | pct(0) }}</dd></div>
+      </dl>
+      {% set top = mc.counts | max %}
+      {% set w = 100 / (mc.counts | length) %}
+      <svg class="histogram" viewBox="0 0 100 34" preserveAspectRatio="none" role="img" aria-label="Spread of yearly returns across the runs">
+        {% for c in mc.counts %}
+          {% set h = (c / top * 30) if top else 0 %}
+          <rect x="{{ loop.index0 * w + 0.2 }}" y="{{ 31 - h }}" width="{{ w - 0.4 }}" height="{{ h }}" rx="0.4">
+            <title>{{ mc.bins[loop.index0] | pct(0) }} to {{ mc.bins[loop.index] | pct(0) }}: {{ (c / mc.draws) | pct(1) }} of runs</title>
+          </rect>
+        {% endfor %}
+        {% set zero = (0 - mc.bins[0]) / (mc.bins[-1] - mc.bins[0]) * 100 %}
+        {% set hurdle = (config.HURDLE_RATE - mc.bins[0]) / (mc.bins[-1] - mc.bins[0]) * 100 %}
+        <line class="axis" x1="0" x2="100" y1="31.2" y2="31.2"/>
+        <line class="marker" x1="{{ zero }}" x2="{{ zero }}" y1="0" y2="31.2"/>
+        <line class="marker hurdle" x1="{{ hurdle }}" x2="{{ hurdle }}" y1="0" y2="31.2"/>
+      </svg>
+      <div class="histogram-axis">
+        <span style="left: 0">{{ mc.bins[0] | pct(0) }}</span>
+        <span style="left: {{ zero }}%">0%</span>
+        <span class="good" style="left: {{ hurdle }}%">{{ config.HURDLE_RATE | pct(0) }}</span>
+        <span style="left: 100%">{{ mc.bins[-1] | pct(0) }}+</span>
+      </div>
+      <p class="lens-note">Yearly return in {{ v.currency }} when growth and the exit P/E are drawn at random:
+        growth around {{ v.growth | pct }} give or take {{ mc.growth_spread | pct }}, exit P/E between
+        {{ "%.0f" | format(mc.pe_range[0]) }} and {{ "%.0f" | format(mc.pe_range[1]) }}.</p>
+    </section>
+    {% endif %}
+
     {% if L.piotroski %}{% set f = L.piotroski %}
     <section class="card lens">
       <div class="lens-head">
         <h3>Piotroski F-score</h3>
-        <span class="pill pill-{{ {'strong': 'pass', 'average': 'warn', 'weak': 'fail'}[f.verdict] }}"><i></i>{{ f.verdict | capitalize }}</span>
+        <span class="pill pill-{{ {'strong': 'pass', 'average': 'warn', 'weak': 'fail'}[f.verdict] }}">{{ f.verdict | capitalize }}</span>
       </div>
       <span class="stat-value">{{ f.scaled }}<small>/ 9</small></span>
-      <p class="lens-note">
-        Nine yes/no tests of whether the business got healthier over the last year.
-        {% if f.of < 9 %}{{ f.of }} could be run here, so the score is scaled to nine.{% endif %}
-      </p>
+      <p class="lens-note">Did the business get healthier over the last year?{% if f.of < 9 %} {{ f.of }} of the 9 tests could run, scaled to nine.{% endif %}</p>
       {{ lens_tests(f.tests) }}
     </section>
     {% endif %}
@@ -269,13 +439,11 @@
       </div>
       {% if g.number %}
       <span class="stat-value">{{ g.number | money }}<small>{{ ccy | text_or }}</small></span>
-      <p class="lens-note">
-        The Graham number, &radic;(22.5 &times; EPS &times; book value per share): the most a defensive investor
-        should pay. {{ g.passed }} of {{ g.of }} of his defensive tests pass over the last {{ g.years }} years.
-      </p>
+      <p class="lens-note">&radic;(22.5 &times; EPS &times; book value a share), the most a defensive investor should pay.
+        {{ g.passed }} of {{ g.of }} defensive tests pass over {{ g.years }} years.</p>
       {% else %}
       <span class="stat-value muted">n/a</span>
-      <p class="lens-note">No Graham number without positive earnings and book value. {{ g.passed }} of {{ g.of }} defensive tests pass.</p>
+      <p class="lens-note">Needs positive earnings and book value. {{ g.passed }} of {{ g.of }} defensive tests pass.</p>
       {% endif %}
       {{ lens_tests(g.tests) }}
     </section>
@@ -288,11 +456,21 @@
         {{ versus_price(d.value, price) }}
       </div>
       <span class="stat-value">{{ d.value | money }}<small>{{ ccy | text_or }}</small></span>
-      <p class="lens-note">
-        {{ d.owner_earnings_per_share | money }} of owner earnings a share (three-year average), growing
-        {{ d.growth | pct }} a year and slowing to 2.5% by year ten, discounted at {{ d.discount | pct }}.
-        {{ d.terminal_share | pct(0) }} of the value comes after year ten, so read it as a rough range.
-      </p>
+      <p class="lens-note">{{ d.owner_earnings_per_share | money }} of owner earnings a share, growing {{ d.growth | pct }}
+        and slowing to 2.5% by year ten, discounted at {{ d.discount | pct }}. {{ d.terminal_share | pct(0) }} of it
+        sits past year ten.</p>
+    </section>
+    {% endif %}
+
+    {% if L.ddm %}{% set dm = L.ddm %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Dividend discount</h3>
+        {{ versus_price(dm.value, price) }}
+      </div>
+      <span class="stat-value">{{ dm.value | money }}<small>{{ ccy | text_or }}</small></span>
+      <p class="lens-note">{{ dm.dps | money }} of dividends a share, growing {{ dm.growth | pct }} and slowing to 2.5%,
+        discounted at {{ dm.discount | pct }}. Only fair to companies that pay out most of what they earn.</p>
     </section>
     {% endif %}
 
@@ -301,19 +479,19 @@
       <div class="lens-head">
         <h3>Lynch</h3>
         {% if ly.peg is defined %}
-          {% if ly.peg <= 1 %}<span class="pill pill-pass"><i></i>Cheap for its growth</span>
-          {% elif ly.peg <= 2 %}<span class="pill pill-warn"><i></i>Fair for its growth</span>
-          {% else %}<span class="pill pill-fail"><i></i>Dear for its growth</span>{% endif %}
+          {% if ly.peg <= 1 %}<span class="pill pill-pass">Cheap for its growth</span>
+          {% elif ly.peg <= 2 %}<span class="pill pill-warn">Fair for its growth</span>
+          {% else %}<span class="pill pill-fail">Dear for its growth</span>{% endif %}
         {% endif %}
       </div>
       <span class="stat-value">{{ ly.category }}</span>
       <p class="lens-note">
         {{ {
-          "Slow grower": "Grows about as fast as the economy. Owned for the dividend, not the growth.",
-          "Stalwart": "Big and steady, 5 to 15% a year. Sell after a solid gain or when the P/E runs well ahead of growth.",
-          "Fast grower": "15% a year or more. The biggest winners, for as long as the growth lasts and the balance sheet holds.",
-          "Cyclical": "Earnings rise and fall with the economy. A low P/E can mark the peak, not a bargain.",
-          "Turnaround": "Has made losses in the last decade. The question is whether the recovery holds.",
+          "Slow grower": "Grows with the economy. Owned for the dividend.",
+          "Stalwart": "Big and steady, 5 to 15% a year. Sell after a solid gain or when the P/E runs ahead of growth.",
+          "Fast grower": "15% a year or more, for as long as the growth lasts and the balance sheet holds.",
+          "Cyclical": "Earnings follow the economy. A low P/E can mark the peak.",
+          "Turnaround": "Made losses in the last decade. The question is whether the recovery holds.",
         }[ly.category] }}
         Earnings grew {{ ly.growth | pct }} a year.
       </p>
@@ -322,7 +500,6 @@
         <div><dt>PEG</dt><dd>{{ "%.2f" | format(ly.peg) }}</dd></div>
         <div><dt>With dividend</dt><dd>{{ "%.2f" | format(ly.pegy) }}</dd></div>
       </dl>
-      <p class="lens-note muted">P/E over growth. Under 1 is cheap, over 2 is expensive.</p>
       {% endif %}
     </section>
     {% endif %}
@@ -332,19 +509,16 @@
       <div class="lens-head">
         <h3>Magic Formula</h3>
         {% if m.earnings_yield is number and v.bond_yield %}
-          {% if m.earnings_yield > v.bond_yield %}<span class="pill pill-pass"><i></i>Beats the bond</span>
-          {% else %}<span class="pill pill-warn"><i></i>Under the bond</span>{% endif %}
+          {% if m.earnings_yield > v.bond_yield %}<span class="pill pill-pass">Beats the bond</span>
+          {% else %}<span class="pill pill-warn">Under the bond</span>{% endif %}
         {% endif %}
       </div>
       <dl class="lens-pair">
         <div><dt>Earnings yield</dt><dd>{{ m.earnings_yield | pct }}</dd></div>
         <div><dt>Return on capital</dt><dd>{{ m.return_on_capital | pct(0) }}</dd></div>
       </dl>
-      <p class="lens-note">
-        Operating profit over enterprise value (is it cheap?) and over working capital plus fixed assets
-        (is it good?). Greenblatt buys the best combined place on both; that place is the Magic # column on the ranking.
-        {% if v.bond_yield %}The 10-year bond pays {{ v.bond_yield | pct(2) }}.{% endif %}
-      </p>
+      <p class="lens-note">EBIT over enterprise value (cheap?) and over working capital plus fixed assets (good?).
+        Its combined place is the Magic # column on the ranking.</p>
     </section>
     {% endif %}
 
@@ -352,18 +526,16 @@
     <section class="card lens">
       <div class="lens-head">
         <h3>Altman Z-score</h3>
-        <span class="pill pill-{{ {'safe': 'pass', 'grey': 'warn', 'distress': 'fail'}[a.zone] }}"><i></i>{{ a.zone | capitalize }} zone</span>
+        <span class="pill pill-{{ {'safe': 'pass', 'grey': 'warn', 'distress': 'fail'}[a.zone] }}">{{ a.zone | capitalize }} zone</span>
       </div>
       <span class="stat-value">{{ "%.1f" | format(a.z) }}</span>
-      <p class="lens-note">
-        Five balance-sheet ratios that flag the risk of financial distress. Above 3 is safe, under 1.8 is distress.
-        It was fitted on manufacturers, so asset-light businesses tend to score very high.
-      </p>
+      <p class="lens-note">Distress risk from five balance-sheet ratios. Above 3 safe, under 1.8 distress.
+        Fitted on manufacturers; asset-light businesses score high.</p>
     </section>
     {% endif %}
   </div>
   {% else %}
-  <p class="empty">Not computed yet. Run <code>python main.py screen</code> to add these.</p>
+  <p class="empty">Not computed yet. Run <code>python main.py screen</code>.</p>
   {% endif %}
 </div>
 
@@ -407,6 +579,93 @@
   <p class="empty">No annual statements could be built from the filings.</p>
   {% endif %}
 </div>
+
+<div class="tab-panel" data-panel="research">
+  {% set asking = questions and questions[0].state == "running" %}
+  <section class="card section ask-card" data-ticker="{{ c.ticker }}" data-state="{{ 'running' if asking else 'idle' }}">
+    <div class="card-head">
+      <h2>Ask about {{ c.ticker }}</h2>
+      <span class="hint">an agent looks it up, then answers with sources</span>
+    </div>
+    <div class="card-body">
+      <form class="ask-form" method="post" action="/company/{{ c.ticker }}/ask">
+        <textarea class="input" name="question" rows="2" maxlength="500" required
+                  placeholder="Who are the main competitors in Europe, and are they gaining share?"
+                  aria-label="Question" {% if asking %}disabled{% endif %}></textarea>
+        <button class="button" type="submit" {% if asking %}disabled{% endif %}>Ask</button>
+      </form>
+      {% for q in questions %}
+      <article class="qa">
+        <p class="qa-question">{{ q.question }}</p>
+        {% if q.state == "running" %}
+          <p class="research-meta"><span class="spinner" aria-hidden="true"></span>Looking it up <span class="muted" data-ask-last>{{ q.last_step or "" }}</span></p>
+        {% elif q.state == "done" %}
+          <div class="report qa-answer">{{ q.html }}</div>
+        {% elif q.state == "error" %}
+          <p class="research-meta"><span class="pill pill-fail">Failed</span> {{ q.error }}</p>
+        {% else %}
+          <p class="research-meta"><span class="pill pill-warn">Stopped</span> Ask again.</p>
+        {% endif %}
+        <p class="qa-meta">{{ q.asked_at[:16] | replace("T", " ") }}</p>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% set st = research_status or {} %}
+  {% set running = st.state in ("queued", "running") %}
+  <section class="card research-card" data-ticker="{{ c.ticker }}" data-state="{{ st.state or 'none' }}">
+    <div class="card-head">
+      <h2>Research brief</h2>
+      <div class="button-row">
+        {% if st.resumable and not running %}
+        <form method="post" action="/company/{{ c.ticker }}/research">
+          <input type="hidden" name="mode" value="fresh">
+          <button class="button button-quiet" type="submit" {% if research_busy %}disabled{% endif %}>Start over</button>
+        </form>
+        <form method="post" action="/company/{{ c.ticker }}/research">
+          <input type="hidden" name="mode" value="resume">
+          <button class="button" type="submit" {% if research_busy %}disabled{% endif %}>Resume</button>
+        </form>
+        {% else %}
+        <form method="post" action="/company/{{ c.ticker }}/research">
+          <input type="hidden" name="mode" value="fresh">
+          <button class="button" type="submit" {% if running or research_busy %}disabled{% endif %}>
+            {% if running %}Running{% elif report %}Run again{% else %}Run research{% endif %}
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="research-meta">
+        {% if running %}
+          <span class="spinner" aria-hidden="true"></span>
+          Since {{ st.started_at | string | truncate(16, True, "") }}{% if st.resumed %}, resumed{% endif %} · step <span data-steps>{{ st.steps or 0 }}</span>
+          <span class="muted" data-last>{{ st.last_step or "" }}</span>
+        {% elif st.resumable %}
+          <span class="pill pill-warn">Unfinished</span> Done so far: {{ st.resumable | join(", ") }}. Resume picks up from there.
+        {% elif st.state == "error" %}
+          <span class="pill pill-fail">Failed</span> {{ st.error }}
+        {% elif st.state == "stalled" %}
+          <span class="pill pill-warn">Stalled</span> The last run stopped reporting; start it again.
+        {% elif st.state == "done" %}
+          {{ st.finished_at | string | truncate(16, True, "") }}, {{ st.minutes }} min, {{ (st.backends or backends) | join(", ") }}.
+        {% elif research_busy %}
+          {{ research_busy }} is being researched; one run at a time.
+        {% else %}
+          Four agents read the annual report, the competitors, demand signals (news, Wikipedia interest,
+          insiders, quarters) and the web, then a writer puts the sourced brief together.
+          Runs on {{ backends | join(", then ") }}.
+        {% endif %}
+      </p>
+      {% if report %}<article class="report">{{ report }}</article>{% endif %}
+    </div>
+  </section>
+</div>
 {% endblock %}
 
-{% block scripts %}<script src="/static/tabs.js?v={{ asset_version }}" defer></script>{% endblock %}
+{% block scripts %}
+<script src="/static/tabs.js?v={{ asset_version }}" defer></script>
+<script src="/static/sort.js?v={{ asset_version }}" defer></script>
+{% endblock %}

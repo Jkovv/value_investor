@@ -1,13 +1,8 @@
-"""09 · macro: rates, Market Cap / GDP and the cash regime.
+"""09 · macro: us rates, Market Cap / GDP and the cash regime.
 
-Market Cap / GDP decides how much cash to hold, never what to buy. The
-ratio has drifted up for decades (more foreign profits, lower rates), so it
-is read against its own long-run log trend rather than a fixed threshold;
-a fixed 140% line would have kept the portfolio in cash for most of the
-last ten years.
-
-The Fed's Z.1 equity figure lags by a quarter or two, so the latest value
-is carried forward with the S&P 500's move since that quarter ended.
+Market Cap / GDP sets how much cash to hold, never what to buy. it is read
+against its own log trend (a fixed 140% line would have kept you in cash for
+a decade), and the lagging Fed figure is rolled forward with the S&P 500.
 """
 
 import io
@@ -65,7 +60,7 @@ def market_cap_to_gdp(con, as_of=None) -> "dict | None":
     if equities.empty or gdp.empty:
         return None
     # FRED stamps quarterly series with the first day of the quarter, but the
-    # Z.1 equity level is measured at quarter end. Date it where it belongs, or
+    # Z.1 equity level is measured at quarter end. date it where it belongs, or
     # the S&P roll-forward below starts three months too early.
     ratio = (equities / 1000.0 / gdp.reindex(equities.index, method="ffill")).dropna()
     ratio.index = ratio.index + pd.offsets.QuarterEnd(0)

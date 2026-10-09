@@ -1,13 +1,13 @@
 """17 · fx: currency conversion through Yahoo's FX pairs, cached like prices.
 
-Some exchanges quote in a subunit: London in pence (GBp), Johannesburg in
-cents (ZAc), Tel Aviv in agorot (ILA). Everything is moved to the major
+some exchanges quote in a subunit: London in pence (GBp), Johannesburg in
+cents (ZAc), Tel Aviv in agorot (ILA). everything is moved to the major
 unit before it meets a financial statement.
 """
 
 import pandas as pd
 
-from value_investor import prices as px
+from value_investor import prices as px, store
 
 SUBUNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ZAc": ("ZAR", 100.0), "ILA": ("ILS", 100.0)}
 
@@ -19,30 +19,47 @@ def major(currency: "str | None") -> "tuple[str | None, float]":
     return currency, 1.0
 
 
-def series(con, base: str, quote: str) -> pd.Series:
-    """Units of `quote` per one `base`, daily."""
+def _closes(con, symbol: str, fetch: bool) -> pd.Series:
+    if fetch:
+        frame = px.ensure(con, symbol)
+    else:
+        # the dashboard holds the database read-only, so it takes what is stored
+        frame = store.load_prices(con, symbol)
+        frame["date"] = pd.to_datetime(frame["date"])
+    if frame.empty:
+        return pd.Series(dtype=float)
+    return frame.set_index("date")["close"].dropna()
+
+
+def series(con, base: str, quote: str, fetch: bool = True) -> pd.Series:
+    """units of `quote` per one `base`, daily."""
     if base == quote:
         return pd.Series(dtype=float)
-    frame = px.ensure(con, f"{base}{quote}=X")
-    if frame.empty:
-        inverse = px.ensure(con, f"{quote}{base}=X")
-        if inverse.empty:
-            return pd.Series(dtype=float)
-        return 1.0 / inverse.set_index("date")["close"]
-    return frame.set_index("date")["close"]
+    direct = _closes(con, f"{base}{quote}=X", fetch)
+    if not direct.empty:
+        return direct
+    inverse = _closes(con, f"{quote}{base}=X", fetch)
+    return inverse if inverse.empty else 1.0 / inverse
 
 
-def rate(con, base: str, quote: str, when=None) -> "float | None":
+def rate(con, base: str, quote: str, when=None, fetch: bool = True) -> "float | None":
     if not base or not quote:
         return None
     if base == quote:
         return 1.0
-    s = series(con, base, quote)
+    s = series(con, base, quote, fetch)
     if s.empty:
         return None
     if when is not None:
         s = s[s.index <= pd.Timestamp(when)]
     return None if s.empty else float(s.iloc[-1])
+
+
+def ensure_pairs(con, currencies, quotes) -> None:
+    for base in {major(c)[0] for c in currencies if c}:
+        for quote in quotes:
+            if base != quote:
+                series(con, base, quote)
 
 
 def to_major(prices: pd.DataFrame, currency: "str | None") -> "tuple[pd.DataFrame, str | None]":
@@ -56,7 +73,7 @@ def to_major(prices: pd.DataFrame, currency: "str | None") -> "tuple[pd.DataFram
 
 
 def convert_prices(con, prices: pd.DataFrame, base: str, quote: str) -> "pd.DataFrame | None":
-    """Re-express a price frame from `base` into `quote`, day by day."""
+    """re-express a price frame from `base` into `quote`, day by day."""
     if base == quote or prices.empty:
         return prices
     s = series(con, base, quote)

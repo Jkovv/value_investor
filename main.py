@@ -1,6 +1,6 @@
 """main.py: command line: screen, rank, look at one company, check the market.
 
-Run `python ingest.py` first, then:
+run `python ingest.py` first, then:
 
   python main.py screen                  # score every ingested company, price the ones that pass
   python main.py screen --tickers KO V   # just these, always priced

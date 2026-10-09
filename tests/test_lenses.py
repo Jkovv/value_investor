@@ -144,3 +144,25 @@ def test_magic_rank_adds_the_two_places():
                        "return_on_capital": [0.30, 0.20, 0.50, 0.90]})
     assert screener.magic_rank(df).tolist()[:3] == [1, 3, 1]
     assert pd.isna(screener.magic_rank(df).iloc[3])
+
+
+def test_dividend_discount_model():
+    _, y, s = compounder()
+    v = priced(s)
+    d = lenses.ddm(s, v)
+    assert d["dps"] == s["dps"] and 0 <= d["growth"] <= 0.12
+    assert lenses.ddm(dict(s, dps=0), v) is None
+
+
+def test_monte_carlo_is_repeatable_and_ordered():
+    _, y, s = compounder()
+    v = dict(priced(s), pe={"low": 12.0, "mid": 15.0, "high": 18.0}, payout=0.4,
+             growth_inputs={"historical": 0.06, "sustainable": 0.08})
+    a = lenses.monte_carlo(y, s, v, price=40.0)
+    b = lenses.monte_carlo(y, s, v, price=40.0)
+    assert a == b
+    assert a["p10"] < a["p50"] < a["p90"]
+    assert 0 <= a["prob_loss"] <= a["prob_hurdle"] + 1
+    assert sum(a["counts"]) == a["draws"]
+    cheaper = lenses.monte_carlo(y, s, v, price=20.0)
+    assert cheaper["p50"] > a["p50"] and cheaper["prob_hurdle"] >= a["prob_hurdle"]

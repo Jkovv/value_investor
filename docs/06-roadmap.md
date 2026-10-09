@@ -13,21 +13,19 @@ feeding the same facts table:
 
 `concepts.py` already maps `ifrs-full`, which ESEF uses.
 
-## Portfolio
+## Portfolio, next steps
 
-Positions in their own currencies, reported in PLN. ROI per position and XIRR overall, dividends
-and FX split out. Sizing by expected return and quality, capped per position and per cluster of
-related positions; clusters from price correlation *and* shared sector, country, currency,
-customers and suppliers. The suggested cash share per market from the Markets page feeds the
-overall cash level. The behavioural guardrails in `principles.md` live here: a written thesis
-before buying, a "did the thesis change or only the price?" check before selling, a turnover warning.
+Positions, returns in PLN, XIRR, dividends, currency effect and a sizing plan are in (see
+[09 Portfolio and track record](09-portfolio-and-track-record.md)). Still to come: clusters that
+also use shared customers and suppliers, and the behavioural guardrails from `principles.md`: a
+written thesis before buying, a "did the thesis change or only the price?" check before selling,
+a turnover warning.
 
-## Insider trades and alerts
+## Alerts
 
-Form 4 filings from EDGAR give every insider purchase and sale for US companies, free; open-market
-buying by several insiders at once is one of the good signs in `principles.md`. Next to it, a
-scheduled run (ingest, screen, then a short digest of what entered or left the buy zone and any
-new sell signals).
+A scheduled run (ingest, screen, then a short digest of what entered or left the buy zone, new
+sell signals, new insider buying). Insider trades themselves are in: US only, since EDGAR is the
+one free and complete source.
 
 ## Backtest (parked)
 

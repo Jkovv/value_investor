@@ -1,17 +1,8 @@
-"""07 · statements: raw facts -> one row per fiscal year.
+"""07 · statements: raw facts -> one row per fiscal year, as known on a date.
 
-Two traps in companyfacts drive the design:
-
-  * `fy` is the fiscal year of the *filing*, not of the number. A 10-K for
-    2024 carries 2022 and 2023 comparatives tagged fy=2024. Years are keyed
-    by period end date instead.
-  * Numbers get restated. Each (concept, period) keeps the latest value
-    filed on or before `as_of`, so a backtest sees what was known then and
-    today's run sees the restated figure.
-
-Per-share values and share counts keep their filing date (`*_filed`),
-because a number filed before a stock split is in pre-split units.
-metrics.py uses that to put everything into today's share units.
+years are keyed by period end (`fy` is the filing's year, not the number's),
+restatements keep the latest value filed by `as_of`, and per-share figures
+keep their filing date so metrics.py can undo splits.
 """
 
 import pandas as pd
@@ -125,11 +116,11 @@ def _clean_ratio(r: float) -> "float | None":
 
 
 def inferred_splits(facts: pd.DataFrame, as_of=None) -> pd.Series:
-    """Splits read off the filings themselves.
+    """splits read off the filings themselves.
 
-    When a company splits its stock, the next annual report restates the
-    share counts of earlier years. The same period then shows up twice, once
-    per filing, at a clean ratio like 4.0 or 0.1. The split is dated at the
+    when a company splits its stock, the next annual report restates the
+    share counts of earlier years. the same period then shows up twice, once
+    per filing, at a clean ratio like 4.0 or 0.1. the split is dated at the
     first filing that carries the restated number, which is exactly the
     boundary metrics.split_factors needs.
     """
@@ -159,7 +150,7 @@ def inferred_splits(facts: pd.DataFrame, as_of=None) -> pd.Series:
 
 
 def annual_statements(facts: pd.DataFrame, as_of=None) -> pd.DataFrame:
-    """One row per fiscal year, indexed by period end. attrs: currency, taxonomy."""
+    """one row per fiscal year, indexed by period end. attrs: currency, taxonomy."""
     if facts.empty:
         return pd.DataFrame()
     f = facts

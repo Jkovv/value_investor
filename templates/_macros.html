@@ -22,8 +22,8 @@
 {% macro versus_price(value, price) -%}
 {% if value and price %}
   {% set gap = price / value - 1 %}
-  {% if gap <= 0 %}<span class="pill pill-pass"><i></i>Price {{ (-gap) | pct(0) }} under</span>
-  {% elif gap <= 0.3 %}<span class="pill pill-warn"><i></i>Price {{ gap | pct(0) }} over</span>
-  {% else %}<span class="pill pill-fail"><i></i>Price {{ gap | pct(0) }} over</span>{% endif %}
+  {% if gap <= 0 %}<span class="pill pill-pass">Price {{ (-gap) | pct(0) }} under</span>
+  {% elif gap <= 0.3 %}<span class="pill pill-warn">Price {{ gap | pct(0) }} over</span>
+  {% else %}<span class="pill pill-fail">Price {{ gap | pct(0) }} over</span>{% endif %}
 {% endif %}
 {%- endmacro %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
+{% block title %}Track record · Value Investor{% endblock %}
+{% block content %}
+{% set s = t.summary %}
+<div class="page-head">
+  <h1>Track record</h1>
+  <p class="sub">Each full screen saves the ranking. Its top {{ top }} are bought on paper at that day's close,
+    equal weight, and held against the MSCI All Country World ETF, both in {{ config.BASE_CURRENCY }} with dividends.</p>
+</div>
+
+{% if t.snapshots %}
+<section class="stats">
+  <div class="stat">
+    <span class="stat-label">Snapshots</span>
+    <span class="stat-value">{{ s.snapshots }}</span>
+    <span class="stat-note">since {{ s.first }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Old enough to judge</span>
+    <span class="stat-value">{{ s.scored }}</span>
+    <span class="stat-note">a week or older</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Lead over the world index</span>
+    <span class="stat-value {% if s.avg_excess is number and s.avg_excess < 0 %}bad{% endif %}">{{ s.avg_excess | pct(1, signed=True) }}</span>
+    <span class="stat-note">average across snapshots</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Snapshots ahead</span>
+    <span class="stat-value">{{ s.beat_share | pct(0) }}</span>
+    <span class="stat-note">of those old enough</span>
+  </div>
+</section>
+
+{% set latest = t.snapshots[0] %}
+<section class="card section">
+  <div class="card-head">
+    <h2>Top {{ top }} of {{ latest.taken_on }}</h2>
+    <span class="hint">{{ latest.days }} days held · world index {{ latest.benchmark | pct(1, signed=True) }}</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data sortable" id="picks">
+    <thead>
+      <tr>
+        {{ sort_head("#", align="num rank", initial="ascending", first="ascending") }}
+        {{ sort_head("Company", "text", "") }}
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Expected a year") }}
+        {{ sort_head("Since, " ~ config.BASE_CURRENCY) }}
+        {{ sort_head("Since, local") }}
+        {{ sort_head("Its market") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for p in latest.picks %}
+      <tr>
+        <td class="num rank" data-value="{{ p.rank }}">{{ p.rank }}</td>
+        <td data-value="{{ p.name | nice_name }}">
+          <a class="company-cell" href="/company/{{ p.ticker }}">
+            <span class="ticker">{{ p.ticker }}</span>
+            <span class="company-name">{{ p.name | nice_name }}</span>
+          </a>
+        </td>
+        <td data-value="{{ p.market | text_or }}"><span class="market-chip">{{ p.market | text_or }}</span></td>
+        <td class="num muted" data-value="{{ p.expected }}">{{ p.expected | pct }}</td>
+        <td class="num {% if p['return'] is number and p['return'] < 0 %}bad{% elif p['return'] is number %}good{% endif %}" data-value="{{ p['return'] }}">{{ p['return'] | pct(1, signed=True) }}</td>
+        <td class="num" data-value="{{ p.local }}">{{ p.local | pct(1, signed=True) }}</td>
+        <td class="num muted" data-value="{{ p.market_return }}">{{ p.market_return | pct(1, signed=True) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Every snapshot</h2></div>
+  <div class="table-scroll">
+  <table class="data sortable" id="snapshots">
+    <thead>
+      <tr>
+        {{ sort_head("Taken", "text", "", initial="descending") }}
+        {{ sort_head("Days") }}
+        {{ sort_head("Ranked") }}
+        {{ sort_head("Top " ~ top) }}
+        {{ sort_head("World index") }}
+        {{ sort_head("Difference") }}
+        {{ sort_head("Beat own market") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for snap in t.snapshots %}
+      <tr>
+        <td class="mono" data-value="{{ snap.taken_on }}">{{ snap.taken_on }}</td>
+        <td class="num" data-value="{{ snap.days }}">{{ snap.days }}</td>
+        <td class="num" data-value="{{ snap.size }}">{{ snap.size }}</td>
+        <td class="num" data-value="{{ snap.portfolio }}">{{ snap.portfolio | pct(1, signed=True) }}</td>
+        <td class="num muted" data-value="{{ snap.benchmark }}">{{ snap.benchmark | pct(1, signed=True) }}</td>
+        <td class="num {% if snap.excess is number and snap.excess < 0 %}bad{% elif snap.excess is number %}good{% endif %}" data-value="{{ snap.excess }}">{{ snap.excess | pct(1, signed=True) }}</td>
+        <td class="num" data-value="{{ snap.hit_rate }}">{{ snap.hit_rate | pct(0) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% else %}
+<p class="empty">No snapshots yet. The next <code>python main.py screen</code> saves the first one.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}

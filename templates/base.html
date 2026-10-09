@@ -20,11 +20,13 @@
           <rect width="24" height="24" rx="7" fill="currentColor"/>
           <path d="M6 15.5l3.6-3.6 2.8 2.8L18 9" fill="none" style="stroke: var(--surface)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Value Investor
+        <span class="brand-name">Value Investor</span>
       </a>
       <nav class="tabs">
         <a href="/" {% if request.url.path == '/' or request.url.path.startswith('/company') %}aria-current="page"{% endif %}>Ranking</a>
-        <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Market</a>
+        <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Markets</a>
+        <a href="/portfolio" {% if request.url.path == '/portfolio' %}aria-current="page"{% endif %}>Portfolio</a>
+        <a href="/track" {% if request.url.path == '/track' %}aria-current="page"{% endif %}>Track record</a>
       </nav>
       <button class="icon-button theme-toggle" type="button" aria-label="Switch to dark theme">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -41,7 +43,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="wrap footer">
-    Filings from SEC EDGAR · prices from Yahoo Finance · macro from FRED. Computed numbers, not advice.
+    SEC EDGAR, Yahoo Finance, FRED, World Bank. Computed, not advice.
   </footer>
   <div class="tooltip" role="status" hidden></div>
   <script src="/static/theme.js?v={{ asset_version }}" defer></script>

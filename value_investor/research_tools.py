@@ -1,14 +1,16 @@
-"""20 · research_tools: what the research agents are allowed to do.
+"""20 · research_tools: what the research agents are allowed to do. all read-only.
 
-Four tools, all read-only:
-
-    company_numbers        our own computed analysis (the agents never compute numbers)
+    company_numbers        our own analysis (the agents never compute numbers)
+    quarterly_results      the last quarters against a year earlier
+    peer_table             the same numbers for the closest companies in the industry
+    insider_trades         open-market form 4 buys and sells (us only)
     annual_report_section  the latest 10-K / 20-F, by section, a page at a time
-    web_search             Tavily while the monthly free credits last, then DuckDuckGo
-    read_web_page          one page of readable text from a URL
+    attention_trend        wikipedia pageviews, a free stand-in for brand interest
+    news_trend             gdelt news volume and tone over the last year
+    web_search             tavily while the free credits last, then duckduckgo
+    read_web_page          one page of readable text from a url
 
-Text is handed out in pages so a small local model with a 16k context can
-still read a 100,000-character risk-factor section.
+long text comes in 5,000-character pages so a 16k-context local model can read it.
 """
 
 import ipaddress
@@ -16,14 +18,16 @@ import json
 import logging
 import socket
 import threading
-from datetime import date
-from urllib.parse import urlparse
+import time
+from datetime import date, timedelta
+from urllib.parse import quote, urlparse
 
+import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
-from value_investor import config, store
+from value_investor import config, peers, store
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +60,9 @@ def _company(ticker: str) -> "dict | None":
 
 @tool
 def company_numbers(ticker: str) -> str:
-    """The computed facts about a company: profile, quality checklist results, valuation and flags.
+    """the computed facts about a company: profile, quality checklist results, valuation and flags.
 
-    Use these numbers as given. Never recompute or estimate financial figures yourself."""
+    use these numbers as given. never recompute or estimate financial figures yourself."""
     comp = _company(ticker)
     if comp is None:
         return f"{ticker} is not in the database."
@@ -90,13 +94,217 @@ def company_numbers(ticker: str) -> str:
     elif v:
         lines.append(f"No valuation: {v.get('reason')}")
     lines += lens_lines(p.get("lenses") or {}, v.get("currency") or p.get("currency"))
+    q = (p.get("quarters") or {}).get("summary") or {}
+    if q:
+        lines.append(_quarter_line(q, p.get("currency")))
+    ins = p.get("insiders")
+    if ins:
+        lines.append(_insider_line(ins))
     for flag in p.get("flags") or []:
         lines.append(f"Flag: {flag}")
     return "\n".join(lines)
 
 
+def _pct(v) -> str:
+    return "n/a" if v is None else f"{v * 100:+.1f}%"
+
+
+def _quarter_line(q: dict, currency) -> str:
+    out = (f"Latest quarter (ended {q.get('last_end')}): revenue {_pct(q.get('revenue_yoy'))} and net income "
+           f"{_pct(q.get('net_income_yoy'))} against a year earlier; trend over two quarters: {q.get('trend')}")
+    if q.get("ttm_net_income") is not None:
+        out += f"; trailing twelve months net income {q['ttm_net_income'] / 1e6:,.0f}M {currency}"
+    if q.get("pe_ttm"):
+        out += f"; P/E on trailing earnings {q['pe_ttm']:.1f}"
+    return out
+
+
+def _insider_line(ins: dict) -> str:
+    return (f"Insiders, last {ins['days']} days (form 4): {ins['buyers']} bought "
+            f"(${ins['buy_value'] / 1e6:,.1f}M), {ins['sellers']} sold (${ins['sell_value'] / 1e6:,.1f}M, of which "
+            f"${ins['unplanned_sell_value'] / 1e6:,.1f}M outside 10b5-1 plans); reading: {ins.get('signal')}")
+
+
+@tool
+def quarterly_results(ticker: str) -> str:
+    """the company's last quarters: revenue, margins, net income and free cash flow, each against
+    the same quarter a year earlier. use it to see whether the business is still on track."""
+    comp = _company(ticker)
+    if comp is None:
+        return f"{ticker} is not in the database."
+    q = (comp.get("payload") or {}).get("quarters") or {}
+    rows = q.get("rows") or []
+    if not rows:
+        return f"No quarterly figures stored for {ticker}."
+    ccy = (comp.get("payload") or {}).get("currency")
+    lines = [_quarter_line(q.get("summary") or {}, ccy), f"Quarter end | revenue ({ccy} M) | gross margin | "
+             "operating margin | net income (M) | revenue vs year ago | net income vs year ago"]
+    for r in rows[-8:]:
+        lines.append(" | ".join([
+            r["end"], _m(r.get("revenue")), _p(r.get("gross_margin")), _p(r.get("operating_margin")),
+            _m(r.get("net_income")), _pct(r.get("revenue_yoy")), _pct(r.get("net_income_yoy"))]))
+    return "\n".join(lines)
+
+
+def _m(v) -> str:
+    return "n/a" if v is None else f"{v / 1e6:,.0f}"
+
+
+def _p(v) -> str:
+    return "n/a" if v is None else f"{v * 100:.1f}%"
+
+
+@tool
+def peer_table(ticker: str) -> str:
+    """the closest companies in the same industry, from any market, with the same computed numbers:
+    margins, ROE, growth, debt, P/E, quality score and expected return. the first row is the company itself."""
+    with store.connect(read_only=True) as con:
+        cik = store.find_cik(con, ticker)
+        if cik is None:
+            return f"{ticker} is not in the database."
+        found = peers.find(con, cik)
+    if not found["rows"]:
+        return f"No peers stored for {ticker}."
+    head = "ticker | name | market | quality | " + " | ".join(label for _, label, _ in peers.METRICS)
+    lines = [f"Peers by {found['basis']} ({found.get('industry') or 'SIC code'}):", head]
+    for r in found["rows"]:
+        cells = [r["ticker"], (r["name"] or "")[:28], r["market"] or "", f"{r['quality'] or 0:.0f}"]
+        for key, _, kind in peers.METRICS:
+            v = r.get(key)
+            cells.append("n/a" if v is None else (f"{v:.1f}" if kind in ("num", "times") else f"{v * 100:.1f}%"))
+        lines.append(" | ".join(cells))
+    return "\n".join(lines)
+
+
+@tool
+def insider_trades(ticker: str) -> str:
+    """open-market purchases and sales by the company's officers and directors over the last year,
+    from SEC form 4 filings (US companies only). planned sales under 10b5-1 plans are marked."""
+    comp = _company(ticker)
+    if comp is None:
+        return f"{ticker} is not in the database."
+    ins = (comp.get("payload") or {}).get("insiders")
+    if not ins:
+        return "No form 4 data: only US companies are covered, and only those in the ranking or held."
+    lines = [_insider_line(ins)]
+    for t in ins.get("recent", []):
+        kind = "bought" if t["code"] == "P" else "sold"
+        plan = " (10b5-1 plan)" if t.get("planned") else ""
+        lines.append(f"{t['date']}: {t['owner']} ({t['role']}) {kind} {t['shares'] or 0:,.0f} shares "
+                     f"at {t['price'] or 0:,.2f}, ${t['value'] / 1e6:,.2f}M{plan}")
+    return "\n".join(lines)
+
+
+WIKI_SEARCH = "https://en.wikipedia.org/w/api.php"
+WIKI_VIEWS = ("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/user/"
+              "{title}/monthly/{start}/{end}")
+HEADERS = {"User-Agent": "value-investor/1.0 (personal research tool)"}
+
+
+def pageviews_link(title: str) -> str:
+    return f"https://pageviews.wmcloud.org/?project=en.wikipedia.org&range=last-year&pages={quote(title)}"
+
+
+@tool
+def attention_trend(topic: str) -> str:
+    """monthly English Wikipedia pageviews for a company, brand or product over the last two years.
+    a free proxy for public interest: compare the last 12 months with the 12 before, and the
+    company with its competitors or its main brands."""
+    try:
+        found = requests.get(WIKI_SEARCH, timeout=20, headers=HEADERS, params={
+            "action": "query", "list": "search", "srsearch": topic, "srlimit": 1, "format": "json"}).json()
+        hits = found.get("query", {}).get("search", [])
+        if not hits:
+            return f"No Wikipedia article found for {topic!r}."
+        title = hits[0]["title"]
+        end = date.today().replace(day=1) - timedelta(days=1)
+        start = (end - timedelta(days=760)).replace(day=1)
+        url = WIKI_VIEWS.format(title=quote(title.replace(" ", "_"), safe=""), start=start.strftime("%Y%m%d"),
+                                end=end.strftime("%Y%m%d"))
+        items = requests.get(url, timeout=20, headers=HEADERS).json().get("items", [])
+    except Exception as exc:
+        return f"Could not read Wikipedia pageviews: {exc}"
+    if len(items) < 6:
+        return f"Too little pageview history for {title!r}."
+    views = [(i["timestamp"][:6], int(i["views"])) for i in items]
+    last, before = sum(v for _, v in views[-12:]), sum(v for _, v in views[-24:-12])
+    change = f"{(last / before - 1) * 100:+.0f}%" if before else "n/a"
+    months = ", ".join(f"{m[:4]}-{m[4:]}: {v:,}" for m, v in views[-12:])
+    return (f"[Wikipedia pageviews: {title}]\nLast 12 months {last:,} views, {change} on the 12 before.\n"
+            f"By month: {months}\nSource: {pageviews_link(title)}")
+
+
+GDELT = "https://api.gdeltproject.org/api/v2/doc/doc"
+
+
+def gdelt_link(query: str) -> str:
+    return f"{GDELT}?query={quote(query)}&mode=timelinevolraw&timespan=12m&format=html"
+
+
+GDELT_GAP = 6.0     # they ask for one request every five seconds
+_gdelt_lock = threading.Lock()
+_gdelt_last = [0.0]
+
+
+def _gdelt(query: str, mode: str) -> pd.DataFrame:
+    for attempt in range(3):
+        with _gdelt_lock:
+            wait = _gdelt_last[0] + GDELT_GAP - time.monotonic()
+            if wait > 0:
+                time.sleep(wait)
+            resp = requests.get(GDELT, timeout=30, headers=HEADERS,
+                                params={"query": query, "mode": mode, "timespan": "12m", "format": "json"})
+            _gdelt_last[0] = time.monotonic()
+        if resp.status_code != 429:
+            break
+        time.sleep(GDELT_GAP * (attempt + 2))
+    resp.raise_for_status()
+    data = resp.json().get("timeline", [{}])[0].get("data", [])
+    df = pd.DataFrame(data)
+    if df.empty:
+        return df
+    df["date"] = pd.to_datetime(df["date"].str[:8])
+    return df.set_index("date")
+
+
+@tool
+def news_trend(query: str) -> str:
+    """how much the world's news wrote about something over the last 12 months, and in what tone
+    (GDELT, free). put company or brand names in double quotes, e.g. '"Coca-Cola"'. a rising count
+    with a falling tone is worth a closer look."""
+    try:
+        volume = _gdelt(query, "timelinevolraw")
+    except Exception as exc:
+        return f"Could not read GDELT: {exc}"
+    try:
+        tone = _gdelt(query, "timelinetone")
+    except Exception:
+        tone = pd.DataFrame()
+    if volume.empty:
+        return f"No news found for {query}."
+    # the 12-month window starts and ends mid-month; partial months would skew the averages
+    this_month = pd.Timestamp.today().normalize().replace(day=1)
+    monthly = volume["value"].resample("MS").sum().iloc[1:]
+    monthly = monthly[monthly.index < this_month]
+    tone_m = tone["value"].resample("MS").mean() if not tone.empty else pd.Series(dtype=float)
+    tone_m = tone_m[(tone_m.index < this_month) & (tone_m.index >= monthly.index.min())] if not monthly.empty else tone_m
+    if len(monthly) < 4:
+        return f"Too little news history for {query}."
+    recent, earlier = monthly.tail(3).mean(), monthly.iloc[:-3].mean() if len(monthly) > 3 else None
+    lines = [f"[GDELT news: {query}]"]
+    if earlier:
+        lines.append(f"Articles a month, last 3 months: {recent:,.0f}; the {len(monthly) - 3} before: {earlier:,.0f} "
+                     f"({(recent / earlier - 1) * 100:+.0f}%).")
+    if not tone_m.empty:
+        lines.append(f"Average tone (below 0 is negative), last 3 months {tone_m.tail(3).mean():+.2f}, "
+                     f"before {tone_m.iloc[:-3].mean():+.2f}.")
+    lines.append("By month: " + ", ".join(f"{d:%Y-%m}: {v:,.0f}" for d, v in monthly.items()))
+    lines.append(f"Source: {gdelt_link(query)}")
+    return "\n".join(lines)
+
+
 def lens_lines(lenses: dict, currency: "str | None") -> list:
-    """The other valuation lenses, one line each, for the writer to weigh against the checklist."""
+    """the other valuation lenses, one line each, for the writer to weigh against the checklist."""
     out = []
     if f := lenses.get("piotroski"):
         out.append(f"Piotroski F-score: {f['scaled']} of 9 ({f['verdict']})")
@@ -142,11 +350,11 @@ def _report_text(comp: dict, section: str) -> "str | None":
 
 @tool
 def annual_report_section(ticker: str, section: str = "business", page: int = 1) -> str:
-    """Read the company's latest annual report, one page at a time.
+    """read the company's latest annual report, one page at a time.
 
     section: "business" (what it does, products, customers, competition),
     "risk_factors" (the risks management lists) or "mda" (management's discussion of results).
-    Start at page 1; the header tells you how many pages there are."""
+    start at page 1; the header tells you how many pages there are."""
     if section not in SECTIONS:
         return f"Unknown section {section!r}. Use one of: {', '.join(SECTIONS)}."
     comp = _company(ticker)
@@ -204,9 +412,9 @@ def _search(query: str, max_results: int) -> list:
 
 @tool
 def web_search(query: str, max_results: int = 5) -> str:
-    """Search the web. Returns numbered results with title, URL and a snippet.
+    """search the web. returns numbered results with title, URL and a snippet.
 
-    Keep queries specific, e.g. "Orlen market share Polish fuel retail 2025"."""
+    keep queries specific, e.g. "Orlen market share Polish fuel retail 2025"."""
     try:
         results = _search(query, min(max(max_results, 1), 8))
     except Exception as exc:
@@ -233,7 +441,7 @@ def _public_host(url: str) -> bool:
 
 @tool
 def read_web_page(url: str, page: int = 1) -> str:
-    """Read one page of readable text from a web page (HTML only), 5,000 characters at a time."""
+    """read one page of readable text from a web page (HTML only), 5,000 characters at a time."""
     if not _public_host(url):
         return "Only public http(s) pages can be read."
     try:
@@ -252,4 +460,5 @@ def read_web_page(url: str, page: int = 1) -> str:
     return _page(text, page, title)
 
 
-TOOLS = [company_numbers, annual_report_section, web_search, read_web_page]
+TOOLS = [company_numbers, quarterly_results, peer_table, insider_trades, annual_report_section,
+         attention_trend, news_trend, web_search, read_web_page]

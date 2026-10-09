@@ -4,9 +4,9 @@
   python research.py PKN.WA ASML.AS     # several, one after another
   python research.py --top 5            # the top five of the current ranking
 
-On the local model a brief takes a while (think tens of minutes on a laptop);
+on the local model a brief takes a while (think tens of minutes on a laptop);
 with GROQ_API_KEY set and LLM_PRIMARY=groq it takes a few minutes.
-Reports land in data/research/<TICKER>.md and show up on the company page.
+reports land in data/research/<TICKER>.md and show up on the company page.
 """
 
 import argparse

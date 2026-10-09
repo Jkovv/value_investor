@@ -3,11 +3,8 @@
 {% block content %}
 <div class="page-head">
   <h1>Markets</h1>
-  <p class="sub">
-    Market Cap / GDP for every market, each read against its own long-run trend. How expensive a market is
-    sets how much cash to hold there, never which company to buy. Levels aren't compared across countries:
-    Hong Kong or Switzerland look huge because of who lists there, not because they're always expensive.
-  </p>
+  <p class="sub">Market Cap / GDP, each market against its own trend. It sets how much cash to hold there,
+    never what to buy.</p>
 </div>
 
 {% if reading and reading.value is not none %}
@@ -18,7 +15,7 @@
     <span class="hero-range">trend {{ reading.trend | pct(0) }} · {{ "%+.1f" | format(reading.z) }}σ from it · {{ reading.source }}</span>
   </div>
   <div class="hero-figure">
-    <span class="pill pill-{{ regime_tone[reading.regime] }}"><i></i>{{ reading.regime | capitalize }}</span>
+    <span class="pill pill-{{ regime_tone[reading.regime] }}">{{ reading.regime | capitalize }}</span>
     <span class="hero-label">suggested cash share</span>
     <span class="hero-value" style="font-size: 32px; margin-top: 4px">{{ reading.suggested_cash | pct(0) }}</span>
   </div>
@@ -89,7 +86,7 @@
         <td class="num" data-value="{{ r.value }}">{{ r.value | pct(0) }}</td>
         <td class="num muted" data-value="{{ r.trend }}">{{ r.trend | pct(0) }}</td>
         <td class="num" data-value="{{ r.z }}">{{ "%+.1f" | format(r.z) }}σ</td>
-        <td data-value="{{ r.z }}"><span class="pill pill-{{ regime_tone[r.regime] }}"><i></i>{{ r.regime | capitalize }}</span></td>
+        <td data-value="{{ r.z }}"><span class="pill pill-{{ regime_tone[r.regime] }}">{{ r.regime | capitalize }}</span></td>
         <td class="num" data-value="{{ r.suggested_cash }}">{{ r.suggested_cash | pct(0) }}</td>
         <td class="num" data-value="{{ bond if bond is not none else '' }}">{{ bond | pct(2) }}</td>
         <td class="muted" data-value="{{ confidence_rank.get(r.confidence, 4) }}">
@@ -120,7 +117,7 @@
     <span class="stat-label">US Sahm rule</span>
     <span class="stat-value">{{ "%.2f" | format(snap.sahm) if snap.sahm is not none else "-" }}</span>
     <span class="stat-note">
-      {% if snap.recession_warning %}<span class="pill pill-fail"><i></i>Triggered</span>{% else %}trigger at 0.50{% endif %}
+      {% if snap.recession_warning %}<span class="pill pill-fail">Triggered</span>{% else %}trigger at 0.50{% endif %}
     </span>
   </div>
   <div class="stat">

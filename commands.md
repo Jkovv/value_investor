@@ -49,12 +49,19 @@ python ingest.py
 
 # Only macro: FRED, World Bank, benchmarks, FX
 python ingest.py --macro-only
+
+# Only insider trades (form 4) for ranked US companies and anything you hold
+python ingest.py --insiders
+
+# Quarters for stored companies outside the US that don't have them yet
+python ingest.py --quarters
 ```
 
 ## Screening
 
 ```bash
-# Score everything ingested, price the gate-passers, print the ranking
+# Score everything ingested, price the gate-passers, print the ranking,
+# save a snapshot for the track record, refresh prices for what you hold
 python main.py screen
 
 # Just a few, always priced
@@ -80,14 +87,19 @@ python research.py KO
 # The top five of the ranking, one after another
 python research.py --top 5
 
+# A run that stopped (laptop asleep, server restarted) resumes on the next run
+# of the same ticker; the dashboard offers Resume or Start over
+
 # Much faster with Groq: set GROQ_API_KEY and LLM_PRIMARY=groq in .env
 ```
+
+Questions about a company are asked on its Research tab.
 
 ## Dashboard
 
 ```bash
-uvicorn app:app
-# http://127.0.0.1:8000
+uvicorn app:app --port 8001
+# http://127.0.0.1:8001: ranking, company pages, markets, portfolio, track record
 ```
 
 ## Tests

@@ -1,4 +1,4 @@
-// Small line charts drawn as inline SVG. Each <figure class="chart"> carries
+// small line charts drawn as inline SVG. each <figure class="chart"> carries
 // its data in data-series: [{name, points: [[label, value|null], ...], muted?}].
 
 (function () {
@@ -9,6 +9,13 @@
     pct: (v) => (v * 100).toFixed(Math.abs(v) < 0.1 ? 1 : 0) + "%",
     pct0: (v) => Math.round(v * 100) + "%",
     num: (v) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(2)),
+    compact: (v) => {
+      const a = Math.abs(v);
+      for (const [size, suffix] of [[1e12, "T"], [1e9, "B"], [1e6, "M"], [1e3, "K"]]) {
+        if (a >= size) return (v / size).toFixed(1) + suffix;
+      }
+      return v.toFixed(0);
+    },
   };
 
   function el(name, attrs, parent) {
@@ -79,7 +86,7 @@
       if (i % every !== 0 && i !== labels.length - 1) return;
       if (i !== labels.length - 1 && labels.length - 1 - i < every * 0.6) return;
       const t = el("text", { x: x(i), y: H - 6, "text-anchor": "middle", class: "tick" }, svg);
-      t.textContent = String(lab).slice(0, wide ? 4 : 4);
+      t.textContent = String(lab).slice(0, +(fig.dataset.labelChars || 4));
     });
 
     series.forEach((s, si) => {

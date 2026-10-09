@@ -1,10 +1,7 @@
 """10 · metrics: yearly ratios, then one summary over the last ten years.
 
-Per-share figures are rebuilt from totals (net income / diluted shares)
-rather than taken as filed, and every share count is moved into today's
-units: a count filed before a split is multiplied by every split that came
-after its filing date. Counts filed after a split are already restated by
-the company and are left alone.
+per-share figures are rebuilt from totals and every share count is moved to
+today's units, undoing the splits that came after it was filed.
 """
 
 import math
@@ -16,7 +13,7 @@ from value_investor import config
 
 
 def _div(a, b):
-    """Elementwise a / b, NaN where b is missing or zero."""
+    """elementwise a / b, NaN where b is missing or zero."""
     b = b.where(b != 0)
     return a / b
 
@@ -35,7 +32,7 @@ def split_factors(filed: pd.Series, splits: pd.Series) -> pd.Series:
 
 
 def _maintenance_capex(t: pd.DataFrame) -> pd.Series:
-    """Greenwald's split: capex beyond what new sales needed is maintenance."""
+    """greenwald's split: capex beyond what new sales needed is maintenance."""
     ppe_to_sales = _div(t["ppe"], t["revenue"]).median()
     if pd.isna(ppe_to_sales):
         return t["capex"]
@@ -69,7 +66,7 @@ def yearly(statements: pd.DataFrame, splits: "pd.Series | None" = None) -> pd.Da
 
     y["eps_reported"] = t["eps_diluted"] / eps_factor
     shares = t["shares_diluted"] * factor
-    # Some filers tag share counts in millions (MCD from 2024 on). When the
+    # some filers tag share counts in millions (MCD from 2024 on). when the
     # count disagrees badly with net income / reported EPS, trust the EPS.
     implied = _div(t["net_income"], y["eps_reported"].where(y["eps_reported"].abs() >= 0.05))
     bad = implied.notna() & (implied > 0) & ((shares / implied - 1).abs() > 0.3)

@@ -1,6 +1,6 @@
 """04 · store: the DuckDB file everything reads from and writes to.
 
-Raw facts are kept with their filing date and accession number, so any
+raw facts are kept with their filing date and accession number, so any
 statement can be rebuilt as it looked on a past date (see statements.py).
 DuckDB allows one writer per file: fetch in threads, write from one.
 """
@@ -86,9 +86,57 @@ CREATE TABLE IF NOT EXISTS entity_ids (
     source_key VARCHAR PRIMARY KEY,
     id INTEGER
 );
+
+CREATE TABLE IF NOT EXISTS quarterly_facts (
+    cik INTEGER,
+    taxonomy VARCHAR,
+    concept VARCHAR,
+    unit VARCHAR,
+    period_start DATE,
+    period_end DATE,
+    value DOUBLE,
+    form VARCHAR,
+    filed DATE,
+    accn VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS insider_filings (
+    accn VARCHAR PRIMARY KEY,
+    cik INTEGER,
+    filed DATE
+);
+
+CREATE TABLE IF NOT EXISTS insider_trades (
+    cik INTEGER,
+    accn VARCHAR,
+    filed DATE,
+    trade_date DATE,
+    owner VARCHAR,
+    role VARCHAR,
+    code VARCHAR,
+    shares DOUBLE,
+    price DOUBLE,
+    acquired BOOLEAN,
+    owned_after DOUBLE,
+    planned BOOLEAN
+);
+
+CREATE TABLE IF NOT EXISTS snapshots (
+    taken_on DATE,
+    rank INTEGER,
+    cik INTEGER,
+    ticker VARCHAR,
+    name VARCHAR,
+    market VARCHAR,
+    currency VARCHAR,
+    price DOUBLE,
+    buy_price DOUBLE,
+    expected_return_base DOUBLE,
+    quality DOUBLE
+);
 """
 
-# Added after the first release; ALTER keeps existing databases working.
+# added after the first release; ALTER keeps existing databases working.
 MIGRATIONS = """
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS source VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS market VARCHAR;
@@ -97,6 +145,7 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS sector VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS industry VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS summary VARCHAR;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS market_cap DOUBLE;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS last_quarter_filed DATE;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS market VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS country VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS currency VARCHAR;
@@ -111,7 +160,7 @@ UPDATE companies SET source = 'sec', market = 'USA', price_currency = 'USD', sec
 COMPANY_COLUMNS = [
     "cik", "ticker", "name", "exchange", "sic", "sic_description", "country", "fiscal_year_end",
     "category", "currency", "last_annual_filed", "source", "market", "price_currency", "sector",
-    "industry", "summary", "market_cap",
+    "industry", "summary", "market_cap", "last_quarter_filed",
 ]
 
 
@@ -134,7 +183,7 @@ def init() -> None:
 
 
 def entity_id(con, source_key: str) -> int:
-    """Companies without an SEC CIK get a stable negative id, so CIKs never collide."""
+    """companies without an SEC CIK get a stable negative id, so CIKs never collide."""
     row = con.execute("SELECT id FROM entity_ids WHERE source_key = ?", [source_key]).fetchone()
     if row:
         return int(row[0])
@@ -168,6 +217,22 @@ def replace_facts(con, cik: int, facts: pd.DataFrame) -> None:
 
 def load_facts(con, cik: int) -> pd.DataFrame:
     return con.execute("SELECT * FROM facts WHERE cik = ?", [cik]).df()
+
+
+def replace_quarterly_facts(con, cik: int, facts: pd.DataFrame) -> None:
+    con.execute("DELETE FROM quarterly_facts WHERE cik = ?", [cik])
+    if facts is None or facts.empty:
+        return
+    frame = facts.assign(cik=cik)[
+        ["cik", "taxonomy", "concept", "unit", "period_start", "period_end", "value", "form", "filed", "accn"]
+    ]
+    con.register("incoming_quarters", frame)
+    con.execute("INSERT INTO quarterly_facts SELECT * FROM incoming_quarters")
+    con.unregister("incoming_quarters")
+
+
+def load_quarterly_facts(con, cik: int) -> pd.DataFrame:
+    return con.execute("SELECT * FROM quarterly_facts WHERE cik = ?", [cik]).df()
 
 
 def company(con, cik: int) -> "dict | None":
@@ -246,3 +311,18 @@ def analyses(con) -> pd.DataFrame:
 def analysis_payload(con, cik: int) -> "dict | None":
     row = con.execute("SELECT payload FROM analyses WHERE cik = ?", [cik]).fetchone()
     return None if row is None else json.loads(row[0])
+
+
+def save_snapshot(con, taken_on, rows: list) -> None:
+    con.execute("DELETE FROM snapshots WHERE taken_on = ?", [taken_on])
+    if rows:
+        con.executemany("INSERT INTO snapshots VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [[taken_on] + list(r) for r in rows])
+
+
+def snapshots(con) -> pd.DataFrame:
+    try:
+        return con.execute("SELECT * FROM snapshots ORDER BY taken_on, rank").df()
+    except (duckdb.CatalogException, duckdb.InvalidInputException):
+        # a database from before snapshots existed, opened read-only by the dashboard
+        return pd.DataFrame()

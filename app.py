@@ -1,11 +1,11 @@
 """app.py: the dashboard.
 
-  uvicorn app:app --reload        then open http://127.0.0.1:8000
+  uvicorn app:app --port 8001        then open http://127.0.0.1:8001
 
-Reads the DuckDB file read-only, so it can stay open while you browse.
-While ingest.py or `main.py screen` is writing, DuckDB locks the file and
-pages show a "busy" notice until the run finishes. Research runs started
-from a company page run in a background thread and write files, not rows.
+duckdb is opened read-only, so the dashboard can stay up while you browse;
+while ingest.py or main.py screen writes, pages say "busy" until it's done.
+research and questions run in background threads and write files, the
+portfolio writes its own sqlite file.
 """
 
 import json
@@ -16,14 +16,14 @@ from pathlib import Path
 import duckdb
 import markdown
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import config, llm, macro, markets, research, screener, store
+from value_investor import config, llm, macro, markets, peers, portfolio, research, screener, store, track
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -31,10 +31,11 @@ app = FastAPI(title="Value Investor")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
 templates = Jinja2Templates(directory=ROOT / "templates")
 
-class _AssetVersion:
-    """Appended to static URLs so a browser never runs yesterday's CSS or JS.
 
-    Read on every render, so editing a static file needs no server restart."""
+
+class _AssetVersion:
+    """appended to static urls so a browser never runs yesterday's css or js.
+    read on every render, so editing a static file needs no restart."""
 
     def __str__(self) -> str:
         return str(int(max(p.stat().st_mtime for p in (ROOT / "static").iterdir())))
@@ -71,7 +72,7 @@ def nice_name(name):
 
 
 def money(v, digits=2):
-    """Cents only where they matter: 1,250,000 won needs no decimals."""
+    """cents only where they matter: 1,250,000 won needs no decimals."""
     if _missing(v):
         return "-"
     return f"{v:,.{0 if abs(v) >= 10_000 else digits}f}"
@@ -118,7 +119,7 @@ _readings_cache: dict = {}
 
 
 def _market_readings(con) -> dict:
-    """All market readings, recomputed at most every ten minutes."""
+    """all market readings, recomputed at most every ten minutes."""
     now = time.time()
     if _readings_cache.get("at", 0) > now - 600:
         return _readings_cache["data"]
@@ -128,7 +129,7 @@ def _market_readings(con) -> dict:
 
 
 def render_report(text: str) -> Markup:
-    """Markdown from the agent, with any raw HTML neutralised and only web links kept."""
+    """markdown from the agent, with any raw HTML neutralised and only web links kept."""
     safe = text.replace("&", "&amp;").replace("<", "&lt;")
     html = markdown.markdown(safe, extensions=["tables", "sane_lists"])
     html = re.sub(r'href="(?!https?://)[^"]*"', 'href="#"', html)
@@ -177,15 +178,26 @@ def company(request: Request, ticker: str):
                 found = store.analyses(con)
                 found = found[found["cik"] == cik]
                 row = None if found.empty else found.iloc[0].to_dict()
-            reading = None
+            reading, peer = None, {"rows": []}
             if payload:
                 reading = _market_readings(con).get(payload["company"].get("market"))
+                peer = peers.find(con, cik)
     except duckdb.IOException:
         return _busy(request, "company")
     if payload is None:
         return templates.TemplateResponse(request, "missing.html", {"ticker": ticker.upper()}, status_code=404)
 
     yearly = pd.DataFrame(payload["yearly"]).tail(config.HISTORY_YEARS + 1)
+    quarters = payload.get("quarters") or {}
+    q_rows = quarters.get("rows") or []
+    q_chart = None
+    if len(q_rows) >= 3:
+        labels = [f"{r['end'][:4]} Q{(int(r['end'][5:7]) - 1) // 3 + 1}" for r in q_rows]
+        q_chart = json.dumps([
+            {"name": "Revenue", "points": json.loads(_series(zip(labels, [r["revenue"] for r in q_rows])))},
+            {"name": "Net income", "points": json.loads(_series(zip(labels, [r["net_income"] for r in q_rows]))),
+             "muted": True},
+        ])
     charts = []
     if not yearly.empty:
         years = yearly["fiscal_year"].astype(int)
@@ -208,21 +220,40 @@ def company(request: Request, ticker: str):
         "yearly": payload["yearly"][-12:], "reading": reading,
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
-        "backends": llm.backends(),
+        "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
+        "peer_metrics": peers.METRICS, "insiders": payload.get("insiders"),
+        "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)
+                      for q in research.questions(ticker)],
     })
 
 
-@app.post("/company/{ticker}/research")
-def start_research(ticker: str):
-    name = None
+def _name(ticker: str) -> "str | None":
     try:
         with store.connect(read_only=True) as con:
             cik = store.find_cik(con, ticker)
-            name = (store.company(con, cik) or {}).get("name") if cik else None
+            return (store.company(con, cik) or {}).get("name") if cik else None
     except duckdb.IOException:
-        pass
-    research.start_in_background(ticker, name)
+        return None
+
+
+@app.post("/company/{ticker}/research")
+def start_research(ticker: str, mode: str = Form("resume")):
+    research.start_in_background(ticker, _name(ticker), resume=mode == "resume")
     return RedirectResponse(f"/company/{ticker}#research", status_code=303)
+
+
+@app.post("/company/{ticker}/ask")
+def ask(ticker: str, question: str = Form("")):
+    research.start_question(ticker, question, _name(ticker))
+    return RedirectResponse(f"/company/{ticker}#research", status_code=303)
+
+
+@app.get("/company/{ticker}/ask/status")
+def ask_status(ticker: str):
+    items = research.questions(ticker)
+    current = items[0] if items else {}
+    return JSONResponse({"state": current.get("state", "none"), "last_step": current.get("last_step", "")},
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/company/{ticker}/research/status")
@@ -258,3 +289,54 @@ def market(request: Request, m: str = ""):
         "snap": snap, "readings": rows, "chosen": chosen, "reading": reading, "chart": chart,
         "table": table, "bonds": bonds,
     })
+
+
+@app.get("/portfolio", response_class=HTMLResponse)
+def portfolio_page(request: Request, error: str = ""):
+    try:
+        with store.connect(read_only=True) as con:
+            held = portfolio.positions(con)
+            readings = _market_readings(con)
+            ranked = screener.ranking(con)
+            plan = portfolio.plan(con, [r for r in held["rows"] if r["shares"] > 1e-9], ranked, readings)
+            names = con.execute("SELECT ticker, name, price_currency FROM companies WHERE ticker IS NOT NULL "
+                                "ORDER BY ticker").fetchall()
+    except duckdb.IOException:
+        return _busy(request, "portfolio")
+    return templates.TemplateResponse(request, "portfolio.html", {
+        "p": held, "plan": plan, "names": names, "readings": readings, "error": error,
+        "today": pd.Timestamp.today().date().isoformat(),
+    })
+
+
+@app.post("/portfolio/add")
+def portfolio_add(ticker: str = Form(...), traded_on: str = Form(...), kind: str = Form("buy"),
+                  shares: float = Form(...), price: float = Form(...), fees: float = Form(0.0), note: str = Form("")):
+    ticker = ticker.strip().upper()
+    try:
+        with store.connect(read_only=True) as con:
+            known = store.find_cik(con, ticker) is not None
+    except duckdb.IOException:
+        known = True
+    if not known:
+        return RedirectResponse(f"/portfolio?error={ticker}+is+not+in+the+database", status_code=303)
+    if kind not in ("buy", "sell") or shares <= 0 or price < 0:
+        return RedirectResponse("/portfolio?error=check+the+numbers", status_code=303)
+    portfolio.add(ticker, traded_on, kind, shares, price, fees, note)
+    return RedirectResponse("/portfolio", status_code=303)
+
+
+@app.post("/portfolio/{tx_id}/delete")
+def portfolio_delete(tx_id: int):
+    portfolio.delete(tx_id)
+    return RedirectResponse("/portfolio", status_code=303)
+
+
+@app.get("/track", response_class=HTMLResponse)
+def track_page(request: Request):
+    try:
+        with store.connect(read_only=True) as con:
+            result = track.record(con)
+    except duckdb.IOException:
+        return _busy(request, "track record")
+    return templates.TemplateResponse(request, "track.html", {"t": result, "top": config.TRACK_TOP})

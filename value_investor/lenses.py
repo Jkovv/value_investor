@@ -1,22 +1,17 @@
-"""23 · lenses: other well-known ways to judge the same company, side by side.
+"""23 · lenses: the other schools, worked out from the same statements.
 
-The checklist is one school of thought. These are the others an investor
-will meet, all computed from the same statements, none of them by a model:
-
-    Piotroski F-score    nine yes/no tests of improving financial health
-    Altman Z-score       distance from financial distress
-    Graham               the Graham number and the defensive-investor tests
-    Magic Formula        earnings yield and return on capital
-    Lynch                growth category, PEG and dividend-adjusted PEG
-    Owner-earnings DCF   ten years of owner earnings plus a terminal value
-
-They're shown next to the checklist, not folded into its score: when they
-disagree with it, that disagreement is the interesting part.
+Piotroski, Altman, Graham, Lynch, the Magic Formula, an owner-earnings dcf,
+a dividend discount model and a Monte Carlo run of the ten-year projection.
+kept out of the quality score on purpose: when they disagree with the
+checklist, that's the thing to look into.
 """
 
 import math
 
+import numpy as np
 import pandas as pd
+
+from value_investor import config
 
 CYCLICAL_SECTORS = {"Energy", "Basic Materials", "Industrials", "Consumer Cyclical", "Real Estate"}
 # SIC codes for the same idea on SEC filers: mining and oil, building, paper,
@@ -46,7 +41,7 @@ def _gt(a, b) -> "bool | None":
 
 
 def ebit(row) -> "float | None":
-    """Operating income, or pre-tax income plus interest for filers that don't tag it (Merck)."""
+    """operating income, or pre-tax income plus interest for filers that don't tag it (Merck)."""
     op = _num(row.operating_income)
     if op is not None:
         return op
@@ -55,7 +50,7 @@ def ebit(row) -> "float | None":
 
 
 def piotroski(t: pd.DataFrame) -> "dict | None":
-    """Nine tests on the last two years. Tests without data are skipped and the
+    """nine tests on the last two years. tests without data are skipped and the
     score is scaled back to nine, so a bank isn't punished for having no
     current ratio."""
     if len(t) < 2:
@@ -91,7 +86,7 @@ def piotroski(t: pd.DataFrame) -> "dict | None":
 
 
 def altman(t: pd.DataFrame, market_cap: "float | None") -> "dict | None":
-    """The original 1968 Z-score. Built on manufacturers, so read it as a rough
+    """the original 1968 Z-score. built on manufacturers, so read it as a rough
     distress gauge for everything else."""
     now = t.iloc[-1]
     ta = _num(now.total_assets)
@@ -111,8 +106,8 @@ def altman(t: pd.DataFrame, market_cap: "float | None") -> "dict | None":
 
 
 def graham(y: pd.DataFrame, s: dict, price: "float | None", t: pd.DataFrame, profile: str) -> "dict | None":
-    """The Graham number (fair price for a defensive investor) and the
-    defensive-investor tests from The Intelligent Investor. Prices here are
+    """the Graham number (fair price for a defensive investor) and the
+    defensive-investor tests from The Intelligent Investor. prices here are
     in statement currency."""
     out: dict = {}
     eps, bvps = s.get("eps"), s.get("bvps")
@@ -150,7 +145,7 @@ def graham(y: pd.DataFrame, s: dict, price: "float | None", t: pd.DataFrame, pro
 
 
 def magic_formula(t: pd.DataFrame, market_cap: "float | None") -> "dict | None":
-    """Earnings yield (EBIT / enterprise value) and return on capital
+    """earnings yield (EBIT / enterprise value) and return on capital
     (EBIT / (net working capital + net fixed assets))."""
     now = t.iloc[-1]
     profit = ebit(now)
@@ -178,7 +173,7 @@ def cyclical(sector: "str | None", sic) -> bool:
 
 
 def lynch(s: dict, v: dict, sector: "str | None" = None, sic=None) -> "dict | None":
-    """One of Lynch's six stock categories, plus PEG and dividend-adjusted PEG
+    """one of Lynch's six stock categories, plus PEG and dividend-adjusted PEG
     (under 1 is cheap for the growth, over 2 is expensive)."""
     g = s.get("eps_cagr_smoothed")
     if g is None:
@@ -202,10 +197,25 @@ def lynch(s: dict, v: dict, sector: "str | None" = None, sic=None) -> "dict | No
     return out
 
 
+def _discount(v: dict) -> float:
+    return max(MIN_DISCOUNT, (v.get("bond_yield") or 0.04) + EQUITY_PREMIUM)
+
+
+def _two_stage(start: float, g0: float, r: float) -> "tuple[float, float]":
+    """ten years of growth fading from g0 to the terminal rate, then a terminal value.
+    returns (value, share of the value that comes after year ten)."""
+    flow, present = start, 0.0
+    for k in range(1, DCF_YEARS + 1):
+        g = g0 + (TERMINAL_GROWTH - g0) * (k - 1) / (DCF_YEARS - 1)
+        flow *= 1 + g
+        present += flow / (1 + r) ** k
+    terminal = flow * (1 + TERMINAL_GROWTH) / (r - TERMINAL_GROWTH) / (1 + r) ** DCF_YEARS
+    return present + terminal, terminal / (present + terminal)
+
+
 def owner_earnings_dcf(y: pd.DataFrame, s: dict, v: dict) -> "dict | None":
-    """Owner earnings per share (average of the last three years), grown at the
-    projection's rate fading to 2.5% by year ten, discounted at the bond yield
-    plus 5 points (never under 9%), plus a terminal value."""
+    """owner earnings a share (last three years' average), growth fading to 2.5%,
+    discounted at the bond yield plus 5 points, never under 9%."""
     if not v.get("available"):
         return None
     oe = y["owner_earnings"].dropna().tail(3)
@@ -214,23 +224,78 @@ def owner_earnings_dcf(y: pd.DataFrame, s: dict, v: dict) -> "dict | None":
         return None
     per_share = float(oe.mean()) / shares
     g0 = min(max(v.get("growth") or 0.0, 0.0), 0.15)
-    r = max(MIN_DISCOUNT, (v.get("bond_yield") or 0.04) + EQUITY_PREMIUM)
-    flow, present = per_share, 0.0
-    for k in range(1, DCF_YEARS + 1):
-        g = g0 + (TERMINAL_GROWTH - g0) * (k - 1) / (DCF_YEARS - 1)
-        flow *= 1 + g
-        present += flow / (1 + r) ** k
-    terminal = flow * (1 + TERMINAL_GROWTH) / (r - TERMINAL_GROWTH) / (1 + r) ** DCF_YEARS
-    value = present + terminal
+    r = _discount(v)
+    value, tail = _two_stage(per_share, g0, r)
     return {"value": value, "owner_earnings_per_share": per_share, "growth": g0, "discount": r,
-            "terminal_share": terminal / value}
+            "terminal_share": tail}
+
+
+def ddm(s: dict, v: dict) -> "dict | None":
+    """dividend discount model: today's dividend, growing at the slower of its own
+    history and the earnings projection, same fade and discount as the dcf."""
+    dps = s.get("dps")
+    if not v.get("available") or not dps or dps <= 0:
+        return None
+    rates = [g for g in (s.get("dps_cagr"), v.get("growth")) if g is not None]
+    g0 = min(max(min(rates) if rates else 0.0, 0.0), 0.12)
+    r = _discount(v)
+    value, tail = _two_stage(dps, g0, r)
+    return {"value": value, "dps": dps, "growth": g0, "discount": r, "terminal_share": tail}
+
+
+MC_DRAWS = 5000
+MC_BINS = [round(-0.10 + 0.02 * i, 2) for i in range(26)]    # -10% to +40%
+
+
+def monte_carlo(y: pd.DataFrame, s: dict, v: dict, price: "float | None", seed: int = 7) -> "dict | None":
+    """the ten-year projection run 5,000 times with growth and the exit P/E drawn
+    at random instead of fixed, so the answer is a spread, not three numbers.
+
+    growth: normal around the projection's rate; the spread is the yearly EPS
+    swings over the square root of the years seen, or half the gap between the
+    two growth estimates if that's wider. exit P/E: triangular between the
+    low and high of the company's own history. returns are local currency."""
+    if not v.get("available") or not price or not s.get("eps") or s["eps"] <= 0:
+        return None
+    pe, inputs = v.get("pe") or {}, v.get("growth_inputs") or {}
+    low, mid, high = pe.get("low"), pe.get("mid"), pe.get("high")
+    if not (low and mid and high):
+        return None
+    if high - low < 0.1 * mid:
+        low, high = mid * 0.8, mid * 1.2
+    eps_hist = y["eps"].dropna()
+    eps_hist = eps_hist[eps_hist > 0]
+    swings = np.diff(np.log(eps_hist.to_numpy())) if len(eps_hist) >= 3 else np.array([0.15])
+    spread = float(np.std(swings) / math.sqrt(max(len(swings), 1)))
+    known = [g for g in (inputs.get("historical"), inputs.get("sustainable")) if g is not None]
+    if len(known) == 2:
+        spread = max(spread, abs(known[0] - known[1]) / 2)
+    spread = min(max(spread, 0.015), 0.06)
+
+    rng = np.random.default_rng(seed)
+    g = np.clip(rng.normal(v.get("growth") or 0.0, spread, MC_DRAWS), -0.05, 0.15)
+    exit_pe = rng.triangular(low, min(max(mid, low), high), high, MC_DRAWS)
+    payout = min(max(v.get("payout") or 0.0, 0.0), 1.0)
+    years = np.arange(1, 11)
+    eps_path = s["eps"] * (1 + g[:, None]) ** years
+    total = eps_path[:, -1] * exit_pe + (eps_path * payout).sum(axis=1)
+    returns = np.where(total > 0, np.power(np.maximum(total, 1e-9) / price, 0.1) - 1, -1.0)
+
+    counts, _ = np.histogram(np.clip(returns, MC_BINS[0], MC_BINS[-1] - 1e-9), bins=MC_BINS)
+    pct = np.percentile(returns, [10, 25, 50, 75, 90])
+    return {
+        "p10": pct[0], "p25": pct[1], "p50": pct[2], "p75": pct[3], "p90": pct[4],
+        "prob_hurdle": float((returns >= config.HURDLE_RATE).mean()),
+        "prob_loss": float((returns < 0).mean()),
+        "bins": MC_BINS, "counts": [int(c) for c in counts], "draws": MC_DRAWS,
+        "growth_spread": spread, "pe_range": [low, high],
+    }
 
 
 def compute(t: pd.DataFrame, y: pd.DataFrame, s: dict, v: dict, profile: str,
             sector: "str | None" = None, sic=None, to_quote: float = 1.0) -> dict:
-    """All lenses for one company. Statements are in their own currency;
-    to_quote turns a statement-currency price into the currency the shares
-    trade in, so the per-share values shown sit next to the quoted price."""
+    """all lenses for one company. statements are in their own currency; to_quote
+    turns a statement-currency price into the one the shares trade in."""
     if t.empty or y.empty:
         return {}
     price = _num(v.get("price")) if v.get("available") else None
@@ -242,15 +307,25 @@ def compute(t: pd.DataFrame, y: pd.DataFrame, s: dict, v: dict, profile: str,
         out["magic"] = magic_formula(t, cap)
     if out["graham"] and "number" in out["graham"]:
         out["graham"]["number"] *= to_quote
-    dcf = owner_earnings_dcf(y, s, v) if price else None
-    if dcf:
-        dcf["value"] *= to_quote
-        dcf["owner_earnings_per_share"] *= to_quote
-        dcf["vs_price"] = dcf["value"] / price - 1
-        out["dcf"] = dcf
+    for key, found in (("dcf", owner_earnings_dcf(y, s, v) if price else None),
+                       ("ddm", ddm(s, v) if price else None)):
+        if found:
+            found["value"] *= to_quote
+            for per_share in ("owner_earnings_per_share", "dps"):
+                if per_share in found:
+                    found[per_share] *= to_quote
+            found["vs_price"] = found["value"] / price - 1
+            out[key] = found
+    out["monte_carlo"] = monte_carlo(y, s, v, price_stmt) if price else None
     return {k: _plain(val) for k, val in out.items() if val}
 
 
 def _plain(d: dict) -> dict:
-    """numpy scalars to Python ones, so the payload round-trips through JSON as is."""
-    return {k: _plain(v) if isinstance(v, dict) else (float(v) if hasattr(v, "dtype") else v) for k, v in d.items()}
+    """numpy scalars to python ones, so the payload goes through json as is."""
+    def one(v):
+        if isinstance(v, dict):
+            return _plain(v)
+        if isinstance(v, list):
+            return [one(x) for x in v]
+        return v.item() if hasattr(v, "item") and hasattr(v, "dtype") else v
+    return {k: one(v) for k, v in d.items()}

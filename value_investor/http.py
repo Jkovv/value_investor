@@ -1,7 +1,7 @@
 """03 · http: one shared, rate-limited session for the SEC APIs.
 
 data.sec.gov allows 10 requests/second per client and answers 403 to
-anything without a contact User-Agent. Every SEC call goes through get_json()
+anything without a contact User-Agent. every SEC call goes through get_json()
 so the limit holds no matter how many threads are fetching.
 """
 
@@ -49,6 +49,14 @@ class NotFound(Exception):
 
 
 def get_json(url: str, retries: int = 4) -> dict:
+    return _get(url, retries).json()
+
+
+def get_text(url: str, retries: int = 4) -> str:
+    return _get(url, retries).text
+
+
+def _get(url: str, retries: int) -> requests.Response:
     for attempt in range(retries + 1):
         _limiter.wait()
         try:
@@ -65,5 +73,5 @@ def get_json(url: str, retries: int = 4) -> dict:
             time.sleep(2 ** attempt + 1)
             continue
         resp.raise_for_status()
-        return resp.json()
+        return resp
     raise RuntimeError(f"gave up on {url}")

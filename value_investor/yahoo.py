@@ -1,16 +1,9 @@
-"""18 · yahoo: every listed company outside the US, from Yahoo Finance.
+"""18 · yahoo: every listed company outside the us.
 
-The universe comes from Yahoo's screener, region by region, above a market
-cap floor. A company listed in several places (NVIDIA also trades in Warsaw)
-shares one message board id across its listings, so each company is kept
-once, at its home listing: the one quoted in the currency it reports in.
-Companies that are American (US listing, reporting in USD) are left to
-EDGAR, which goes back further.
-
-Statements are Yahoo's annual income statement, balance sheet and cash flow,
-usually five years. They're stored as facts with taxonomy "yahoo" and run
-through exactly the same statements / metrics / rules / valuation code.
-Yahoo gives no filing date, so one is estimated at period end + 120 days.
+the universe is yahoo's screener, region by region, one home listing per
+company (the one quoted in the currency it reports in). about five years of
+statements and five quarters, stored as facts and run through the same code
+as edgar; filing dates are estimated at period end + 120 days.
 """
 
 import logging
@@ -57,7 +50,7 @@ def screen_region(region: str, min_cap_local: float, limit: "int | None" = None)
 
 
 def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None" = None) -> pd.DataFrame:
-    """One row per company, at its home listing, for the given markets."""
+    """one row per company, at its home listing, for the given markets."""
     rows = []
     wanted = [markets.BY_ISO[i] for i in iso3s if i in markets.BY_ISO and i != "USA"]
     for m in wanted + [markets.BY_ISO["USA"]]:
@@ -76,7 +69,7 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
     if df.empty:
         return df
     df["market"] = df["market_code"].map(_market_iso3)
-    # Foreign-share segments: London's International Order Book, Brazilian depositary receipts.
+    # foreign-share segments: London's International Order Book, Brazilian depositary receipts.
     df = df[~df["symbol"].str.endswith(".IL") & ~df["symbol"].str.contains(r"3[1-5]\.SA$", regex=True)]
     american = set(df[(df["market"] == "USA") & (df["financial_currency"] == "USD")]["board"])
     df = df[~df["board"].isin(american) & (df["market"] != "USA") & df["market"].notna()]
@@ -87,7 +80,7 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
     local = df["market"].map(lambda iso: markets.BY_ISO[iso].currency)
     quote = df["currency"].map(lambda c: fx.major(c)[0])
     df = df[(quote == local) | (df["financial_currency"] == local)]
-    # Reporting in another market's own currency (CHF, TWD, CNY...) gives it away
+    # reporting in another market's own currency (CHF, TWD, CNY...) gives it away
     # as a foreign company. USD and EUR are too common to judge this way; the
     # headquarters check in fundamentals() catches those.
     local, quote = local.loc[df.index], quote.loc[df.index]
@@ -98,7 +91,7 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
 
     df["home"] = quote.loc[df.index] == df["financial_currency"]
     df = df.sort_values(["home", "turnover"], ascending=False).drop_duplicates("board")
-    # Twin exchanges in one country (NSE and BSE in India) get separate board ids.
+    # twin exchanges in one country (NSE and BSE in India) get separate board ids.
     df["name_key"] = df["name"].fillna(df["symbol"]).str.lower().str.replace(r"[^a-z0-9]", "", regex=True)
     df = df.drop_duplicates(["market", "name_key"]).drop(columns="name_key")
     df = df.sort_values(["market", "market_cap"], ascending=[True, False])
@@ -116,11 +109,12 @@ def _wanted_rows() -> set:
 
 
 WANTED = _wanted_rows()
+COLUMNS = ["taxonomy", "concept", "unit", "period_start", "period_end", "value", "form", "filed", "accn"]
 INCOME_LIKE = "duration"
 BALANCE = "instant"
 
 
-def _facts_from(frame: pd.DataFrame, kind: str, currency: str) -> list:
+def _facts_from(frame: pd.DataFrame, kind: str, currency: str, days: int = 364) -> list:
     out = []
     if frame is None or frame.empty:
         return out
@@ -138,7 +132,7 @@ def _facts_from(frame: pd.DataFrame, kind: str, currency: str) -> list:
             if pd.isna(value):
                 continue
             end = pd.Timestamp(end).date()
-            start = end - timedelta(days=364) if kind == INCOME_LIKE else None
+            start = end - timedelta(days=days) if kind == INCOME_LIKE else None
             filed = min(end + FILING_LAG, today)
             out.append(("yahoo", row_name, unit, start, end, float(value), "yahoo", filed, None))
     return out
@@ -151,7 +145,7 @@ EURO_MEMBERS = {m.iso3 for m in markets.MARKETS if m.currency == "EUR"}
 
 
 def home_elsewhere(info: dict, market: "str | None") -> "str | None":
-    """The other covered market a listing really belongs to, if any.
+    """the other covered market a listing really belongs to, if any.
 
     Allianz quoted in zloty is still a German company: headquartered in a
     market we cover and reporting in that market's currency.
@@ -166,18 +160,19 @@ def home_elsewhere(info: dict, market: "str | None") -> "str | None":
     return None
 
 
-def fundamentals(symbol: str, market: "str | None" = None, retries: int = 3) -> "tuple[pd.DataFrame, dict]":
+def fundamentals(symbol: str, market: "str | None" = None, retries: int = 3) -> tuple:
     for attempt in range(retries + 1):
         try:
             t = yf.Ticker(symbol)
             info = t.info or {}
             elsewhere = home_elsewhere(info, market)
             if elsewhere:
-                return pd.DataFrame(), {"home_market": elsewhere}
+                return pd.DataFrame(), {"home_market": elsewhere}, pd.DataFrame()
             currency = info.get("financialCurrency") or fx.major(info.get("currency"))[0]
             rows = (_facts_from(t.income_stmt, INCOME_LIKE, currency)
                     + _facts_from(t.cashflow, INCOME_LIKE, currency)
                     + _facts_from(t.balance_sheet, BALANCE, currency))
+            quarter_rows = _quarter_rows(t, currency)
             break
         except Exception as exc:
             if attempt == retries:
@@ -185,10 +180,8 @@ def fundamentals(symbol: str, market: "str | None" = None, retries: int = 3) -> 
             wait = 20 * (attempt + 1) + random.random() * 5
             logger.info("Yahoo throttled %s (%s); waiting %.0fs", symbol, type(exc).__name__, wait)
             time.sleep(wait)
-    facts = pd.DataFrame(rows, columns=[
-        "taxonomy", "concept", "unit", "period_start", "period_end", "value", "form", "filed", "accn",
-    ])
-    profile = {
+    facts = pd.DataFrame(rows, columns=COLUMNS)
+    prof = {
         "name": info.get("longName") or info.get("shortName"),
         "country": info.get("country"),
         "sector": info.get("sector"),
@@ -200,4 +193,25 @@ def fundamentals(symbol: str, market: "str | None" = None, retries: int = 3) -> 
         "fiscal_year_end": None,
         "last_annual_filed": max(facts["filed"]) if not facts.empty else None,
     }
-    return facts, profile
+    return facts, prof, pd.DataFrame(quarter_rows, columns=COLUMNS)
+
+
+def _quarter_rows(t, currency: str) -> list:
+    return (_facts_from(t.quarterly_income_stmt, INCOME_LIKE, currency, days=91)
+            + _facts_from(t.quarterly_cashflow, INCOME_LIKE, currency, days=91)
+            + _facts_from(t.quarterly_balance_sheet, BALANCE, currency))
+
+
+def quarterly(symbol: str) -> pd.DataFrame:
+    """the last five or so quarters, for companies stored before quarters were kept."""
+    t = yf.Ticker(symbol)
+    info = t.info or {}
+    currency = info.get("financialCurrency") or fx.major(info.get("currency"))[0]
+    return pd.DataFrame(_quarter_rows(t, currency), columns=COLUMNS)
+
+
+def profile(symbol: str) -> dict:
+    """sector, industry and size for a ticker we already have statements for."""
+    info = yf.Ticker(symbol).info or {}
+    return {"sector": info.get("sector"), "industry": info.get("industry"),
+            "summary": info.get("longBusinessSummary"), "market_cap": info.get("marketCap")}

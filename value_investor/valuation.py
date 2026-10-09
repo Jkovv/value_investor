@@ -1,14 +1,8 @@
 """12 · valuation: what today's price buys over the next ten years.
 
-The share is treated as a bond whose coupon is EPS and whose coupon grows.
-Ten years of growth at a conservative rate, times the P/E the market has
-historically paid for this company, plus the dividends collected on the
-way, gives a value in year ten. The annual return from today's price to
-that value is what the ranking sorts on. Working the same formula backwards
-from the hurdle rate gives the most we should pay.
-
-Growth is the lower of what EPS actually did and what ROE × retention can
-sustain, capped, so one great decade doesn't get projected forever.
+the share is a bond whose coupon is EPS, growing at the lower of its past
+growth and ROE × retention. ten years out, times the company's usual P/E,
+plus dividends, gives a value; the yearly return to it is what ranks.
 """
 
 import pandas as pd

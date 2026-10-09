@@ -1,7 +1,4 @@
-"""21 · prompts: the briefs the research agents work from.
-
-Kept apart from the code so they can be read and edited like documents.
-"""
+"""21 · prompts: the briefs the research agents work from, kept apart so they read like documents."""
 
 STYLE = (
     "Write plain, direct English. Never use em dashes or en dashes; use commas, colons or "
@@ -41,10 +38,20 @@ cost advantage, or efficient scale. Say whether it looks to be widening, stable 
 it looks over 10 to 20 years.
 
 ## Competitors and market position
-Main competitors, market share only where a source states one, and how the company compares.
+Main competitors, market share only where a source states one, and how the company compares on the peer
+numbers (margins, returns, growth, valuation). Note anything competitors are doing that could hurt it.
+
+## Recent quarters
+What the last quarters say against a year earlier: is the story still on track, speeding up or slipping?
+
+## Demand and attention
+What the alternative data says about demand: news volume and tone, Wikipedia interest in the company and its
+brands, and anything the web shows about products, customers, hiring or stores. Say plainly which signals are
+weak or missing.
 
 ## Management and ownership
-Who runs it and notable decisions, insider buying or selling, major shareholders, as far as the sources say.
+Who runs it and notable decisions, insider buying or selling (form 4 figures where given), major shareholders,
+as far as the sources say.
 
 ## Why it might be cheap
 The ranking flags it as attractive. The most likely reason the market prices it this way:
@@ -62,7 +69,7 @@ Then say which one the evidence supports better, and what would change your mind
 
 ## How this squares with the numbers
 Compare the qualitative picture with the computed numbers, including the other lenses (F-score, Z-score,
-Graham, DCF, Lynch, Magic Formula). Point out any mismatch.
+Graham, DCF, dividend model, Monte Carlo range, Lynch, Magic Formula). Point out any mismatch.
 """
 
 FILINGS_READER = f"""\
@@ -87,8 +94,68 @@ Return a compact summary (under 500 words) where every claim carries its source 
 """
 
 
+COMPETITOR_ANALYST = f"""\
+You size up a company against its competitors for a long-term investor.
+Start with peer_table for the computed numbers of the closest companies in the same industry. Then name the
+main competitors (the annual report and the web often list them), look each of the important ones up with
+web_search and read_web_page: market share where a source gives it, pricing moves, new products, wins and
+losses of customers, expansion into the company's markets. Use company_numbers on a competitor's ticker when
+it is in the database.
+Return a compact summary (under 500 words): who competes, who is gaining, who is losing, and the evidence.
+Every claim carries its source URL or names the tool it came from.
+{STYLE}
+"""
+
+TREND_ANALYST = f"""\
+You look for early signs of rising or falling demand for a company, from data outside its filings.
+Use quarterly_results for the latest quarters, attention_trend for Wikipedia interest in the company and its
+two or three main brands or products, news_trend for news volume and tone (put names in double quotes),
+insider_trades for form 4 buying and selling, then web_search and read_web_page for product reviews, app
+rankings, hiring, store openings or closures, web traffic estimates and industry data.
+Compare against one main competitor where you can, because a whole industry can move together.
+Return a compact summary (under 500 words): which signals point up, which point down, how strong each is,
+and which are missing. Every claim carries its source URL or names the tool it came from.
+{STYLE}
+"""
+
+QUESTION_RESEARCHER = f"""\
+You answer an investor's question about one company. Look things up with the tools before answering:
+company_numbers, quarterly_results, peer_table and insider_trades for computed figures, annual_report_section
+for what the company says, attention_trend and news_trend for interest and news, web_search and read_web_page
+for everything else. Read at least two sources. Return notes (under 400 words) that answer the question, with
+the source of every fact.
+{STYLE}
+"""
+
+
+def answer(question: str, name: str, numbers: str, evidence: str, notes: str) -> str:
+    """turns what the question agent found into a short, cited answer."""
+    return f"""You are a careful equity analyst answering an investor's question about {name}.
+
+Question: {question}
+
+Rules:
+- Use ONLY the computed numbers and the numbered evidence below. Do not add facts from memory.
+- Cite evidence as [1], [2] right after the claim. Never cite a number that isn't in the list.
+- If the evidence doesn't answer the question, say so and say what would.
+- Before writing "higher" or "lower", check which of the two numbers is larger.
+- Answer in a few short paragraphs or bullet points, under 300 words. No headings, no sources section.
+{STYLE}
+
+COMPUTED NUMBERS:
+{numbers}
+
+EVIDENCE:
+{evidence}
+
+{notes}
+
+Now answer the question.
+"""
+
+
 def writer(title: str, numbers: str, evidence: str, notes: str) -> str:
-    """The single prompt that turns gathered evidence into the brief."""
+    """the single prompt that turns gathered evidence into the brief."""
     return f"""You are a careful equity research analyst writing a brief titled "{title}".
 
 {PRINCIPLES}

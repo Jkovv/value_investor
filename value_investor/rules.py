@@ -1,14 +1,8 @@
 """11 · rules: the quality checklist, one check per principle.
 
-Each check lands on pass / warn / fail, or n/a when the data isn't there.
-The score is the weighted share of points over the checks that could run;
-completeness is how much of the checklist could run at all. A company with
-three years of history and a perfect score is not the same as one with ten,
-and the two numbers keep that visible.
-
-Banks, insurers and REITs get a shorter list: margins, leverage and capex
-rules describe industrial businesses and say little about a balance sheet
-that *is* the product.
+each check is pass, warn, fail or n/a. quality is the weighted share of points
+over the checks that could run; completeness is how much could run at all.
+banks, insurers and reits get a shorter list.
 """
 
 from dataclasses import asdict, dataclass

@@ -51,3 +51,65 @@ def test_names_missing_from_the_cited_source_are_flagged():
     out = research._flag_unsupported(text, e, numbers="")
     assert "James Quaker [1]. *(not found in the cited source)*" in out
     assert out.endswith("James Quincey [2].")
+
+
+def test_evidence_is_trimmed_to_fit_the_writer():
+    e = research.Evidence()
+    for i in range(60):
+        e.add(f"Page {i}", f"https://p{i}.example", "x" * 3000)
+    prompt = e.as_prompt(budget=30_000)
+    assert len(prompt) < 30_000 + 60 * 80
+    assert prompt.count("[60]") == 1
+
+
+def test_alternative_data_tools_become_evidence_with_their_links():
+    e = research.Evidence()
+    research.record(e, "attention_trend", {"topic": "Coca-Cola"},
+                    "[Wikipedia pageviews: Coca-Cola]\nLast 12 months 1,000 views.\nSource: https://pageviews.example/x")
+    research.record(e, "quarterly_results", {"ticker": "KO"}, "Latest quarter ...")
+    assert e.items[0]["title"] == "Wikipedia pageviews: Coca-Cola"
+    assert e.items[0]["where"] == "https://pageviews.example/x"
+    assert e.items[1]["title"] == "Quarterly results, KO"
+
+
+class FakeModel:
+    def invoke(self, prompt):
+        return type("Reply", (), {"content": "**Verdict:** Worth watching [1]."})()
+
+
+def test_an_unfinished_run_resumes_after_the_last_saved_stage(tmp_path, monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+
+    monkeypatch.setattr(research, "RESEARCH_DIR", tmp_path)
+
+    @contextmanager
+    def connect(read_only=True):
+        yield None
+
+    monkeypatch.setattr(research, "store", SimpleNamespace(connect=connect, find_cik=lambda con, t: None,
+                                                           company=lambda con, cik: None))
+    monkeypatch.setattr(research, "llm", SimpleNamespace(backends=lambda: ["fake"], tune=lambda p: p,
+                                                         get_llm=lambda: FakeModel()))
+    cp = research.Checkpoint("KO", resume=False)
+    cp.numbers = "numbers"
+    cp.evidence.add("Annual report, business", "page 1", "text")
+    cp.save("gather")
+    cp.save("competitors")
+    assert research.resumable("KO") == ["gather", "competitors"]
+
+    dug = []
+    monkeypatch.setattr(research, "gather", lambda *a: (_ for _ in ()).throw(AssertionError("gathered again")))
+    monkeypatch.setattr(research, "_dig", lambda role, *a, **k: dug.append(role) or f"{role} notes")
+    text = research.run("KO", "Coca-Cola")
+    assert dug == ["trends", "web"]
+    assert text.startswith("# Coca-Cola: research brief")
+    assert research.resumable("KO") is None
+    assert research.status("KO")["state"] == "done"
+
+
+def test_starting_over_drops_the_saved_work(tmp_path, monkeypatch):
+    monkeypatch.setattr(research, "RESEARCH_DIR", tmp_path)
+    research.Checkpoint("KO", resume=False).save("gather")
+    assert research.Checkpoint("KO", resume=False).done == []
+    assert research.resumable("KO") is None

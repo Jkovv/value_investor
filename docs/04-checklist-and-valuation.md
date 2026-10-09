@@ -59,6 +59,8 @@ checklist, that's the thing to look into.
 | Owner-earnings DCF | three-year average owner earnings a share, growth fading to 2.5% by year ten, discounted at the bond yield + 5 points (at least 9%) | half or more of the value usually sits past year ten, so it's a range |
 | Lynch | slow grower, stalwart, fast grower, cyclical or turnaround; PEG and dividend-adjusted PEG | PEG under 1 cheap for the growth, over 2 dear |
 | Magic Formula | EBIT / enterprise value and EBIT / (net working capital + net fixed assets) | the ranking's **Magic #** column is the combined place on both among ranked companies |
+| Dividend discount | today's dividend, growing at the slower of its own history and the projection, fading to 2.5%, same discount as the DCF | only fair to companies that pay out most of what they earn |
+| Monte Carlo | the ten-year projection run 5,000 times, growth drawn around the projected rate and the exit P/E between the company's own historical low and high | the spread of yearly returns, the chance of reaching 15% and the chance of a loss |
 
 The ranking also carries the **F-score** column, so both can be sorted on.
 

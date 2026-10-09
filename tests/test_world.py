@@ -53,7 +53,7 @@ def test_filing_date_is_estimated_after_period_end():
 
 @pytest.mark.parametrize("info, market, expected", [
     ({"country": "Germany", "financialCurrency": "EUR"}, "POL", "DEU"),      # Allianz in Warsaw
-    ({"country": "Switzerland", "financialCurrency": "CHF"}, "DEU", "CHE"),  # Roche in Frankfurt
+    ({"country": "Switzerland", "financialCurrency": "CHF"}, "DEU", "CHE"),  # roche in Frankfurt
     ({"country": "Poland", "financialCurrency": "PLN"}, "POL", None),        # Orlen at home
     ({"country": "Netherlands", "financialCurrency": "EUR"}, "POL", "NLD"),  # euro member, euro reports
     ({"country": "Luxembourg", "financialCurrency": "USD"}, "BRA", None),    # home not covered
