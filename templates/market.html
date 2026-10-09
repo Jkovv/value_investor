@@ -58,37 +58,48 @@
 {% endif %}
 {% endif %}
 
+{% macro sort_head(label, kind="num", align="num", initial="none") -%}
+<th class="{{ align }}" data-sort="{{ kind }}" aria-sort="{{ initial }}">
+  <button type="button" class="sort-btn">
+    {{ label }}
+    <svg class="sort-icon" viewBox="0 0 10 14" aria-hidden="true"><path class="up" d="M5 1 9 5.5H1z"/><path class="down" d="M5 13 1 8.5h8z"/></svg>
+  </button>
+</th>
+{%- endmacro %}
+
+{% set confidence_rank = {"high": 0, "medium": 1, "low": 2, "stale": 3} %}
 <section class="card section">
   <div class="card-head">
     <h2>All markets</h2>
-    <span class="hint">most expensive against its own trend first</span>
+    <span class="hint">click a column to sort, click again to flip</span>
   </div>
   <div class="table-scroll">
-  <table class="data markets-table">
+  <table class="data markets-table sortable" id="markets">
     <thead>
       <tr>
-        <th>Market</th>
-        <th class="num">Market Cap / GDP</th>
-        <th class="num">Trend</th>
-        <th class="num">Distance</th>
-        <th>Reading</th>
-        <th class="num">Cash</th>
-        <th class="num">10y bond</th>
-        <th>Data</th>
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Market Cap / GDP") }}
+        {{ sort_head("Trend") }}
+        {{ sort_head("Distance", initial="descending") }}
+        {{ sort_head("Reading", align="") }}
+        {{ sort_head("Cash") }}
+        {{ sort_head("10y bond") }}
+        {{ sort_head("Data", align="") }}
       </tr>
     </thead>
     <tbody>
     {% for r in readings %}
-      <tr {% if r.iso3 == chosen %}class="selected"{% endif %}>
-        <td><a class="company-cell" href="/market?m={{ r.iso3 }}"><span class="ticker">{{ r.iso3 }}</span><span class="company-name">{{ r.name }}</span></a></td>
+      <tr {% if r.iso3 == chosen %}class="selected"{% endif %} {% if r.value is none %}data-empty{% endif %}>
+        <td data-value="{{ r.name }}"><a class="company-cell" href="/market?m={{ r.iso3 }}"><span class="ticker">{{ r.iso3 }}</span><span class="company-name">{{ r.name }}</span></a></td>
         {% if r.value is not none %}
-        <td class="num">{{ r.value | pct(0) }}</td>
-        <td class="num muted">{{ r.trend | pct(0) }}</td>
-        <td class="num">{{ "%+.1f" | format(r.z) }}σ</td>
-        <td><span class="pill pill-{{ regime_tone[r.regime] }}"><i></i>{{ r.regime | capitalize }}</span></td>
-        <td class="num">{{ r.suggested_cash | pct(0) }}</td>
-        <td class="num">{{ bonds.get(r.iso3) | pct(2) }}</td>
-        <td class="muted">
+        {% set bond = bonds.get(r.iso3) %}
+        <td class="num" data-value="{{ r.value }}">{{ r.value | pct(0) }}</td>
+        <td class="num muted" data-value="{{ r.trend }}">{{ r.trend | pct(0) }}</td>
+        <td class="num" data-value="{{ r.z }}">{{ "%+.1f" | format(r.z) }}σ</td>
+        <td data-value="{{ r.z }}"><span class="pill pill-{{ regime_tone[r.regime] }}"><i></i>{{ r.regime | capitalize }}</span></td>
+        <td class="num" data-value="{{ r.suggested_cash }}">{{ r.suggested_cash | pct(0) }}</td>
+        <td class="num" data-value="{{ bond if bond is not none else '' }}">{{ bond | pct(2) }}</td>
+        <td class="muted" data-value="{{ confidence_rank.get(r.confidence, 4) }}">
           {% if r.confidence == "high" %}current{% elif r.confidence == "medium" %}since {{ r.base_date.year }}, rolled{% elif r.confidence == "low" %}since {{ r.base_date.year }}, rough{% else %}{{ r.base_date.year }}, stale{% endif %}
         </td>
         {% else %}
@@ -126,3 +137,5 @@
   </div>
 </section>
 {% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}
