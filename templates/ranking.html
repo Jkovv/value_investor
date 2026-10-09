@@ -76,12 +76,14 @@
         {{ sort_head("Company", "text", "") }}
         {{ sort_head("Market", "text", "") }}
         {{ sort_head("Quality") }}
+        {{ sort_head("F-score") }}
         {{ sort_head("Price") }}
         {{ sort_head("Buy below") }}
         {{ sort_head("Discount") }}
         {{ sort_head("Local return") }}
         {{ sort_head("Return in " ~ config.BASE_CURRENCY, initial="descending") }}
         {{ sort_head("Yield") }}
+        {{ sort_head("Magic #", first="ascending") }}
       </tr>
     </thead>
     <tbody>
@@ -113,6 +115,7 @@
             {{ "%.0f" | format(r.quality) }}
           </span>
         </td>
+        <td class="num {% if r.f_score is number and r.f_score >= 7 %}good{% elif r.f_score is number and r.f_score <= 3 %}muted{% endif %}" data-value="{{ r.f_score | whole('') }}">{{ r.f_score | whole }}</td>
         <td class="num" data-value="{{ r.price }}">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
         <td class="num" data-value="{{ r.buy_price }}">{{ r.buy_price | money }}</td>
         <td class="num {% if mos is not none and mos > 0 %}good{% else %}muted{% endif %}" data-value="{{ mos if mos is not none else '' }}">{{ mos | pct(0, signed=True) }}</td>
@@ -126,6 +129,7 @@
           {% else %}-{% endif %}
         </td>
         <td class="num" data-value="{{ r.dividend_yield }}">{{ r.dividend_yield | pct }}</td>
+        <td class="num" data-value="{{ r.magic_rank | whole('') }}">{{ r.magic_rank | whole }}</td>
       </tr>
     {% endfor %}
     </tbody>

@@ -22,6 +22,13 @@ customers and suppliers. The suggested cash share per market from the Markets pa
 overall cash level. The behavioural guardrails in `principles.md` live here: a written thesis
 before buying, a "did the thesis change or only the price?" check before selling, a turnover warning.
 
+## Insider trades and alerts
+
+Form 4 filings from EDGAR give every insider purchase and sale for US companies, free; open-market
+buying by several insiders at once is one of the good signs in `principles.md`. Next to it, a
+scheduled run (ingest, screen, then a short digest of what entered or left the buy zone and any
+new sell signals).
+
 ## Backtest (parked)
 
 The engine can rebuild statements as of any date, so a backtest is possible for US companies

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import lens_tests, versus_price %}
 {% block title %}{{ c.ticker }} · Value Investor{% endblock %}
 {% block content %}
 <a class="back" href="/">
@@ -94,6 +95,7 @@
 <div class="segmented" role="tablist" aria-label="Company sections">
   <button role="tab" type="button" data-tab="overview" aria-selected="true">Overview</button>
   <button role="tab" type="button" data-tab="checklist" aria-selected="false">Checklist</button>
+  <button role="tab" type="button" data-tab="lenses" aria-selected="false">Lenses</button>
   <button role="tab" type="button" data-tab="financials" aria-selected="false">Financials</button>
   <button role="tab" type="button" data-tab="research" aria-selected="false">Research</button>
 </div>
@@ -232,6 +234,137 @@
     </table>
     </div>
   </section>
+</div>
+
+<div class="tab-panel" data-panel="lenses">
+  {% set L = p.lenses or {} %}
+  {% set ccy = v.currency if v.available else p.currency %}
+  {% set price = v.price if v.available else none %}
+  {% if L %}
+  <p class="lens-intro">
+    The checklist is one school of thought. These are the other yardsticks value investors use, worked out from
+    the same statements. They don't feed the quality score; where they disagree with it is worth a closer look.
+  </p>
+  <div class="lens-grid">
+    {% if L.piotroski %}{% set f = L.piotroski %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Piotroski F-score</h3>
+        <span class="pill pill-{{ {'strong': 'pass', 'average': 'warn', 'weak': 'fail'}[f.verdict] }}"><i></i>{{ f.verdict | capitalize }}</span>
+      </div>
+      <span class="stat-value">{{ f.scaled }}<small>/ 9</small></span>
+      <p class="lens-note">
+        Nine yes/no tests of whether the business got healthier over the last year.
+        {% if f.of < 9 %}{{ f.of }} could be run here, so the score is scaled to nine.{% endif %}
+      </p>
+      {{ lens_tests(f.tests) }}
+    </section>
+    {% endif %}
+
+    {% if L.graham %}{% set g = L.graham %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Graham</h3>
+        {{ versus_price(g.number, price) }}
+      </div>
+      {% if g.number %}
+      <span class="stat-value">{{ g.number | money }}<small>{{ ccy | text_or }}</small></span>
+      <p class="lens-note">
+        The Graham number, &radic;(22.5 &times; EPS &times; book value per share): the most a defensive investor
+        should pay. {{ g.passed }} of {{ g.of }} of his defensive tests pass over the last {{ g.years }} years.
+      </p>
+      {% else %}
+      <span class="stat-value muted">n/a</span>
+      <p class="lens-note">No Graham number without positive earnings and book value. {{ g.passed }} of {{ g.of }} defensive tests pass.</p>
+      {% endif %}
+      {{ lens_tests(g.tests) }}
+    </section>
+    {% endif %}
+
+    {% if L.dcf %}{% set d = L.dcf %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Owner-earnings DCF</h3>
+        {{ versus_price(d.value, price) }}
+      </div>
+      <span class="stat-value">{{ d.value | money }}<small>{{ ccy | text_or }}</small></span>
+      <p class="lens-note">
+        {{ d.owner_earnings_per_share | money }} of owner earnings a share (three-year average), growing
+        {{ d.growth | pct }} a year and slowing to 2.5% by year ten, discounted at {{ d.discount | pct }}.
+        {{ d.terminal_share | pct(0) }} of the value comes after year ten, so read it as a rough range.
+      </p>
+    </section>
+    {% endif %}
+
+    {% if L.lynch %}{% set ly = L.lynch %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Lynch</h3>
+        {% if ly.peg is defined %}
+          {% if ly.peg <= 1 %}<span class="pill pill-pass"><i></i>Cheap for its growth</span>
+          {% elif ly.peg <= 2 %}<span class="pill pill-warn"><i></i>Fair for its growth</span>
+          {% else %}<span class="pill pill-fail"><i></i>Dear for its growth</span>{% endif %}
+        {% endif %}
+      </div>
+      <span class="stat-value">{{ ly.category }}</span>
+      <p class="lens-note">
+        {{ {
+          "Slow grower": "Grows about as fast as the economy. Owned for the dividend, not the growth.",
+          "Stalwart": "Big and steady, 5 to 15% a year. Sell after a solid gain or when the P/E runs well ahead of growth.",
+          "Fast grower": "15% a year or more. The biggest winners, for as long as the growth lasts and the balance sheet holds.",
+          "Cyclical": "Earnings rise and fall with the economy. A low P/E can mark the peak, not a bargain.",
+          "Turnaround": "Has made losses in the last decade. The question is whether the recovery holds.",
+        }[ly.category] }}
+        Earnings grew {{ ly.growth | pct }} a year.
+      </p>
+      {% if ly.peg is defined %}
+      <dl class="lens-pair">
+        <div><dt>PEG</dt><dd>{{ "%.2f" | format(ly.peg) }}</dd></div>
+        <div><dt>With dividend</dt><dd>{{ "%.2f" | format(ly.pegy) }}</dd></div>
+      </dl>
+      <p class="lens-note muted">P/E over growth. Under 1 is cheap, over 2 is expensive.</p>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if L.magic %}{% set m = L.magic %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Magic Formula</h3>
+        {% if m.earnings_yield is number and v.bond_yield %}
+          {% if m.earnings_yield > v.bond_yield %}<span class="pill pill-pass"><i></i>Beats the bond</span>
+          {% else %}<span class="pill pill-warn"><i></i>Under the bond</span>{% endif %}
+        {% endif %}
+      </div>
+      <dl class="lens-pair">
+        <div><dt>Earnings yield</dt><dd>{{ m.earnings_yield | pct }}</dd></div>
+        <div><dt>Return on capital</dt><dd>{{ m.return_on_capital | pct(0) }}</dd></div>
+      </dl>
+      <p class="lens-note">
+        Operating profit over enterprise value (is it cheap?) and over working capital plus fixed assets
+        (is it good?). Greenblatt buys the best combined place on both; that place is the Magic # column on the ranking.
+        {% if v.bond_yield %}The 10-year bond pays {{ v.bond_yield | pct(2) }}.{% endif %}
+      </p>
+    </section>
+    {% endif %}
+
+    {% if L.altman %}{% set a = L.altman %}
+    <section class="card lens">
+      <div class="lens-head">
+        <h3>Altman Z-score</h3>
+        <span class="pill pill-{{ {'safe': 'pass', 'grey': 'warn', 'distress': 'fail'}[a.zone] }}"><i></i>{{ a.zone | capitalize }} zone</span>
+      </div>
+      <span class="stat-value">{{ "%.1f" | format(a.z) }}</span>
+      <p class="lens-note">
+        Five balance-sheet ratios that flag the risk of financial distress. Above 3 is safe, under 1.8 is distress.
+        It was fitted on manufacturers, so asset-light businesses tend to score very high.
+      </p>
+    </section>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="empty">Not computed yet. Run <code>python main.py screen</code> to add these.</p>
+  {% endif %}
 </div>
 
 <div class="tab-panel" data-panel="financials">

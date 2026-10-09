@@ -36,7 +36,7 @@ and only matter for the research agents.
 | `python main.py show KO` | Checklist, valuation steps and ten years of ratios for one company. |
 | `python main.py macro` | US rates, the yield curve, Sahm rule and Market Cap / GDP. |
 | `python research.py KO` | Deep research agent: reads the annual report and the web, writes a sourced brief. `--top N` for the top of the ranking. |
-| `uvicorn app:app` | The dashboard: ranking, company pages with a Research tab, all markets. |
+| `uvicorn app:app` | The dashboard: ranking, company pages with checklist, other lenses and a Research tab, all markets. |
 | `python -m value_investor.llm` | Checks the model router (local Ollama first, then Groq / Hugging Face if keyed). |
 | `pytest` | The test suite. |
 
@@ -50,6 +50,7 @@ Read `docs/` in order:
 [04 Checklist & valuation](docs/04-checklist-and-valuation.md) ·
 [05 Markets](docs/05-market-regime.md) ·
 [06 Roadmap](docs/06-roadmap.md) ·
-[07 Research agents](docs/07-research-agents.md)
+[07 Research agents](docs/07-research-agents.md) ·
+[08 Compared with other projects](docs/08-compared.md)
 
 Every command, in order: **[commands.md](commands.md)**.

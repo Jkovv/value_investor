@@ -89,9 +89,30 @@ def company_numbers(ticker: str) -> str:
             lines.append(f"Expected yearly return in {p.get('base_currency')}: {p['expected_return_base'] * 100:.1f}%")
     elif v:
         lines.append(f"No valuation: {v.get('reason')}")
+    lines += lens_lines(p.get("lenses") or {}, v.get("currency") or p.get("currency"))
     for flag in p.get("flags") or []:
         lines.append(f"Flag: {flag}")
     return "\n".join(lines)
+
+
+def lens_lines(lenses: dict, currency: "str | None") -> list:
+    """The other valuation lenses, one line each, for the writer to weigh against the checklist."""
+    out = []
+    if f := lenses.get("piotroski"):
+        out.append(f"Piotroski F-score: {f['scaled']} of 9 ({f['verdict']})")
+    if a := lenses.get("altman"):
+        out.append(f"Altman Z-score: {a['z']:.1f} ({a['zone']} zone)")
+    if (g := lenses.get("graham")) and g.get("number"):
+        out.append(f"Graham number: {g['number']:.2f} {currency}; {g['passed']} of {g['of']} defensive tests pass")
+    if d := lenses.get("dcf"):
+        out.append(f"Owner-earnings DCF value: {d['value']:.2f} {currency} a share")
+    if ly := lenses.get("lynch"):
+        peg = f", PEG {ly['peg']:.2f}" if ly.get("peg") is not None else ""
+        out.append(f"Lynch category: {ly['category']}{peg}")
+    if (m := lenses.get("magic")) and m.get("earnings_yield") is not None and m.get("return_on_capital") is not None:
+        out.append(f"Magic Formula: earnings yield {m['earnings_yield'] * 100:.1f}%, "
+                   f"return on capital {m['return_on_capital'] * 100:.0f}%")
+    return out
 
 
 def _report_text(comp: dict, section: str) -> "str | None":

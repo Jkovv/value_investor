@@ -101,6 +101,9 @@ ALTER TABLE analyses ADD COLUMN IF NOT EXISTS market VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS country VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS currency VARCHAR;
 ALTER TABLE analyses ADD COLUMN IF NOT EXISTS expected_return_base DOUBLE;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS f_score INTEGER;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS earnings_yield DOUBLE;
+ALTER TABLE analyses ADD COLUMN IF NOT EXISTS return_on_capital DOUBLE;
 UPDATE companies SET source = 'sec', market = 'USA', price_currency = 'USD', sector = sic_description
     WHERE source IS NULL AND cik > 0;
 """
@@ -222,7 +225,7 @@ def load_macro(con, series: str) -> pd.Series:
 ANALYSIS_COLUMNS = [
     "cik", "ticker", "name", "as_of", "profile", "quality", "completeness", "history_years", "price",
     "expected_return", "buy_price", "dividend_yield", "passes_gate", "market", "country", "currency",
-    "expected_return_base",
+    "expected_return_base", "f_score", "earnings_yield", "return_on_capital",
 ]
 
 

@@ -13,7 +13,8 @@ income statement, balance sheet and cash flow. Each lands on **pass**,
 Keeping the two apart matters: a company with three years of data and a
 perfect score is not the same as one with ten.
 
-**The gate:** quality ≥ 70, coverage ≥ 60%, at least five years of history.
+**The gate:** quality ≥ 70, coverage ≥ 60%, at least four years of history
+(Yahoo gives four or five outside the US).
 Only gate-passers get priced and ranked.
 
 Banks, insurers, brokers and REITs (SIC 6000-6799) get a shorter list:
@@ -43,5 +44,22 @@ differently over the decade.
 means the stock is cheap against its *own* past, which can be an
 opportunity or a business whose best years are behind it. That question is
 exactly what the research agents are for.
+
+## Other lenses (`lenses.py`)
+
+The checklist is one school. The **Lenses** tab on a company page shows the others, worked out from
+the same statements and kept out of the quality score on purpose: when they disagree with the
+checklist, that's the thing to look into.
+
+| Lens | What it says | Read it as |
+|---|---|---|
+| Piotroski F-score | nine yes/no tests on the last two years: profitability, leverage, liquidity, dilution, margins, turnover | 7 to 9 strong, 4 to 6 average, 0 to 3 weak; tests without data are skipped and the score scaled to nine |
+| Altman Z-score | 1.2 WC/TA + 1.4 RE/TA + 3.3 EBIT/TA + 0.6 MV/TL + 1.0 Sales/TA | above 3 safe, under 1.8 distress; fitted on manufacturers, not shown for financials |
+| Graham | √(22.5 × EPS × BVPS) plus the defensive-investor tests over ten years | the most a defensive investor should pay |
+| Owner-earnings DCF | three-year average owner earnings a share, growth fading to 2.5% by year ten, discounted at the bond yield + 5 points (at least 9%) | half or more of the value usually sits past year ten, so it's a range |
+| Lynch | slow grower, stalwart, fast grower, cyclical or turnaround; PEG and dividend-adjusted PEG | PEG under 1 cheap for the growth, over 2 dear |
+| Magic Formula | EBIT / enterprise value and EBIT / (net working capital + net fixed assets) | the ranking's **Magic #** column is the combined place on both among ranked companies |
+
+The ranking also carries the **F-score** column, so both can be sorted on.
 
 Next: **[05 Market regime](05-market-regime.md)**.

@@ -24,6 +24,7 @@ Modules are numbered in reading order, starting at config.py (01):
     20 research_tools  what the research agents may read
     21 prompts         the agents' briefs
     22 research        the deep research agent
+    23 lenses          Piotroski, Altman, Graham, Lynch, Magic Formula, owner-earnings DCF
 
 Entry points live at the repo root: ingest.py, main.py, research.py, app.py.
 """

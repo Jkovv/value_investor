@@ -56,8 +56,10 @@ their scratch space.
 
 `prompts.py` holds the principles (the three kinds of advantage, red flags, good signs, why a great
 business might be cheap), the subagent briefs and the writer prompt with the exact structure:
-verdict, what the business does, competitive advantage, competitors, management, why it might be
-cheap, opportunities, risks, and how the story squares with the numbers.
+verdict, what the business does, competitive advantage (which kind, its source such as brand,
+switching costs, network effects, cost or scale, and whether it is widening or narrowing),
+competitors, management, why it might be cheap, opportunities, risks, the bull case against the
+bear case, and how the story squares with the numbers, including the other lenses.
 
 ## Running it
 
@@ -77,3 +79,5 @@ long prompts at ~27 tokens/s. With `GROQ_API_KEY` set and `LLM_PRIMARY=groq` it 
 Every claim should carry a source number that leads to a real page or report section. The writer is
 told to say plainly when the sources don't cover something rather than fill the gap. Treat the brief
 as a well-organised starting point for your own reading, not a verdict.
+
+Next: **[08 Compared with other projects](08-compared.md)**.

@@ -36,7 +36,9 @@ How it makes money, main products or services, main customers, where it sells.
 
 ## Competitive advantage
 Which of the three kinds (unique product, unique service, low-cost operator) or "none visible", and the
-evidence for it. How durable it looks over 10 to 20 years.
+evidence for it. Name the source as well: brand or other intangible assets, switching costs, network effects,
+cost advantage, or efficient scale. Say whether it looks to be widening, stable or narrowing, and how durable
+it looks over 10 to 20 years.
 
 ## Competitors and market position
 Main competitors, market share only where a source states one, and how the company compares.
@@ -54,8 +56,13 @@ Bullet points.
 ## Risks
 Bullet points, most serious first. Include anything that could permanently damage the business.
 
+## Bull case and bear case
+The strongest argument for owning it and the strongest argument against, two or three sentences each.
+Then say which one the evidence supports better, and what would change your mind.
+
 ## How this squares with the numbers
-Compare the qualitative picture with the computed numbers. Point out any mismatch.
+Compare the qualitative picture with the computed numbers, including the other lenses (F-score, Z-score,
+Graham, DCF, Lynch, Magic Formula). Point out any mismatch.
 """
 
 FILINGS_READER = f"""\

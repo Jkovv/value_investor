@@ -76,6 +76,7 @@ def market_cap_to_gdp(con, as_of=None) -> "dict | None":
 
     value, value_date = float(ratio.iloc[-1]), ratio.index[-1]
     spx = prices.until(store.load_prices(con, "^GSPC").assign(date=lambda d: pd.to_datetime(d["date"])), as_of)
+    spx = spx.dropna(subset=["close"])
     if not spx.empty:
         then = spx[spx["date"] <= value_date]
         if not then.empty:

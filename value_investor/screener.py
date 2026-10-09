@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from value_investor import config, fx, markets, metrics, prices as px, rules, statements, store, valuation
+from value_investor import config, fx, lenses, markets, metrics, prices as px, rules, statements, store, valuation
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,7 @@ class Analysis:
     flags: list = field(default_factory=list)
     rankable: bool = True
     expected_return_base: "float | None" = None
+    lenses: dict = field(default_factory=dict)
 
     @property
     def market(self) -> "str | None":
@@ -79,11 +80,13 @@ class Analysis:
             "expected_return_base": self.expected_return_base,
             "base_currency": config.BASE_CURRENCY,
             "flags": self.flags,
+            "lenses": self.lenses,
             "yearly": yearly,
         }
 
     def row(self) -> dict:
         v = self.valuation
+        magic = self.lenses.get("magic") or {}
         return {
             "cik": self.cik, "ticker": self.ticker, "name": self.name,
             "as_of": pd.Timestamp(self.as_of or pd.Timestamp.today()).date(),
@@ -93,7 +96,10 @@ class Analysis:
             "buy_price": v.get("buy_price"), "dividend_yield": v.get("dividend_yield"),
             "passes_gate": self.passes_gate, "market": self.market,
             "country": self.company.get("country"), "currency": v.get("currency") or self.currency,
-            "expected_return_base": self.expected_return_base, "payload": self.payload(),
+            "expected_return_base": self.expected_return_base,
+            "f_score": (self.lenses.get("piotroski") or {}).get("scaled"),
+            "earnings_yield": magic.get("earnings_yield"), "return_on_capital": magic.get("return_on_capital"),
+            "payload": self.payload(),
         }
 
 
@@ -148,7 +154,7 @@ def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield) -> dict:
         v["shareholder_yield"] = v["dividend_yield"] + net_buyback / cap
     if quote_ccy != a.currency:
         rate = fx.rate(con, a.currency, quote_ccy) or 1.0
-        v["price"] = float(quoted["close"].iloc[-1])
+        v["price"] = px.last_close(quoted)[0]
         v["buy_price"] *= rate
         v["statement_currency"] = a.currency
     v["currency"] = quote_ccy
@@ -215,6 +221,10 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
             if a.valuation.get("available"):
                 a.expected_return_base = markets.to_base(
                     con, a.expected_return, a.valuation.get("currency"), config.BASE_CURRENCY)
+
+    v = a.valuation
+    to_quote = (fx.rate(con, a.currency, v["currency"]) or 1.0) if v.get("statement_currency") else 1.0
+    a.lenses = lenses.compute(table, a.yearly, a.summary, v, profile, comp.get("sector"), comp.get("sic"), to_quote)
     return a
 
 
@@ -248,6 +258,17 @@ def ranking(con, only_gate: bool = True) -> pd.DataFrame:
     if only_gate:
         df = df[df["passes_gate"]]
     key = df["expected_return_base"].fillna(df["expected_return"] - 1.0)
-    df = df.assign(_has=df["expected_return"].notna(), _key=key)
+    df = df.assign(_has=df["expected_return"].notna(), _key=key, magic_rank=magic_rank(df))
     return (df.sort_values(["_has", "_key", "quality"], ascending=[False, False, False])
               .drop(columns=["_has", "_key"]).reset_index(drop=True))
+
+
+def magic_rank(df: pd.DataFrame) -> pd.Series:
+    """Greenblatt's ranking: place on earnings yield plus place on return on
+    capital, lowest total first. Only companies with both numbers take part."""
+    if "earnings_yield" not in df:
+        return pd.Series(pd.NA, index=df.index, dtype="Int64")
+    both = df["earnings_yield"].notna() & df["return_on_capital"].notna()
+    places = (df.loc[both, "earnings_yield"].rank(ascending=False)
+              + df.loc[both, "return_on_capital"].rank(ascending=False))
+    return places.rank(method="min").astype("Int64").reindex(df.index)

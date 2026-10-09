@@ -425,6 +425,11 @@ table.data {
 .data tbody tr:hover { background: var(--surface-2); }
 
 .ranking td { padding-block: 12px; }
+.ranking th, .ranking td { padding-inline: 9px; }
+.ranking th:first-child, .ranking td:first-child { padding-left: 16px; }
+.ranking th:last-child, .ranking td:last-child { padding-right: 16px; }
+.ranking .company-cell { min-width: 180px; }
+.ranking .bar { width: 40px; }
 .ranking .rank { width: 44px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ranking .below-gate td { opacity: 0.55; }
 .company-cell { display: flex; align-items: center; gap: 12px; color: var(--ink); min-width: 260px; }
@@ -678,6 +683,9 @@ th[aria-sort="descending"] .sort-btn { color: var(--ink); }
 th[aria-sort="ascending"] .sort-icon .up,
 th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 .markets-table .company-cell { min-width: 200px; }
+.ranking .sort-btn { padding-inline: 9px; }
+.ranking th:first-child .sort-btn { padding-left: 16px; }
+.ranking th:last-child .sort-btn { padding-right: 16px; }
 
 /* research */
 
@@ -756,6 +764,31 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 .table-twin { margin-top: 14px; font-size: 13px; }
 .table-twin summary { cursor: pointer; color: var(--accent-ink); }
 .table-twin table { margin-top: 10px; max-width: 460px; }
+
+/* lenses */
+
+.lens-intro { color: var(--ink-2); max-width: 75ch; margin: 0 0 16px; font-size: 13.5px; }
+.lens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.lens { display: flex; flex-direction: column; gap: 8px; padding: 18px 20px; }
+.lens-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.lens-head h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--muted); }
+.lens-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.lens-pair { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 2px 0; }
+.lens-pair div { display: flex; flex-direction: column; gap: 2px; }
+.lens-pair dt { font-size: 12px; color: var(--muted); }
+.lens-pair dd { margin: 0; font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.lens-tests { list-style: none; margin: 6px 0 0; padding: 8px 0 0; border-top: 1px solid var(--border); }
+.lens-tests li { display: flex; gap: 8px; padding: 4px 0; font-size: 13px; color: var(--ink); }
+.lens-tests .mark { width: 14px; flex: none; text-align: center; font-weight: 700; }
+.lens-tests .ok .mark { color: var(--good-text); }
+.lens-tests .no .mark { color: var(--critical-text); }
+.lens-tests .na { color: var(--muted); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .footer {
   font-size: 12.5px;

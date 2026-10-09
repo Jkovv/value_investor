@@ -65,9 +65,11 @@ def until(prices: pd.DataFrame, as_of) -> pd.DataFrame:
 
 
 def last_close(prices: pd.DataFrame) -> "tuple[float, pd.Timestamp] | tuple[None, None]":
-    if prices.empty:
+    # Yahoo sometimes ends with today's row before the close is known (Tokyo).
+    closed = prices.dropna(subset=["close"]) if not prices.empty else prices
+    if closed.empty:
         return None, None
-    row = prices.iloc[-1]
+    row = closed.iloc[-1]
     return float(row["close"]), row["date"]
 
 

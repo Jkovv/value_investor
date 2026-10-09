@@ -6,3 +6,24 @@
   </button>
 </th>
 {%- endmacro %}
+
+{% macro lens_tests(tests) -%}
+<ul class="lens-tests">
+  {% for label, ok in tests.items() %}
+  {% set state = "ok" if ok else ("no" if ok is sameas false else "na") %}
+  <li class="{{ state }}">
+    <span class="mark" aria-hidden="true">{% if state == "ok" %}&#10003;{% elif state == "no" %}&#10005;{% else %}&#183;{% endif %}</span>
+    <span>{{ label }}<span class="sr">{{ {"ok": ": yes", "no": ": no", "na": ": no data"}[state] }}</span>{% if state == "na" %} <span class="muted">no data</span>{% endif %}</span>
+  </li>
+  {% endfor %}
+</ul>
+{%- endmacro %}
+
+{% macro versus_price(value, price) -%}
+{% if value and price %}
+  {% set gap = price / value - 1 %}
+  {% if gap <= 0 %}<span class="pill pill-pass"><i></i>Price {{ (-gap) | pct(0) }} under</span>
+  {% elif gap <= 0.3 %}<span class="pill pill-warn"><i></i>Price {{ gap | pct(0) }} over</span>
+  {% else %}<span class="pill pill-fail"><i></i>Price {{ gap | pct(0) }} over</span>{% endif %}
+{% endif %}
+{%- endmacro %}

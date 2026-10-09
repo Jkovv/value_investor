@@ -9,7 +9,6 @@ from a company page run in a background thread and write files, not rows.
 """
 
 import json
-import math
 import re
 import time
 from pathlib import Path
@@ -45,9 +44,12 @@ ASSET_VERSION = _AssetVersion()
 
 
 def _missing(v) -> bool:
-    if v is None or isinstance(v, Undefined) or isinstance(v, str):
+    if v is None or isinstance(v, (Undefined, str)):
         return True
-    return isinstance(v, float) and math.isnan(v)
+    try:
+        return bool(pd.isna(v))
+    except (TypeError, ValueError):
+        return False
 
 
 def pct(v, digits=1, signed=False):
@@ -69,7 +71,10 @@ def nice_name(name):
 
 
 def money(v, digits=2):
-    return "-" if _missing(v) else f"{v:,.{digits}f}"
+    """Cents only where they matter: 1,250,000 won needs no decimals."""
+    if _missing(v):
+        return "-"
+    return f"{v:,.{0 if abs(v) >= 10_000 else digits}f}"
 
 
 def compact(v):
@@ -85,12 +90,16 @@ def times(v):
     return "-" if _missing(v) else f"{v:.1f}×"
 
 
+def whole(v, fallback="-"):
+    return fallback if _missing(v) else f"{int(v)}"
+
+
 def text_or(v, fallback=""):
     return v if isinstance(v, str) and v else fallback
 
 
 templates.env.filters.update(pct=pct, money=money, compact=compact, times=times, nice_name=nice_name,
-                             text_or=text_or)
+                             text_or=text_or, whole=whole)
 templates.env.globals.update(config=config, asset_version=ASSET_VERSION)
 
 TONE = {"cheap": "pass", "fair": "pass", "expensive": "warn", "very expensive": "fail"}
