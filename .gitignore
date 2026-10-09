@@ -1,0 +1,23 @@
+# secrets
+.env
+
+# local data — the DuckDB file is rebuilt by ingest.py
+data/
+
+# python
+**/__pycache__/
+**/*.pyc
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# virtualenvs
+.venv/
+venv/
+
+# reference material and old attempts, not part of the app
+inspo/
+
+# os / editor
+.DS_Store
+Thumbs.db

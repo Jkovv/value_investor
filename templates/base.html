@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Value Investor{% endblock %}</title>
+  <script>
+    try {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead-row">
+      <a class="wordmark" href="/">Value Investor</a>
+      <nav>
+        <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Ranking</a>
+        <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Market</a>
+      </nav>
+      <button class="theme-toggle" type="button" aria-live="polite">Theme: <b>Auto</b></button>
+    </div>
+  </header>
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="wrap colophon">
+    Filings from SEC EDGAR, prices from Yahoo Finance, macro series from FRED.
+    Every number here is computed from those; none of it is advice.
+  </footer>
+  <div class="tooltip" role="status" hidden></div>
+  <script src="/static/theme.js" defer></script>
+  <script src="/static/charts.js" defer></script>
+</body>
+</html>

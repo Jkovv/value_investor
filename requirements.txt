@@ -1,0 +1,25 @@
+python-dotenv==1.2.4
+
+# data — filings come straight from public APIs, everything lands in one DuckDB file
+requests==2.34.2
+duckdb==1.5.6
+pandas==3.0.6
+numpy==2.5.3
+yfinance==1.7.0
+
+# llm — local Ollama first, Groq / Hugging Face as optional fallbacks (value_investor/llm.py)
+litellm==1.104.2
+langchain-core==1.6.9
+langchain-litellm==0.11.0
+
+# web app
+fastapi==0.143.0
+uvicorn==0.54.0
+jinja2==3.1.6
+python-multipart==0.0.32
+
+# cli output
+rich==15.0.0
+
+# tests
+pytest==9.1.1

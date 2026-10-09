@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Market · Value Investor{% endblock %}
+{% block content %}
+{% set mc = snap.market_cap_to_gdp %}
+<section class="intro">
+  <h1>The market</h1>
+  <p class="lede">
+    How expensive the whole market is decides how much cash to keep — never which business to buy.
+    Market Cap / GDP has drifted upward for decades, so it is read against its own trend
+    rather than against a fixed line.
+  </p>
+</section>
+
+<section class="company-head market-head">
+  <div class="verdict">
+    <span class="verdict-value">{{ mc.value | pct(0) if mc else "–" }}</span>
+    <span class="verdict-label">US corporate equities over GDP{% if mc %}, {{ mc.date }}{% endif %}</span>
+    {% if mc %}<span class="verdict-range">trend {{ mc.trend | pct(0) }}; {{ "%+.1f" | format(mc.z) }} standard deviations away</span>{% endif %}
+  </div>
+  {% if mc %}
+  <div class="regime">
+    <span class="caps muted">Reading</span>
+    <span class="figure">{{ mc.regime | capitalize }}</span>
+    <span class="verdict-range">keep about {{ mc.suggested_cash | pct(0) }} in cash</span>
+  </div>
+  {% endif %}
+</section>
+
+{% if chart %}
+<section class="part">
+  <h2>Market Cap / GDP since 1990</h2>
+  <figure class="chart wide" tabindex="0" data-series='{{ chart }}' data-format="pct0" aria-label="Market cap to GDP with its long-run trend">
+  </figure>
+  <details class="table-twin">
+    <summary>The same, as a table</summary>
+    <table class="data">
+      <thead><tr><th>Quarter</th><th class="num">Market Cap / GDP</th><th class="num">Trend</th></tr></thead>
+      <tbody>
+      {% for t in table %}
+        <tr><td>{{ t.date }}</td><td class="num">{{ t.ratio | pct(0) }}</td><td class="num">{{ t.trend | pct(0) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+</section>
+{% endif %}
+
+<section class="ledger part-ledger">
+  <div>
+    <span class="label">10-year Treasury</span>
+    <span class="figure">{{ snap.treasury_10y | pct(2) }}</span>
+    <span class="note">{% if snap.treasury_10y_date %}{{ snap.treasury_10y_date.date() }}{% endif %}</span>
+  </div>
+  <div>
+    <span class="label">10y less 2y</span>
+    <span class="figure">{{ snap.yield_curve | pct(2, signed=True) }}</span>
+    <span class="note">an inverted curve came before most US recessions</span>
+  </div>
+  <div>
+    <span class="label">Sahm rule</span>
+    <span class="figure">{{ "%.2f" | format(snap.sahm) if snap.sahm is not none else "–" }}</span>
+    <span class="note">
+      {% if snap.recession_warning %}<span class="status status-fail"><i aria-hidden="true"></i>triggered</span>
+      {% else %}trigger is 0.50{% endif %}
+    </span>
+  </div>
+  <div>
+    <span class="label">VIX</span>
+    <span class="figure">{{ "%.1f" | format(snap.vix) if snap.vix else "–" }}</span>
+    <span class="note">spikes near 30 have been better times to buy than to sell</span>
+  </div>
+</section>
+{% endblock %}

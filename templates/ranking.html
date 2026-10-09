@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="intro">
+  <h1>The ranking</h1>
+  <p class="lede">
+    Businesses that clear the checklist, ordered by the yearly return today's price implies over
+    the next ten years. <em>Buy below</em> is the most you can pay and still compound at
+    {{ config.HURDLE_RATE | pct(0) }}.
+  </p>
+</section>
+
+{% set mc = snap.market_cap_to_gdp %}
+<section class="ledger" aria-label="Market context">
+  <a href="/market">
+    <span class="label">Market Cap / GDP</span>
+    <span class="figure">{{ mc.value | pct(0) if mc else "–" }}</span>
+    <span class="note">{% if mc %}{{ mc.regime }}; keep {{ mc.suggested_cash | pct(0) }} in cash{% else %}run ingest.py{% endif %}</span>
+  </a>
+  <div>
+    <span class="label">10-year Treasury</span>
+    <span class="figure">{{ snap.treasury_10y | pct(2) }}</span>
+    <span class="note">what every earnings yield is measured against</span>
+  </div>
+  <div>
+    <span class="label">10y less 2y</span>
+    <span class="figure">{{ snap.yield_curve | pct(2, signed=True) }}</span>
+    <span class="note">{{ "inverted" if snap.yield_curve is not none and snap.yield_curve < 0 else "upward sloping" }}</span>
+  </div>
+  <div>
+    <span class="label">Sahm rule</span>
+    <span class="figure">{{ "%.2f" | format(snap.sahm) if snap.sahm is not none else "–" }}</span>
+    <span class="note">{{ "recession signal" if snap.recession_warning else "trigger is 0.50" }}</span>
+  </div>
+</section>
+
+<form class="filters" method="get" action="/">
+  <label class="field">
+    <span>Search</span>
+    <input type="search" name="q" value="{{ q }}" placeholder="Ticker or name">
+  </label>
+  <label class="field">
+    <span>Kind of business</span>
+    <select name="profile">
+      <option value="" {% if not profile %}selected{% endif %}>All</option>
+      <option value="general" {% if profile == 'general' %}selected{% endif %}>Operating businesses</option>
+      <option value="financial" {% if profile == 'financial' %}selected{% endif %}>Banks, insurers, REITs</option>
+    </select>
+  </label>
+  <label class="check">
+    <input type="checkbox" name="all" value="true" {% if all %}checked{% endif %}>
+    <span>Show the ones below the gate too</span>
+  </label>
+  <button type="submit">Apply</button>
+  <span class="count">{{ count }} {{ "company" if count == 1 else "companies" }}</span>
+</form>
+
+{% if rows %}
+<div class="table-scroll">
+<table class="data ranking">
+  <thead>
+    <tr>
+      <th class="num rank">No.</th>
+      <th>Company</th>
+      <th class="num">Quality</th>
+      <th class="num">Coverage</th>
+      <th class="num">Price</th>
+      <th class="num">Buy below</th>
+      <th class="num">Discount</th>
+      <th class="num">Expected return</th>
+      <th class="num">Yield</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    {% set mos = (r.buy_price / r.price - 1) if r.buy_price and r.price else none %}
+    <tr {% if not r.passes_gate %}class="below-gate"{% endif %}>
+      <td class="num rank">{{ loop.index }}</td>
+      <td>
+        <a class="company-link" href="/company/{{ r.ticker }}"><span class="ticker">{{ r.ticker }}</span><span class="name">{{ r.name | nice_name }}</span></a>
+      </td>
+      <td class="num">{{ "%.0f" | format(r.quality) }}</td>
+      <td class="num">{{ r.completeness | pct(0) }}</td>
+      <td class="num">{{ r.price | money }}</td>
+      <td class="num">{{ r.buy_price | money }}</td>
+      <td class="num {% if mos is not none and mos > 0 %}good{% endif %}">{{ mos | pct(0, signed=True) }}</td>
+      <td class="num strong">{{ r.expected_return | pct }}</td>
+      <td class="num">{{ r.dividend_yield | pct }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="empty">Nothing here yet. Run <code>python ingest.py</code>, then <code>python main.py screen</code>.</p>
+{% endif %}
+{% endblock %}
