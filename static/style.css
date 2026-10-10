@@ -813,6 +813,28 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 .tooltip .tt-row b { display: inline-block; width: 12px; height: 2px; border-radius: 1px; }
 .tooltip .tt-row strong { font-variant-numeric: tabular-nums; }
 .tooltip .tt-row span { color: var(--ink-2); }
+.tooltip .tt-text { max-width: 260px; line-height: 1.45; color: var(--ink-2); }
+
+/* a header with an "i" beside its sort button */
+.th-tip { display: flex; align-items: center; }
+th.num .th-tip { justify-content: flex-end; }
+.th-tip .sort-btn { width: auto; padding-right: 4px; }
+.th-tip .info { margin-right: 10px; }
+.info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: help;
+}
+.info svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+.info svg .dot { fill: currentColor; stroke: none; }
+.info:hover, .info:focus-visible { color: var(--ink); }
+.info:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .table-twin { margin-top: 14px; font-size: 13px; }
 .table-twin summary { cursor: pointer; color: var(--accent-ink); }

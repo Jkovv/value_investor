@@ -1,10 +1,18 @@
-{% macro sort_head(label, kind="num", align="num", initial="none", first="") -%}
-<th class="{{ align }}" data-sort="{{ kind }}" aria-sort="{{ initial }}" {% if first %}data-first="{{ first }}"{% endif %}>
+{% macro sort_head(label, kind="num", align="num", initial="none", first="", tip="") -%}
+<th class="{{ align }}{% if tip %} has-tip{% endif %}" data-sort="{{ kind }}" aria-sort="{{ initial }}" {% if first %}data-first="{{ first }}"{% endif %}>
+  {% if tip %}<span class="th-tip">{% endif %}
   <button type="button" class="sort-btn">
     {{ label }}
     <svg class="sort-icon" viewBox="0 0 10 14" aria-hidden="true"><path class="up" d="M5 1 9 5.5H1z"/><path class="down" d="M5 13 1 8.5h8z"/></svg>
   </button>
+  {% if tip %}{{ info(tip) }}</span>{% endif %}
 </th>
+{%- endmacro %}
+
+{% macro info(text) -%}
+<span class="info" tabindex="0" role="button" aria-label="{{ text }}" data-tip="{{ text }}">
+  <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M8 7.2v4"/><circle class="dot" cx="8" cy="4.9" r="0.6"/></svg>
+</span>
 {%- endmacro %}
 
 {% macro lens_tests(tests) -%}
