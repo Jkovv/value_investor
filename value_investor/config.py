@@ -136,6 +136,8 @@ GROWTH_CAP = 0.15
 PE_FLOOR = 5.0
 PE_CAP = 35.0
 SELL_PE = 40.0
+# a quality business on a P/E under 3 is almost always bad data: a currency label or a share count
+MIN_SANE_PE = 3.0
 
 ## RANKING
 

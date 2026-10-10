@@ -17,8 +17,9 @@
       {% elif c.sic_description and c.sic_description != "None" %}<span class="chip">{{ c.sic_description | title }}</span>{% endif %}
       {% if c.country and c.country != "None" %}<span class="chip">{{ c.country }}</span>{% endif %}
       {% if reading and reading.regime %}
-        <a class="chip chip-link" href="/market?m={{ reading.iso3 }}" title="Market Cap / GDP for {{ reading.name }}">
-          <i class="dot dot-{{ regime_tone[reading.regime] }}"></i>{{ reading.name }}: {{ reading.regime }}
+        <a class="chip chip-link" href="/market?m={{ reading.iso3 }}"
+           title="Market Cap / GDP: how pricey the {{ reading.name }} stock market is against its own history">
+          {{ reading.name }} market: <span class="tone-{{ regime_tone[reading.regime] }}">{{ reading.regime }}</span>
         </a>
       {% endif %}
       {% if row %}
@@ -73,7 +74,7 @@
   <div class="stat">
     <span class="stat-label">Dividend yield</span>
     <span class="stat-value">{{ v.dividend_yield | pct }}</span>
-    <span class="stat-note">{% if v.shareholder_yield is defined %}{{ v.shareholder_yield | pct }} with buybacks{% endif %}</span>
+    <span class="stat-note">{% if v.shareholder_yield is number and v.shareholder_yield == v.shareholder_yield %}{{ v.shareholder_yield | pct }} with buybacks{% endif %}</span>
   </div>
 </section>
 

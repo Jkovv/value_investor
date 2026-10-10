@@ -67,3 +67,37 @@ def test_every_market_has_a_region_currency_and_iso2():
     for m in markets.MARKETS:
         assert m.currency and m.iso3 in markets.ISO2
 
+
+
+def test_kuwait_quotes_in_fils():
+    assert fx.major("KWF") == ("KWD", 1000.0)
+
+
+def test_the_size_floor_follows_the_screener_units():
+    assert yahoo.screener_floor("EUR", 1e9, 0.92) == pytest.approx(0.92e9)
+    assert yahoo.screener_floor("GBP", 1e9, 0.75) == pytest.approx(75e9)       # pence
+    assert yahoo.screener_floor("KWD", 1e9, 0.307) == pytest.approx(307e9)     # fils
+
+
+def test_peer_size_reads_market_cap_in_the_major_unit(monkeypatch):
+    from value_investor import peers
+    monkeypatch.setattr(fx, "rate", lambda con, base, quote, when=None, fetch=True: 1.25 if base == "GBP" else None)
+    assert peers._cap_usd(None, 47e9, "GBp") == pytest.approx(47e9 * 1.25)
+
+
+def test_exchange_codes_map_to_their_country():
+    assert yahoo._market_iso3("sr_market") == "SAU"
+    assert yahoo._market_iso3("tl_market") == "EST"
+    assert yahoo._market_iso3("pl_market") == "POL"
+    assert yahoo._market_iso3("xx_market") is None
+
+
+def test_funds_and_trusts_are_told_apart_from_businesses():
+    from value_investor.screener import looks_like_fund
+    assert looks_like_fund("Sprott Physical Silver Trust", "Asset Management", "")
+    assert looks_like_fund("Polar Capital Technology Ord", "Asset Management", "")
+    assert looks_like_fund("Ruffer Investment Company Limited", None,
+                           "Ruffer Investment Company Limited is a closed-ended investment company.")
+    assert not looks_like_fund("Jupiter Fund Management Plc", "Asset Management", "")
+    assert not looks_like_fund("Chemtrade Logistics Income Fund", "Chemicals", "")
+    assert not looks_like_fund("Granite Ord", None, "Granite is a real estate investment trust.")

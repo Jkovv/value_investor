@@ -50,7 +50,7 @@ EPS, the implied count wins and the company page says so.
 
 ## Every other market (`yahoo.py`)
 
-Outside the US there is no free, uniform source of filings, so all 43 other markets go through
+Outside the US there is no free, uniform source of filings, so all 49 other markets go through
 Yahoo Finance the same way: no region gets better treatment than another.
 
 1. **Universe.** Yahoo's screener, market by market, above a market-cap floor

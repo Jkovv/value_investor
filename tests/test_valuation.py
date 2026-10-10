@@ -55,3 +55,12 @@ def test_sell_signal_at_pe_forty():
     s = {"eps": 1.0, "eps_reported": 1.0, "eps_cagr_smoothed": 0.05, "roe_recent": 0.2, "payout": 0.3}
     out = valuation.value(yearly_with_eps([1.0] * 10), s, flat_prices(45.0), bond_yield=0.04)
     assert out["sell_signal"]
+
+
+def test_a_pe_under_three_is_treated_as_bad_data():
+    from value_investor import valuation
+    import pandas as pd
+    prices = pd.DataFrame({"date": pd.to_datetime(["2026-01-02"]), "high": [10.0], "low": [10.0], "close": [10.0],
+                           "dividend": [0.0], "split": [0.0]})
+    v = valuation.value(pd.DataFrame(), {"eps": 5.0}, prices, 0.04)
+    assert not v["available"] and "bad data" in v["reason"]

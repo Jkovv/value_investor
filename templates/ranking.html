@@ -4,7 +4,8 @@
 <div class="page-head">
   <h1>Ranking</h1>
   <p class="sub">Quality businesses from every market, by the yearly return today's price implies, in the
-    currency the shares trade in. Buy below compounds at {{ config.HURDLE_RATE | pct(0) }}.</p>
+    currency the shares trade in. Buy below compounds at {{ config.HURDLE_RATE | pct(0) }}. The word under each
+    market says how pricey that whole stock market is right now (Market Cap / GDP against its own history).</p>
 </div>
 
 {% set ranked = readings.values() | selectattr("z", "defined") | selectattr("z", "number") | list %}
@@ -90,9 +91,11 @@
         <td data-value="{{ mkt }}">
           {% if mkt %}
           {% set rd = readings.get(mkt) %}
-          <span class="market-chip" title="{{ rd.name if rd else mkt }}">
-            <i class="dot dot-{{ regime_tone[rd.regime] if rd and rd.regime else 'na' }}"></i>{{ mkt }}
-          </span>
+          <a class="market-cell" href="/market?m={{ mkt }}"
+             title="{% if rd and rd.regime %}{{ rd.name }}: the stock market as a whole is {{ rd.regime }} against its own history (Market Cap / GDP){% else %}{{ rd.name if rd else mkt }}: no Market Cap / GDP reading{% endif %}">
+            <span class="market-code">{{ mkt }}</span>
+            <span class="market-level tone-{{ regime_tone[rd.regime] if rd and rd.regime else 'na' }}">{{ rd.regime if rd and rd.regime else "no reading" }}</span>
+          </a>
           {% endif %}
         </td>
         <td class="num" data-value="{{ r.quality }}">

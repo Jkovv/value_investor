@@ -17,6 +17,12 @@ perfect score is not the same as one with ten.
 (Yahoo gives four or five outside the US).
 Only gate-passers get priced and ranked.
 
+Two more things keep a company out of the ranking. Funds and trusts (investment trusts, closed-end
+funds, physical metal trusts) are scored but not ranked: their earnings are gains on what they
+hold, so a checklist for operating businesses says nothing about them. And a P/E under 3 on a
+company that passes the checklist is treated as bad data (a mislabelled statement currency or a
+broken share count), so it gets no valuation.
+
 Banks, insurers, brokers and REITs (SIC 6000-6799) get a shorter list:
 margins, leverage and capex describe industrial businesses and say little
 about a balance sheet that *is* the product.

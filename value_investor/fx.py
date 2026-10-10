@@ -1,7 +1,7 @@
 """17 · fx: currency conversion through Yahoo's FX pairs, cached like prices.
 
 some exchanges quote in a subunit: London in pence (GBp), Johannesburg in
-cents (ZAc), Tel Aviv in agorot (ILA). everything is moved to the major
+cents (ZAc), Tel Aviv in agorot (ILA), Kuwait in fils (KWF). everything is moved to the major
 unit before it meets a financial statement.
 """
 
@@ -9,7 +9,8 @@ import pandas as pd
 
 from value_investor import prices as px, store
 
-SUBUNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ZAc": ("ZAR", 100.0), "ILA": ("ILS", 100.0)}
+SUBUNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ZAc": ("ZAR", 100.0), "ILA": ("ILS", 100.0),
+            "KWF": ("KWD", 1000.0)}
 
 
 def major(currency: "str | None") -> "tuple[str | None, float]":

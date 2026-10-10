@@ -60,6 +60,11 @@ def value(yearly: pd.DataFrame, s: dict, prices: pd.DataFrame, bond_yield: "floa
         out["reason"] = f"per-share mismatch (computed {eps:.2f} vs filed {reported:.2f}); share classes or ADR ratio"
         return out
 
+    if price / eps < config.MIN_SANE_PE:
+        out["reason"] = (f"a P/E of {price / eps:.1f} points to bad data (statement currency or share count), "
+                         "so no valuation")
+        return out
+
     g, growth_inputs = _growth(s)
     if g is None:
         out["reason"] = "not enough history to estimate growth"

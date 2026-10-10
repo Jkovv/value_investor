@@ -1,4 +1,4 @@
-"""19 · markets: the 44 markets we screen and Market Cap / GDP for each.
+"""19 · markets: the 50 markets we screen and Market Cap / GDP for each.
 
 world bank history, rolled forward with the local benchmark and gdp growth.
 each market is judged against its own trend only: Switzerland looks huge next
@@ -54,12 +54,18 @@ MARKETS = [
     Market("DNK", "Denmark", "dk", "DKK", "^OMXC25", "DKK"),
     Market("FIN", "Finland", "fi", "EUR", "^OMXH25", "EUR"),
     Market("POL", "Poland", "pl", "PLN", "ETFBW20TR.WA", "PLN"),
+    Market("ROU", "Romania", "ro", "RON", "TVBETETF.RO", "RON"),
+    Market("EST", "Estonia", "ee", "EUR", None, None),
+    Market("LTU", "Lithuania", "lt", "EUR", None, None),
+    Market("ISL", "Iceland", "is", "ISK", None, None),
     Market("CZE", "Czechia", "cz", "CZK", None, None),
     Market("HUN", "Hungary", "hu", "HUF", None, None),
     Market("GRC", "Greece", "gr", "EUR", "GD.AT", "EUR"),
     Market("TUR", "Turkey", "tr", "TRY", "XU100.IS", "TRY"),
     Market("ISR", "Israel", "il", "ILS", "TA35.TA", "ILS"),
     Market("SAU", "Saudi Arabia", "sa", "SAR", "KSA", "USD"),
+    Market("QAT", "Qatar", "qa", "QAR", "QAT", "USD"),
+    Market("KWT", "Kuwait", "kw", "KWD", "KWT", "USD"),
     Market("EGY", "Egypt", "eg", "EGP", None, None),
     Market("ZAF", "South Africa", "za", "ZAR", "^J203.JO", "ZAR"),
     Market("IND", "India", "in", "INR", "^NSEI", "INR"),
@@ -87,7 +93,8 @@ ISO2 = {
     "CHE": "CH", "SWE": "SE", "NOR": "NO", "DNK": "DK", "FIN": "FI", "POL": "PL", "CZE": "CZ", "HUN": "HU",
     "GRC": "GR", "TUR": "TR", "ISR": "IL", "SAU": "SA", "EGY": "EG", "ZAF": "ZA", "IND": "IN", "CHN": "CN",
     "HKG": "HK", "TWN": "TW", "KOR": "KR", "JPN": "JP", "SGP": "SG", "MYS": "MY", "IDN": "ID", "THA": "TH",
-    "PHL": "PH", "VNM": "VN", "AUS": "AU", "NZL": "NZ",
+    "PHL": "PH", "VNM": "VN", "AUS": "AU", "NZL": "NZ", "ROU": "RO", "EST": "EE", "LTU": "LT", "ISL": "IS",
+    "QAT": "QA", "KWT": "KW",
 }
 
 FRED_BOND = "IRLTLT01{iso2}M156N"   # OECD long-term government bond yields, monthly

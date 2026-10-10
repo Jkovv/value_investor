@@ -19,6 +19,7 @@
   --good-soft: rgba(12, 163, 12, 0.09);
   --warning: #fab219;
   --warning-soft: rgba(250, 178, 25, 0.14);
+  --warning-text: #8a6200;
   --critical: #d03b3b;
   --critical-text: #b42f2f;
   --critical-soft: rgba(208, 59, 59, 0.09);
@@ -50,6 +51,7 @@
     --good-text: #3ec43e;
     --good-soft: rgba(12, 163, 12, 0.16);
     --warning-soft: rgba(250, 178, 25, 0.16);
+    --warning-text: #e8b23a;
     --critical-text: #ef7a7a;
     --critical-soft: rgba(208, 59, 59, 0.18);
     --shadow: none;
@@ -76,6 +78,7 @@
   --good-text: #3ec43e;
   --good-soft: rgba(12, 163, 12, 0.16);
   --warning-soft: rgba(250, 178, 25, 0.16);
+  --warning-text: #e8b23a;
   --critical-text: #ef7a7a;
   --critical-soft: rgba(208, 59, 59, 0.18);
   --shadow: none;
@@ -467,6 +470,7 @@ table.data {
 .ranking .below-gate td { opacity: 0.55; }
 .company-cell { display: flex; align-items: center; gap: 12px; color: var(--ink); min-width: 260px; }
 .company-cell:hover { text-decoration: none; }
+.company-cell .ticker { flex: none; }
 .company-cell:hover .company-name { color: var(--accent-ink); }
 .company-name { font-weight: 500; }
 .brief-icon { width: 15px; height: 15px; color: var(--accent); flex: none; }
@@ -688,11 +692,15 @@ pre {
   font-weight: 600;
   color: var(--ink-2);
 }
-.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
-.dot-pass { background: var(--good); }
-.dot-warn { background: var(--warning); }
-.dot-fail { background: var(--critical); }
-.dot-na { background: transparent; border: 1px solid var(--muted); }
+.market-cell { display: inline-flex; flex-direction: column; gap: 2px; color: inherit; }
+.market-cell:hover { text-decoration: none; }
+.market-cell:hover .market-code { color: var(--accent-ink); }
+.market-code { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.market-level { font-size: 11.5px; line-height: 1.2; white-space: nowrap; }
+.tone-pass { color: var(--good-text); }
+.tone-warn { color: var(--warning-text); }
+.tone-fail { color: var(--critical-text); }
+.tone-na { color: var(--muted); }
 .chip-link { gap: 6px; color: var(--ink-2); }
 .chip-link:hover { color: var(--ink); border-color: var(--border-strong); text-decoration: none; }
 .ccy { font-size: 11px; color: var(--muted); margin-left: 2px; }

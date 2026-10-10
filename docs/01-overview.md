@@ -12,7 +12,7 @@ return. Reading years of annual reports for all of them by hand is not an option
 ```mermaid
 flowchart LR
     A["SEC EDGAR<br/>(US, 10+ years)"] --> C["Annual statements<br/>point-in-time"]
-    B["Yahoo Finance<br/>(43 other markets, ~5 years)"] --> C
+    B["Yahoo Finance<br/>(49 other markets, ~5 years)"] --> C
     C --> D["Ratios + summary"]
     D --> E["Quality checklist<br/>score + coverage"]
     E -->|passes the gate| F["Valuation in local currency"]
@@ -21,7 +21,7 @@ flowchart LR
     I["World Bank, FRED,<br/>benchmarks"] --> J["Market Cap / GDP<br/>per market"]
 ```
 
-1. **Pull** statements for every listed company above a size floor, in 44 markets.
+1. **Pull** statements for every listed company above a size floor, in 50 markets.
 2. **Rebuild** clean annual statements, as they were known on any date.
 3. **Score** each company against the checklist in `knowledge/principles.md`.
 4. **Price** the ones that pass: what today's price returns over ten years, in the currency the
@@ -32,7 +32,8 @@ flowchart LR
    industry from any market, insider buying and selling (US), and the other schools' yardsticks.
 7. **Research** the shortlist with four deep agents (filings, competitors, demand trends, web)
    and ask them questions about any company.
-8. **Read the market**: Market Cap / GDP for each of the 44 markets against its own trend.
+8. **Read the market**: Market Cap / GDP for every market the World Bank has history for,
+   each against its own trend.
 
 ## What it deliberately doesn't do
 

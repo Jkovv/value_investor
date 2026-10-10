@@ -22,9 +22,16 @@ FILING_LAG = timedelta(days=120)
 PAGE = 250
 
 
+# a few exchanges carry their own code instead of the country's: Tadawul is "sr"
+# (which is also Suriname's region), Tallinn "tl", Vilnius "vs", Reykjavik "ic"
+EXCHANGE_CODES = {"sr": "SAU", "tl": "EST", "vs": "LTU", "ic": "ISL"}
+
+
 def _market_iso3(market_code: "str | None") -> "str | None":
-    region = (market_code or "").split("_")[0]
-    m = markets.BY_REGION.get(region)
+    code = (market_code or "").split("_")[0]
+    if code in EXCHANGE_CODES:
+        return EXCHANGE_CODES[code]
+    m = markets.BY_REGION.get(code)
     return m.iso3 if m else None
 
 
@@ -49,13 +56,19 @@ def screen_region(region: str, min_cap_local: float, limit: "int | None" = None)
     return out[:limit] if limit else out
 
 
+def screener_floor(currency: str, min_cap_usd: float, usd_to_local: float) -> float:
+    """the size floor in the screener's units. where shares are quoted in pence, cents or
+    fils (London, Johannesburg, Tel Aviv, Kuwait), the screener's market cap is too."""
+    unit = next((d for major, d in fx.SUBUNITS.values() if major == currency), 1.0)
+    return min_cap_usd * usd_to_local * unit
+
+
 def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None" = None) -> pd.DataFrame:
     """one row per company, at its home listing, for the given markets."""
     rows = []
     wanted = [markets.BY_ISO[i] for i in iso3s if i in markets.BY_ISO and i != "USA"]
     for m in wanted + [markets.BY_ISO["USA"]]:
-        usd_to_local = fx.rate(con, "USD", m.currency) or 1.0
-        quotes = screen_region(m.region, min_cap_usd * usd_to_local)
+        quotes = screen_region(m.region, screener_floor(m.currency, min_cap_usd, fx.rate(con, "USD", m.currency) or 1.0))
         logger.info("%s: %d listings above the floor", m.name, len(quotes))
         for q in quotes:
             rows.append({

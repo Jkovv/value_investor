@@ -22,7 +22,7 @@ how many standard deviations today is above or below it.
 
 - **United States:** the Fed's Z.1 corporate equities over GDP (FRED), quarterly since 1947, rolled
   forward with the S&P 500 since the last quarter end.
-- **The other 43 markets:** the World Bank's *market capitalization of listed domestic companies
+- **The other 49 markets:** the World Bank's *market capitalization of listed domestic companies
   (% of GDP)*, annual. The last annual point is rolled forward to today with the local benchmark
   index (or a country ETF converted to local currency where Yahoo has no index: Poland's WIG20 ETF,
   and US-listed country ETFs for Chile, Saudi Arabia, Thailand, the Philippines and Vietnam) and
@@ -37,7 +37,8 @@ Each reading carries a confidence label shown in the dashboard:
 | since 20xx, rough | the World Bank stopped publishing for this market years ago (France, Italy, the Netherlands, Belgium, Ireland, Portugal, Norway); rolled forward a long way |
 | stale | old and nothing to roll it forward with (Sweden, Denmark, Finland) |
 
-Taiwan has no World Bank series at all and shows as missing.
+Taiwan, Iceland, Estonia and Lithuania have no World Bank series at all and show as missing; their
+companies are still screened.
 
 ## Also on the page
 

@@ -18,7 +18,7 @@
     16 tracing         optional langsmith tracing
     17 fx              exchange rates and quote subunits
     18 yahoo           every market outside the us
-    19 markets         44 markets, Market Cap / GDP each
+    19 markets         50 markets, Market Cap / GDP each
     20 research_tools  what the agents may read
     21 prompts         the agents' briefs
     22 research        the deep agents, and questions

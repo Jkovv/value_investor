@@ -112,6 +112,24 @@ def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of) -> pd.Series:
     return found
 
 
+FUND_NAME = re.compile(r"\sOrd$|\bPhysical\b|\bFund\b(?! Management)|\bETF\b", re.I)
+FUND_SUMMARY = re.compile(r"^[^.]{0,120}?\b(is|operates as) an? (closed[- ]end(ed)?|investment trust|exchange[- ]traded|"
+                          r"(listed |externally managed )?investment (company|fund|vehicle))", re.I)
+
+
+def looks_like_fund(name: "str | None", industry: "str | None", summary: "str | None") -> bool:
+    """investment trusts, closed-end funds and metal trusts: their earnings are gains on what
+    they hold, so a checklist built for operating businesses says nothing about them."""
+    name, summary = name or "", summary or ""
+    if "Physical" in name and ("Trust" in name or "Fund" in name):
+        return True
+    if isinstance(industry, str) and industry not in ("", "Asset Management"):
+        return False
+    if "real estate investment trust" in summary.lower():
+        return False
+    return bool(FUND_NAME.search(name) or FUND_SUMMARY.search(summary))
+
+
 def _name_key(name: "str | None") -> str:
     words = re.sub(r"[^a-z0-9 ]", " ", (name or "").lower()).split()
     drop = {"ltd", "limited", "inc", "plc", "sa", "ag", "nv", "co", "corp", "corporation", "the", "group", "holdings"}
@@ -200,6 +218,9 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
         if home:
             a.rankable = False
             a.flags.append(f"US listing of a foreign company; ranked through its home listing {home}")
+    if looks_like_fund(comp.get("name"), comp.get("industry"), comp.get("summary")):
+        a.rankable = False
+        a.flags.append("a fund or trust that holds other assets; the checklist is for operating businesses, so it isn't ranked")
 
     if with_prices is None:
         with_prices = a.passes_gate

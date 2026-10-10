@@ -18,8 +18,8 @@ thing lives here, or why it doesn't.
 | Checklist of a famous investor's rules | open-source value screeners | The full checklist from `knowledge/principles.md`, 20 checks (9 for financials), with the reason for each. |
 | Decision log, paper trading, portfolio | ai-hedge-fund, TradingAgents | Left out on purpose. This finds and studies companies; what you buy and how much is yours to decide. |
 | Resume an interrupted run | TradingAgents | Research saves after every stage and resumes from there. |
-| Market valuation | rarely | Market Cap / GDP for 44 markets, each against its own trend, with a suggested cash share. |
-| Coverage | TradingAgents covers several markets through Yahoo; most value screeners are US only | 44 markets, one home listing per company, returns in the currency each listing trades in. |
+| Market valuation | rarely | Market Cap / GDP per market, each against its own trend, with a suggested cash share. |
+| Coverage | TradingAgents covers several markets through Yahoo; most value screeners are US only | 50 markets, one home listing per company, returns in the currency each listing trades in. |
 | Data and model cost | ai-hedge-fund and FinRobot use paid data APIs and hosted models; TradingAgents can run on free data and Ollama | Free: SEC EDGAR, Yahoo Finance, FRED, World Bank, Wikipedia, GDELT, a local model through Ollama, Groq and Hugging Face only as free fallbacks. |
 | Backtest | ai-hedge-fund, TradingAgents | Parked on purpose. See [06 Roadmap](06-roadmap.md) for the limits a free backtest runs into. |
 | Technical, sentiment and social-media analysts | TradingAgents | Left out on purpose. They answer "where will the price go next week", which this method doesn't ask. |

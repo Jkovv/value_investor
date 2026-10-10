@@ -1,6 +1,6 @@
 # Value Investor
 
-Finds businesses with a durable competitive advantage in 44 stock markets, prices what they'd
+Finds businesses with a durable competitive advantage in 50 stock markets, prices what they'd
 return over ten years at today's price (in the currency the shares trade in), ranks them, and
 sends research agents to read up on the ones worth a closer look: the filings, the competitors
 and the signs of demand. Everything runs locally and costs nothing: filings come
@@ -55,3 +55,14 @@ Read `docs/` in order:
 [08 Compared with other projects](docs/08-compared.md)
 
 Every command, in order: **[commands.md](commands.md)**.
+
+## To do
+
+- [ ] Find a free source for the markets Yahoo Finance doesn't cover, so their companies can be
+      screened too:
+  - **Egypt**: 259 listings, but no market caps, so the size floor drops them all.
+  - **Philippines, Vietnam**: the screener returns nothing (their Market Cap / GDP still shows).
+  - **UAE, Colombia, Peru, Pakistan, Sri Lanka**: no listings at all.
+  - **Russia**: dropped by Yahoo after the 2022 sanctions.
+  - **Latvia, Venezuela, Suriname**: nothing above the $1B floor (Venezuela's market caps read as
+    zero), so these only matter if the floor comes down.

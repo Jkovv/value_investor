@@ -33,9 +33,10 @@ def _known(v) -> bool:
 def _cap_usd(con, cap, currency) -> "float | None":
     if not _known(cap) or not cap:
         return None
-    code, divisor = fx.major(currency)
+    # yahoo gives market cap in the major unit even when the price is in pence or cents
+    code = fx.major(currency)[0]
     rate = 1.0 if code in (None, "USD") else fx.rate(con, code, "USD", fetch=False)
-    return None if rate is None else cap / divisor * rate
+    return None if rate is None else cap * rate
 
 
 def candidates(con, cik: int) -> "tuple[dict, pd.DataFrame]":
