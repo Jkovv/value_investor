@@ -13,8 +13,8 @@
 <section class="stats" aria-label="Market context">
   <div class="stat">
     <span class="stat-label">Markets in the ranking</span>
-    <span class="stat-value">{{ n_markets }}</span>
-    <span class="stat-note">{{ count }} {{ "company" if count == 1 else "companies" }} shown</span>
+    <span class="stat-value" data-markets>{{ n_markets }}</span>
+    <span class="stat-note" data-count=" shown">{{ count }} {{ "company" if count == 1 else "companies" }} shown</span>
   </div>
   <a class="stat" href="/market">
     <span class="stat-label">Cheapest vs own trend</span>
@@ -51,25 +51,38 @@
       {{ config.HISTORY_YEARS }}-year history only
     </label>
     <button class="button" type="submit">Apply</button>
-    <span class="count">{{ count }} {{ "company" if count == 1 else "companies" }}</span>
+    <span class="count" data-count>{{ count }} {{ "company" if count == 1 else "companies" }}</span>
   </form>
 
   {% if rows %}
+  <div class="table-controls" data-controls="ranking">
+    <div class="control-row">
+      <span class="control-label">Sort</span>
+      <span class="control-items" data-sort-levels></span>
+      <button type="button" class="chip-add" data-add-level>Then by</button>
+    </div>
+    <div class="control-row">
+      <span class="control-label">Filter</span>
+      <span class="control-items" data-filters></span>
+      <button type="button" class="chip-add" data-add-filter>Add filter</button>
+      <button type="button" class="chip-clear" data-clear hidden>Clear filters</button>
+    </div>
+  </div>
   {% set top = top_return or 0 %}
   <div class="table-scroll">
   <table class="data ranking sortable" id="ranking">
     <thead>
       <tr>
-        {{ sort_head("#", align="num rank", first="ascending") }}
+        {{ sort_head("#", align="num rank", first="ascending", name="Rank") }}
         {{ sort_head("Company", "text", "") }}
-        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Market", "text", "", key="market") }}
         {{ sort_head("Quality") }}
         {{ sort_head("F-score", tip="Piotroski F-score: nine pass-or-fail checks on the last year against the year before, such as a profit, cash flow above profit, less debt, better margins and no new shares. 7 to 9 is a business getting stronger, 0 to 3 one getting weaker.") }}
         {{ sort_head("Price") }}
         {{ sort_head("Buy below") }}
-        {{ sort_head("Discount", tip="Room between the price and Buy below. +40%: the price could rise 40% and still be under Buy below. -20%: it would have to fall 20% to get there.") }}
-        {{ sort_head("Return a year", initial="descending") }}
-        {{ sort_head("Yield") }}
+        {{ sort_head("Discount", unit="pct", tip="Room between the price and Buy below. +40%: the price could rise 40% and still be under Buy below. -20%: it would have to fall 20% to get there.") }}
+        {{ sort_head("Return a year", initial="descending", unit="pct") }}
+        {{ sort_head("Yield", unit="pct") }}
         {{ sort_head("Magic #", first="ascending") }}
       </tr>
     </thead>
@@ -125,10 +138,14 @@
     </tbody>
   </table>
   </div>
+  <p class="empty" data-no-match hidden>No company meets every filter.</p>
   {% else %}
   <p class="empty">Nothing here yet. Run <code>python ingest.py</code>, then <code>python main.py screen</code>.</p>
   {% endif %}
 </section>
 {% endblock %}
 
-{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}
+{% block scripts %}
+<script src="/static/sort.js?v={{ asset_version }}" defer></script>
+<script src="/static/controls.js?v={{ asset_version }}" defer></script>
+{% endblock %}

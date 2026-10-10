@@ -430,6 +430,70 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
 .button-row { display: flex; align-items: center; gap: 8px; }
 .count { margin-left: auto; font-size: 12.5px; color: var(--muted); }
 
+/* sort and filter rows under the toolbar */
+.table-controls { display: grid; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 32px; }
+.control-label { width: 44px; flex: none; font-size: 12.5px; color: var(--muted); }
+.control-items { display: contents; }
+.control-item { display: inline-flex; align-items: center; gap: 6px; }
+.control-item .then { font-size: 12.5px; color: var(--muted); padding: 0 2px; }
+.control-item .select, .control-item .input { height: 32px; font-size: 13px; }
+.control-item .select { padding-left: 10px; padding-right: 28px; background-position: right 9px center; }
+.value-box { position: relative; display: inline-flex; align-items: center; }
+.value-box .input { width: 92px; padding: 0 10px; font-variant-numeric: tabular-nums; }
+.value-box .unit { position: absolute; right: 10px; font-size: 13px; color: var(--muted); pointer-events: none; }
+.value-box.pct .input { padding-right: 24px; }
+.chip-add, .chip-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink-2);
+  background: none;
+  border: 1px dashed var(--border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.chip-add::before { content: "+"; font-size: 15px; line-height: 1; color: var(--muted); }
+.chip-clear { border: 0; color: var(--muted); padding: 0 6px; }
+.chip-add:hover { color: var(--ink); border-color: var(--muted); }
+.chip-clear:hover { color: var(--ink); }
+.chip-add:focus-visible, .chip-clear:focus-visible, .remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.remove:hover { color: var(--ink); background: var(--surface-2); }
+.sort-btn[data-level]::after {
+  content: attr(data-level);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 14px;
+  height: 14px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: 7px;
+}
+
 /* tables */
 
 .table-scroll { overflow-x: auto; }
