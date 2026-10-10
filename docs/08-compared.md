@@ -10,7 +10,7 @@ thing lives here, or why it doesn't.
 | Bull researcher against bear researcher | TradingAgents, FinRobot | Every brief has a **Bull case and bear case** section and must say which one the evidence supports and what would change its mind. |
 | Sourced equity research report | FinRobot | The **Research** tab: every claim numbered, the source list added by code rather than by the model. |
 | Free-form questions about a ticker | FinRobot | The **Ask** box on the Research tab, answered by an agent with sources. |
-| Comparable companies | FinRobot | The **Peers** tab: closest companies in the same industry from any market, with medians and where the company ranks. |
+| Comparable companies | FinRobot | The **Competitors** tab: the ten closest companies in the same industry from any market, compared on 19 measures, with the company's place on each and a side-by-side sheet. |
 | Quarterly results | FinRobot | The **Quarters** tab: each quarter against a year earlier, trailing twelve months, a flag when the last two quarters slip. |
 | Insider trades | TradingAgents | Form 4 for US companies: open-market buys and sells, planned sales marked, cluster buying flagged. |
 | DCF, DDM, Monte Carlo | FinRobot | Owner-earnings DCF, dividend discount model and a 5,000-run Monte Carlo of the ten-year projection. |

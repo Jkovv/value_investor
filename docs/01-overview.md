@@ -51,7 +51,7 @@ flowchart LR
 | Every other market (Yahoo Finance), quote currencies and subunits | done |
 | Market Cap / GDP for every market | done |
 | Research agents per company, questions, resumable runs | done |
-| Quarters, peers, insiders, other lenses (DDM, Monte Carlo and more) | done |
+| Quarters, competitors compared on 19 measures, insiders, other lenses (DDM, Monte Carlo and more) | done |
 | Deeper official history outside the US (ESEF, EDINET, DART) | planned |
 | Scheduled runs and alerts | planned |
 | Backtest of the quantitative engine | parked |

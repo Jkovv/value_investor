@@ -92,7 +92,7 @@
 <div class="segmented" role="tablist" aria-label="Company sections">
   <button role="tab" type="button" data-tab="overview" aria-selected="true">Overview</button>
   <button role="tab" type="button" data-tab="quarters" aria-selected="false">Quarters</button>
-  <button role="tab" type="button" data-tab="peers" aria-selected="false">Peers</button>
+  <button role="tab" type="button" data-tab="competitors" aria-selected="false">Competitors</button>
   <button role="tab" type="button" data-tab="checklist" aria-selected="false">Checklist</button>
   <button role="tab" type="button" data-tab="lenses" aria-selected="false">Lenses</button>
   <button role="tab" type="button" data-tab="financials" aria-selected="false">Financials</button>
@@ -137,6 +137,22 @@
           Against {{ v.price | money }} today: {{ v.expected_return.mid | pct }} a year.
         </li>
       </ol>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if peers.metrics %}
+  <section class="card section">
+    <div class="card-head">
+      <h2>Against competitors</h2>
+      <a class="hint-link" href="#competitors" data-open-tab="competitors">All {{ peers.compared }} measures</a>
+    </div>
+    <div class="card-body versus-summary">
+      <p>Ahead of the median of {{ peers.rows | length - 1 }} competitors ({% for r in peers.rows[1:5] %}{{ r.ticker }}{% if not loop.last %}, {% endif %}{% endfor %}{% if peers.rows | length > 5 %} and others{% endif %}) on <strong>{{ peers.ahead }} of {{ peers.compared }}</strong> measures.</p>
+      <p>
+        {% if peers.strengths %}Strongest: {% for m in peers.strengths %}{{ m.label | lower }} ({{ m.rank | ordinal }} of {{ m.of }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
+        {% if peers.weaknesses %}Weakest: {% for m in peers.weaknesses %}{{ m.label | lower }} ({{ m.rank | ordinal }} of {{ m.of }}){% if not loop.last %}, {% endif %}{% endfor %}.{% endif %}
+      </p>
     </div>
   </section>
   {% endif %}
@@ -267,64 +283,110 @@
   {% endif %}
 </div>
 
-<div class="tab-panel" data-panel="peers">
-  {% if peers.rows %}
+<div class="tab-panel" data-panel="competitors">
+  {% if peers.metrics %}
+  {% set me = peers.rows[0] %}
+  <section class="stats">
+    <div class="stat">
+      <span class="stat-label">Competitors</span>
+      <span class="stat-value">{{ peers.rows | length - 1 }}</span>
+      <span class="stat-note">closest in size, {{ peers.markets }} {{ "market" if peers.markets == 1 else "markets" }}, {% if peers.basis == "industry" %}{{ peers.industry }}{% else %}same SIC code{% endif %}</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Ahead of the median</span>
+      <span class="stat-value">{{ peers.ahead }}<small>of {{ peers.compared }} measures</small></span>
+      <span class="bar wide" aria-hidden="true"><span style="width: {{ (peers.ahead / peers.compared * 100) if peers.compared else 0 }}%"></span></span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Strongest</span>
+      <span class="stat-list">
+        {% for m in peers.strengths %}<span><strong>{{ m.label }}</strong> {{ m.rank | ordinal }} of {{ m.of }}</span>{% else %}<span class="muted">nothing stands out</span>{% endfor %}
+      </span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">Weakest</span>
+      <span class="stat-list">
+        {% for m in peers.weaknesses %}<span><strong>{{ m.label }}</strong> {{ m.rank | ordinal }} of {{ m.of }}</span>{% else %}<span class="muted">nothing stands out</span>{% endfor %}
+      </span>
+    </div>
+  </section>
+
+  <section class="card section">
+    <div class="card-head">
+      <h2>Where {{ me.ticker }} stands</h2>
+      <span class="hint">each dot is a competitor, the line is their median; further right is better</span>
+    </div>
+    <div class="card-body standing">
+      {% for group in ["Quality", "Profitability", "Growth", "Balance sheet", "Price"] %}
+        {% set rows = peers.metrics | selectattr("group", "equalto", group) | list %}
+        {% if rows %}
+        <h3 class="standing-group">{{ group }}</h3>
+        {% for m in rows %}
+        <div class="standing-row">
+          <span class="standing-label">{{ m.label }}</span>
+          <span class="strip" role="img" aria-label="{{ me.ticker }} is {{ m.rank | ordinal }} of {{ m.of }} on {{ m.label | lower }}">
+            <span class="strip-median" style="left: {{ m.median_x * 100 }}%" title="Median of competitors: {{ m.median | measure(m.kind) }}"></span>
+            {% for d in m.dots %}
+            <span class="strip-dot {% if d.me %}me{% endif %}" style="left: {{ d.x * 100 }}%" title="{{ d.ticker }}: {{ d.value | measure(m.kind) }}"></span>
+            {% endfor %}
+          </span>
+          <span class="standing-value">{{ m.mine | measure(m.kind) }}</span>
+          <span class="standing-rank {% if m.rank == 1 %}good{% elif m.rank == m.of %}bad{% endif %}">{{ m.rank | ordinal }} of {{ m.of }}</span>
+        </div>
+        {% endfor %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
   <section class="card">
     <div class="card-head">
-      <h2>Peers</h2>
-      <span class="hint">{% if peers.basis == "industry" %}{{ peers.industry }}{% else %}same SIC code{% endif %}, closest in size, every market</span>
+      <h2>Side by side</h2>
+      <span class="hint">the best value in each row is marked</span>
     </div>
     <div class="table-scroll">
-    <table class="data sortable peers-table" id="peers">
+    <table class="data versus">
       <thead>
         <tr>
-          {{ sort_head("Company", "text", "") }}
-          {{ sort_head("Market", "text", "") }}
-          {{ sort_head("Quality") }}
-          {{ sort_head("F") }}
-          {% for key, label, kind in peer_metrics %}{{ sort_head(label, first="ascending" if key in ("debt_years", "pe_now") else "") }}{% endfor %}
+          <th>Measure</th>
+          {% for r in peers.rows %}
+          <th class="num {% if r.me %}me{% endif %}">
+            <a class="versus-head" href="/company/{{ r.ticker }}" title="{{ r.name | nice_name }}">
+              <span class="ticker">{{ r.ticker }}</span>
+              <span class="versus-market">{{ r.market | text_or }}</span>
+            </a>
+          </th>
+          {% endfor %}
+          <th class="num">Median</th>
         </tr>
       </thead>
       <tbody>
-      {% for r in peers.rows %}
-        <tr {% if r.me %}class="me"{% endif %}>
-          <td data-value="{{ r.name | nice_name }}">
-            <a class="company-cell" href="/company/{{ r.ticker }}">
-              <span class="ticker">{{ r.ticker }}</span>
-              <span class="company-name">{{ r.name | nice_name }}</span>
-            </a>
-          </td>
-          <td data-value="{{ r.market | text_or }}"><span class="market-chip">{{ r.market | text_or }}</span></td>
-          <td class="num" data-value="{{ r.quality }}">{{ "%.0f" | format(r.quality) if r.quality is number else "-" }}</td>
-          <td class="num" data-value="{{ r.f_score | whole('') }}">{{ r.f_score | whole }}</td>
-          {% for key, label, kind in peer_metrics %}
-          {% set val = r[key] %}
-          <td class="num" data-value="{{ val if val is number else '' }}">
-            {% if kind == "pct" %}{{ val | pct }}{% elif kind == "times" %}{{ val | times }}{% else %}{{ "%.1f" | format(val) if val is number else "-" }}{% endif %}
-          </td>
-          {% endfor %}
+        <tr>
+          <td class="check-label">Market cap (USD)</td>
+          {% for r in peers.rows %}<td class="num {% if r.me %}me{% endif %}">{{ r.cap_usd | compact }}</td>{% endfor %}
+          <td class="num muted"></td>
         </tr>
-      {% endfor %}
       </tbody>
-      <tfoot>
-        <tr class="median">
-          <td>Median of peers</td><td></td><td></td><td></td>
-          {% for key, label, kind in peer_metrics %}
-          {% set val = peers.medians[key] %}
-          <td class="num">{% if kind == "pct" %}{{ val | pct }}{% elif kind == "times" %}{{ val | times }}{% else %}{{ "%.1f" | format(val) if val is number else "-" }}{% endif %}</td>
+      {% for group, rows in peers.sheet %}{% if rows %}
+      <tbody>
+        <tr class="group-row"><td colspan="{{ peers.rows | length + 2 }}">{{ group }}</td></tr>
+        {% for m in rows %}
+        <tr>
+          <td class="check-label">{{ m.label }}{% if m.better == "low" %} <span class="muted">(lower is better)</span>{% endif %}</td>
+          {% for r in peers.rows %}
+          {% set val = m["values"].get(r.ticker) %}
+          <td class="num {% if r.me %}me{% endif %} {% if val is not none and r.ticker == m.best %}best{% endif %}">{{ val | measure(m.kind) }}</td>
           {% endfor %}
+          <td class="num muted">{{ m.median | measure(m.kind) }}</td>
         </tr>
-      </tfoot>
-    </table>
-    </div>
-    <div class="card-body peer-ranks">
-      {% for key, label, kind in peer_metrics %}{% set rk = peers.ranks.get(key) %}{% if rk %}
-        <span class="chip">{{ label }}: better than {{ rk.beats }} of {{ rk.of }}</span>
+        {% endfor %}
+      </tbody>
       {% endif %}{% endfor %}
+    </table>
     </div>
   </section>
   {% else %}
-  <p class="empty">No peers found. Industry labels come with <code>python ingest.py</code>.</p>
+  <p class="empty">No competitors found. Industry labels come with <code>python ingest.py</code>.</p>
   {% endif %}
 </div>
 
@@ -672,5 +734,4 @@
 
 {% block scripts %}
 <script src="/static/tabs.js?v={{ asset_version }}" defer></script>
-<script src="/static/sort.js?v={{ asset_version }}" defer></script>
 {% endblock %}

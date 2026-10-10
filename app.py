@@ -94,12 +94,27 @@ def whole(v, fallback="-"):
     return fallback if _missing(v) else f"{int(v)}"
 
 
+def ordinal(n) -> str:
+    if _missing(n):
+        return "-"
+    n = int(n)
+    suffix = "th" if 10 <= n % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def measure(v, kind: str = "num"):
+    """a value in the format its metric uses."""
+    if _missing(v):
+        return "-"
+    return {"pct": pct(v), "int": whole(v), "times": times(v)}.get(kind, f"{v:.1f}")
+
+
 def text_or(v, fallback=""):
     return v if isinstance(v, str) and v else fallback
 
 
 templates.env.filters.update(pct=pct, money=money, compact=compact, times=times, nice_name=nice_name,
-                             text_or=text_or, whole=whole)
+                             text_or=text_or, whole=whole, ordinal=ordinal, measure=measure)
 templates.env.globals.update(config=config, asset_version=ASSET_VERSION)
 
 TONE = {"cheap": "pass", "fair": "pass", "expensive": "warn", "very expensive": "fail"}
@@ -218,7 +233,7 @@ def company(request: Request, ticker: str):
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
         "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
-        "peer_metrics": peers.METRICS, "insiders": payload.get("insiders"),
+        "insiders": payload.get("insiders"),
         "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)
                       for q in research.questions(ticker)],
     })

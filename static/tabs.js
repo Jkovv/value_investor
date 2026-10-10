@@ -32,6 +32,15 @@
 
   open(location.hash.slice(1) || "overview");
 
+  // links like "all 19 measures" on the overview open another tab
+  document.querySelectorAll("[data-open-tab]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      e.preventDefault();
+      open(a.dataset.openTab);
+      document.querySelector(".segmented").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
   function poll(url, onUpdate, isDone) {
     const tick = async () => {
       try {

@@ -154,8 +154,8 @@ def _p(v) -> str:
 
 @tool
 def peer_table(ticker: str) -> str:
-    """the closest companies in the same industry, from any market, with the same computed numbers:
-    margins, ROE, growth, debt, P/E, quality score and expected return. the first row is the company itself."""
+    """the closest competitors in the same industry, from any market, with the same computed numbers
+    (quality, margins, returns, growth, debt, price) and where the company ranks on each, 1 being best."""
     with store.connect(read_only=True) as con:
         cik = store.find_cik(con, ticker)
         if cik is None:
@@ -163,15 +163,20 @@ def peer_table(ticker: str) -> str:
         found = peers.find(con, cik)
     if not found["rows"]:
         return f"No peers stored for {ticker}."
-    head = "ticker | name | market | quality | " + " | ".join(label for _, label, _ in peers.METRICS)
-    lines = [f"Peers by {found['basis']} ({found.get('industry') or 'SIC code'}):", head]
-    for r in found["rows"]:
-        cells = [r["ticker"], (r["name"] or "")[:28], r["market"] or "", f"{r['quality'] or 0:.0f}"]
-        for key, _, kind in peers.METRICS:
-            v = r.get(key)
-            cells.append("n/a" if v is None else (f"{v:.1f}" if kind in ("num", "times") else f"{v * 100:.1f}%"))
-        lines.append(" | ".join(cells))
+    lines = [f"Competitors by {found['basis']} ({found.get('industry') or 'SIC code'}): "
+             + ", ".join(f"{r['ticker']} {r['name']} ({r['market']})" for r in found["rows"][1:]),
+             f"{ticker} is ahead of the competitors' median on {found['ahead']} of {found['compared']} measures.",
+             "measure | " + ticker + " | rank | competitors' median | best"]
+    for m in found["metrics"]:
+        lines.append(f"{m['label']} | {_fmt(m['mine'], m['kind'])} | {m['rank']} of {m['of']} | "
+                     f"{_fmt(m['median'], m['kind'])} | {m['best']} {_fmt(m['values'][m['best']], m['kind'])}")
     return "\n".join(lines)
+
+
+def _fmt(v, kind: str) -> str:
+    if v is None:
+        return "n/a"
+    return f"{v * 100:.1f}%" if kind == "pct" else f"{v:.0f}" if kind == "int" else f"{v:.1f}"
 
 
 @tool

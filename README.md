@@ -37,7 +37,7 @@ and only matter for the research agents.
 | `python main.py show KO` | Checklist, valuation steps and ten years of ratios for one company. |
 | `python main.py macro` | US rates, the yield curve, Sahm rule and Market Cap / GDP. |
 | `python research.py KO` | Deep research agents: filings, competitors, demand trends and the web, then a sourced brief. Resumes an unfinished run. `--top N` for the top of the ranking. |
-| `uvicorn app:app --port 8001` | The dashboard: ranking, company pages (quarters, peers, insiders, checklist, lenses, research and questions), markets. |
+| `uvicorn app:app --port 8001` | The dashboard: ranking, company pages (quarters, competitors, insiders, checklist, lenses, research and questions), markets. |
 | `python -m value_investor.llm` | Checks the model router (local Ollama first, then Groq / Hugging Face if keyed). |
 | `pytest` | The test suite. |
 
