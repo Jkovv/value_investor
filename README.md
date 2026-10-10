@@ -4,8 +4,10 @@ Finds businesses with a durable competitive advantage in 50 stock markets, price
 return over ten years at today's price (in the currency the shares trade in), ranks them, and
 sends research agents to read up on the ones worth a closer look: the filings, the competitors
 and the signs of demand. Everything runs locally and costs nothing: filings come
-from SEC EDGAR, statements for the rest of the world and prices from Yahoo Finance, macro series
-from FRED and the World Bank, and the agents run on a local model through Ollama.
+from SEC EDGAR, statements for the rest of the world and prices from Yahoo Finance, ten years of
+history from each market's own free source where there is one (EastMoney, FinMind, Screener.in,
+the CVM, and SEC filings of foreign companies), macro series from FRED and the World Bank, and
+the agents run on a local model through Ollama.
 
 The rules it scores against are written out in **[knowledge/principles.md](knowledge/principles.md)**.
 
@@ -31,7 +33,7 @@ and only matter for the research agents.
 
 | Command | What it does |
 |---|---|
-| `python ingest.py` | Every market: US companies from EDGAR (annual, quarterly, form 4), every other market from Yahoo Finance (one home listing per company, above a $1B floor), plus FRED, World Bank and benchmark series. Only fetches what can have changed. `--us`, `--world`, `--markets`, `--tickers`, `--min-cap`, `--limit`, `--refresh`, `--insiders`, `--quarters`, `--macro-only`. |
+| `python ingest.py` | Every market: US companies from EDGAR (annual, quarterly, form 4), every other market from Yahoo Finance (one home listing per company, above a $1B floor), plus FRED, World Bank and benchmark series. Only fetches what can have changed. `--us`, `--world`, `--markets`, `--tickers`, `--min-cap`, `--limit`, `--refresh`, `--insiders`, `--quarters`, `--history`, `--macro-only`. |
 | `python main.py screen` | Scores every ingested company, prices the ones that pass the gate, and ranks them by expected return. |
 | `python main.py rank` | Prints the last ranking. `--all` includes companies below the gate. |
 | `python main.py show KO` | Checklist, valuation steps and ten years of ratios for one company. |
@@ -58,6 +60,12 @@ Every command, in order: **[commands.md](commands.md)**.
 
 ## To do
 
+- [ ] Ten years of history for the markets that still only have Yahoo Finance's four:
+  - **Japan** (EDINET) and **Korea** (OpenDART): free, but each needs an API key.
+  - **Europe**: ESEF filings only start in 2020, so they add years slowly; national registers
+    differ country by country.
+  - **Everything else**: companies with SEC filings are already covered; the rest needs a source
+    per market.
 - [ ] Find a free source for the markets Yahoo Finance doesn't cover, so their companies can be
       screened too:
   - **Egypt**: 259 listings, but no market caps, so the size floor drops them all.

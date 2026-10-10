@@ -50,11 +50,15 @@ python ingest.py
 # Only macro: FRED, World Bank, benchmarks, FX
 python ingest.py --macro-only
 
-# Only insider trades (form 4) for ranked US companies and anything you hold
+# Only insider trades (form 4) for ranked US companies
 python ingest.py --insiders
 
 # Quarters for stored companies outside the US that don't have them yet
 python ingest.py --quarters
+
+# Only the ten-year histories: China, Hong Kong, Taiwan, India and Brazil from their own
+# sources, then SEC filings of foreign companies (refetched after 30 days; --refresh forces it)
+python ingest.py --history
 ```
 
 ## Screening

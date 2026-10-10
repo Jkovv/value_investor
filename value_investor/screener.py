@@ -130,6 +130,11 @@ def looks_like_fund(name: "str | None", industry: "str | None", summary: "str | 
     return bool(FUND_NAME.search(name) or FUND_SUMMARY.search(summary))
 
 
+SOURCE_NAMES = {"us-gaap": "SEC XBRL", "ifrs-full": "SEC XBRL", "eastmoney": "EastMoney", "finmind": "FinMind",
+                "screener": "Screener.in", "eastmoney-hk": "EastMoney", "cvm": "CVM", "yahoo": "Yahoo Finance"}
+ESTIMATED_DATES = {"yahoo", "finmind", "screener", "eastmoney-hk"}
+
+
 def _name_key(name: "str | None") -> str:
     words = re.sub(r"[^a-z0-9 ]", " ", (name or "").lower()).split()
     drop = {"ltd", "limited", "inc", "plc", "sa", "ag", "nv", "co", "corp", "corporation", "the", "group", "holdings"}
@@ -197,11 +202,11 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
 
     if profile == "financial":
         a.flags.append("financial company: shorter checklist")
+    lead = SOURCE_NAMES.get(table.attrs.get("taxonomy"), "XBRL")
     if a.summary.get("history_years", 0) < config.HISTORY_YEARS:
-        where = "Yahoo Finance" if source == "yahoo" else "XBRL"
-        a.flags.append(f"only {a.summary.get('history_years', 0)} years of {where} history")
-    if source == "yahoo":
-        a.flags.append("statements from Yahoo Finance; filing dates estimated")
+        a.flags.append(f"only {a.summary.get('history_years', 0)} years of {lead} history")
+    if table.attrs.get("taxonomy") in ESTIMATED_DATES:
+        a.flags.append(f"statements from {lead}; filing dates estimated")
     if a.summary.get("shares_corrected"):
         a.flags.append("some share counts were rebuilt from net income / reported EPS (tagging error in the filing)")
     if a.yearly["eps"].isna().all():

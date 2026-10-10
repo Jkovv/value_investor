@@ -100,6 +100,13 @@ CREATE TABLE IF NOT EXISTS quarterly_facts (
     accn VARCHAR
 );
 
+CREATE TABLE IF NOT EXISTS source_fetches (
+    cik INTEGER,
+    source VARCHAR,
+    fetched_at TIMESTAMP,
+    years INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS insider_filings (
     accn VARCHAR PRIMARY KEY,
     cik INTEGER,
@@ -190,8 +197,15 @@ def upsert_company(con, profile: dict) -> None:
     )
 
 
-def replace_facts(con, cik: int, facts: pd.DataFrame) -> None:
-    con.execute("DELETE FROM facts WHERE cik = ?", [cik])
+def replace_facts(con, cik: int, facts: pd.DataFrame, taxonomies=None) -> None:
+    """swap in new facts. only the taxonomies being replaced are cleared, so a yahoo refresh
+    leaves the long history from another source alone, and the other way round."""
+    taxonomies = list(taxonomies or (facts["taxonomy"].unique() if not facts.empty else []))
+    if taxonomies:
+        con.execute(f"DELETE FROM facts WHERE cik = ? AND taxonomy IN ({', '.join('?' * len(taxonomies))})",
+                    [cik] + taxonomies)
+    else:
+        con.execute("DELETE FROM facts WHERE cik = ?", [cik])
     if facts.empty:
         return
     frame = facts.assign(cik=cik)[
@@ -299,3 +313,12 @@ def analysis_payload(con, cik: int) -> "dict | None":
     row = con.execute("SELECT payload FROM analyses WHERE cik = ?", [cik]).fetchone()
     return None if row is None else json.loads(row[0])
 
+
+def mark_fetched(con, cik: int, source: str, years: int) -> None:
+    con.execute("DELETE FROM source_fetches WHERE cik = ? AND source = ?", [cik, source])
+    con.execute("INSERT INTO source_fetches VALUES (?, ?, now(), ?)", [cik, source, years])
+
+
+def fetched(con, source: str) -> dict:
+    """cik -> when a source was last fetched for it."""
+    return dict(con.execute("SELECT cik, fetched_at FROM source_fetches WHERE source = ?", [source]).fetchall())

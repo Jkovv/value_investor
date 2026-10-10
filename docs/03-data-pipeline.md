@@ -76,6 +76,31 @@ Yahoo Finance the same way: no region gets better treatment than another.
 5. **Refresh.** A company is refetched after 30 days; stored listings that the rules above now say
    belong elsewhere are pruned on every run.
 
+Yahoo's screener misses some big names (Kweichow Moutai and about fifty other A-shares), so the
+Chinese universe is topped up from EastMoney's valuation table. A foreign listing that shares a
+message board with a US one is kept only if it trades at least half as much: HSBC in Hong Kong and
+Shell in London stay, Apple in Frankfurt goes.
+
+## Ten years outside the US
+
+Yahoo stops at four or five years, which is too short for a ten-year checklist. Where a market has
+a free source that goes further, its statements are stored next to Yahoo's under their own taxonomy
+(`ingest.py --history`, part of every full run):
+
+| Market | Source | Years | Notes |
+|---|---|---|---|
+| China | EastMoney F10 | 10 | full statements, real filing dates |
+| Hong Kong | EastMoney HK indicators | up to 20 | headline lines only; the currency is settled by matching net income with Yahoo's |
+| Taiwan | FinMind (exchange filings) | 10+ | quarters summed into years; a free token raises the hourly limit |
+| India | Screener.in | 12 | consolidated where published; coarser lines, no cost of sales |
+| Brazil | CVM open data (DFP) | 11 | full statements, real filing dates; banks read by account name |
+| Anywhere | SEC 20-F / 40-F / 10-K | 10+ | home listings of companies that also file with the SEC (Toyota, ASML, HDFC Bank), linked only when revenue or net income agrees |
+
+Per-share numbers are moved into today's units with the bonus issues and splits found in the jump
+of the share count implied by net income over EPS. When sources overlap, SEC filings lead, then the
+source with the most years; Yahoo only fills lines and years the others don't have. The ranking can
+be limited to companies with ten full years.
+
 ## Known gaps
 
 - **Several share classes** (Visa, Hershey, Berkshire): EPS is filed per
@@ -83,9 +108,9 @@ Yahoo Finance the same way: no region gets better treatment than another.
   waits for dimensional XBRL parsing.
 - **US listings of foreign companies reporting in their own currency** (TSMC in TWD) are scored
   but kept out of the ranking; their home listing (2330.TW) is valued instead.
-- **History outside the US** is four to five years, so ten-year consistency checks run on a shorter
-  window there. The coverage figure and a flag on the company page say so. Official sources
-  (ESEF for Europe, EDINET for Japan, DART for Korea) can deepen it later.
+- **History in the markets without a local source** (Japan, Korea, Europe and the rest) is four
+  to five years unless the company files with the SEC, so ten-year checks run on a shorter window
+  there. The years of history show in the ranking and on the company page.
 - **No cost of sales filed** (payment networks, many services): operating
   margin stands in for gross margin, R&D and depreciation are measured
   against revenue.

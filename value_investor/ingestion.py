@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-from value_investor import config, edgar, fx, markets, store, yahoo
+from value_investor import brazil, china, config, edgar, fx, hongkong, india, markets, store, taiwan, yahoo
 from value_investor.http import NotFound
 
 logger = logging.getLogger(__name__)
@@ -130,6 +130,8 @@ def ingest_world(iso3s: list, min_cap_usd: float, limit_per_market: "int | None"
     counts = {"fetched": 0, "fresh": 0, "foreign listing": 0, "no statements": 0, "failed": 0}
     with store.connect() as con:
         listings = yahoo.universe(con, iso3s, min_cap_usd, limit_per_market)
+        if "CHN" in iso3s and not limit_per_market:
+            listings = _add_missing_china(con, listings, min_cap_usd)
         if listings.empty:
             return counts
         existing = store.companies(con)
@@ -174,6 +176,24 @@ def ingest_world(iso3s: list, min_cap_usd: float, limit_per_market: "int | None"
     return counts
 
 
+def _add_missing_china(con, listings: pd.DataFrame, min_cap_usd: float) -> pd.DataFrame:
+    """a-shares yahoo's screener leaves out, from eastmoney's full list."""
+    try:
+        full = china.universe(min_cap_usd * (fx.rate(con, "USD", "CNY") or 7.2))
+    except Exception as exc:
+        logger.warning("eastmoney a-share list failed: %s", exc)
+        return listings
+    have = set(listings["symbol"]) if not listings.empty else set()
+    extra = full[~full["symbol"].isin(have)]
+    if extra.empty:
+        return listings
+    logger.info("China: %d a-shares the yahoo screener missed", len(extra))
+    extra = extra.assign(name=None, exchange=extra["symbol"].str[-2:].map({"SS": "Shanghai", "SZ": "Shenzhen", "BJ": "Beijing"}),
+                         currency="CNY", financial_currency="CNY", board=extra["symbol"], turnover=0.0, market="CHN",
+                         market_code="cn_market")
+    return pd.concat([listings, extra[[c for c in listings.columns if c in extra.columns]]], ignore_index=True)
+
+
 def prune_foreign(con) -> list:
     """drop stored Yahoo listings that the current rules say belong to another market."""
     gone = []
@@ -182,7 +202,8 @@ def prune_foreign(con) -> list:
             continue
         local = markets.BY_ISO[r.market].currency
         quote = fx.major(r.price_currency)[0]
-        foreign_currency = r.currency not in ("USD", "EUR", local) and r.currency in {m.currency for m in markets.MARKETS}
+        foreign_currency = (r.currency not in ("USD", "EUR", local) and r.currency in {m.currency for m in markets.MARKETS}
+                            and (r.market, r.currency) not in yahoo.OWN_FOREIGN_CURRENCY)
         wrong_market = quote != local and r.currency != local
         moved = yahoo.home_elsewhere({"country": r.country, "financialCurrency": r.currency}, r.market)
         if foreign_currency or wrong_market or moved:
@@ -209,3 +230,51 @@ def world_quarters(con, workers: int = 3) -> int:
                 store.replace_quarterly_facts(con, futures[fut], frame)
                 done += 1
     return done
+
+
+# sources with a longer history than yahoo's four years, and the markets they cover
+# source: (fetch for one ticker, markets, threads, check against what's stored or None)
+HISTORY_SOURCES = {
+    "eastmoney": (china.statements, ("CHN",), 4, None),
+    "finmind": (taiwan.statements, ("TWN",), 2, None),       # paced inside; more threads wouldn't help
+    "screener": (india.statements, ("IND",), 2, None),
+    "eastmoney-hk": (hongkong.statements, ("HKG",), 4, hongkong.settle),
+    "cvm": (brazil.statements, ("BRA",), 4, None),
+}
+HISTORY_REFRESH = timedelta(days=30)
+
+
+def extend_history(con, source: str, refresh: bool = False, tickers=None) -> dict:
+    """ten years of statements from a market's own free source, stored next to yahoo's."""
+    fetch, covered, workers, check = HISTORY_SOURCES[source]
+    done = store.fetched(con, source)
+    rows = con.execute(f"SELECT cik, ticker FROM companies WHERE source = 'yahoo' AND market IN "
+                       f"({', '.join('?' * len(covered))})", list(covered)).fetchall()
+    if tickers:
+        rows = [r for r in rows if r[1] in set(tickers)]
+    now = datetime.now()
+    todo = [(cik, t) for cik, t in rows if refresh or cik not in done or now - done[cik] > HISTORY_REFRESH]
+    counts = {"companies": len(rows), "fresh": len(rows) - len(todo), "fetched": 0, "empty": 0, "failed": 0}
+    logger.info("%s: %d companies, %d to fetch", source, len(rows), len(todo))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(fetch, ticker): (cik, ticker) for cik, ticker in todo}
+        for i, fut in enumerate(as_completed(futures), start=1):
+            cik, ticker = futures[fut]
+            try:
+                facts = fut.result()
+                if check is not None:
+                    facts = check(con, cik, facts)
+            except Exception as exc:
+                logger.warning("%s failed for %s: %s", source, ticker, exc)
+                counts["failed"] += 1
+                continue
+            years = int(facts["period_end"].nunique()) if not facts.empty else 0
+            if years:
+                store.replace_facts(con, cik, facts, taxonomies=[source])
+                counts["fetched"] += 1
+            else:
+                counts["empty"] += 1
+            store.mark_fetched(con, cik, source, years)
+            if i % 100 == 0 or i == len(futures):
+                logger.info("%s: %d / %d  %s", source, i, len(futures), counts)
+    return counts

@@ -61,7 +61,7 @@ def _cap_usd(con, cap, currency, rates: "dict | None" = None) -> "float | None":
 def candidates(con, cik: int) -> "tuple[dict, pd.DataFrame]":
     rows = con.execute("""
         SELECT c.cik, c.ticker, c.name, c.market, c.industry, c.sector, c.sic, c.market_cap,
-               c.price_currency, a.quality, a.f_score, a.passes_gate, a.expected_return
+               c.price_currency, a.quality, a.f_score, a.passes_gate, a.expected_return, a.history_years
         FROM companies c JOIN analyses a USING (cik)""").df()
     me = rows[rows["cik"] == cik]
     if me.empty:
@@ -158,7 +158,7 @@ def _row(con, r: dict, is_me: bool) -> dict:
     priced = bool(v.get("available"))
     out = {"cik": int(r["cik"]), "ticker": r["ticker"], "name": r["name"], "market": r["market"],
            "me": is_me, "passes_gate": bool(r.get("passes_gate")), "cap_usd": r.get("cap_usd"),
-           "quality": r.get("quality"), "f_score": r.get("f_score")}
+           "quality": r.get("quality"), "f_score": r.get("f_score"), "history_years": r.get("history_years")}
     for key in ("gross_margin", "operating_margin", "net_margin", "roe", "roa", "revenue_cagr",
                 "eps_cagr_smoothed", "debt_years", "current_ratio"):
         out[key] = s.get(key)

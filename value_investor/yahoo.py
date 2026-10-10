@@ -56,6 +56,42 @@ def screen_region(region: str, min_cap_local: float, limit: "int | None" = None)
     return out[:limit] if limit else out
 
 
+# hong kong is where most chinese companies list; they report in yuan and it's still home
+OWN_FOREIGN_CURRENCY = {("HKG", "CNY")}
+HOME_FROM_ELSEWHERE = {("HKG", "CHN")}
+SECONDARY_TURNOVER = 0.5
+
+
+def _turnover_usd(con, df: pd.DataFrame) -> pd.Series:
+    rates = {}
+    out = []
+    for value, ccy in zip(df["turnover"], df["currency"]):
+        code, divisor = fx.major(ccy)
+        if code not in rates:
+            rates[code] = 1.0 if code in (None, "USD") else fx.rate(con, code, "USD", fetch=False)
+        out.append(None if rates[code] is None else (value or 0) / divisor * rates[code])
+    return pd.Series(out, index=df.index, dtype=float)
+
+
+def _drop_american(con, df: pd.DataFrame) -> pd.DataFrame:
+    """american companies are edgar's. a foreign listing that shares its yahoo board with a
+    us one is a sideline (apple in frankfurt) unless it trades at least half as much: hsbc in
+    hong kong and shell in london outtrade their adrs, apple in frankfurt is a rounding error."""
+    usd = _turnover_usd(con, df)
+    us = df["market"] == "USA"
+    us_turnover = usd[us & (df["financial_currency"] == "USD")].groupby(df.loc[us, "board"]).max()
+    keep = []
+    for idx, board, market in zip(df.index, df["board"], df["market"]):
+        if market == "USA" or not isinstance(market, str):
+            keep.append(False)
+        elif board in us_turnover.index:
+            mine = usd.get(idx)
+            keep.append(mine is not None and not pd.isna(mine) and mine >= SECONDARY_TURNOVER * us_turnover[board])
+        else:
+            keep.append(True)
+    return df[keep]
+
+
 def screener_floor(currency: str, min_cap_usd: float, usd_to_local: float) -> float:
     """the size floor in the screener's units. where shares are quoted in pence, cents or
     fils (London, Johannesburg, Tel Aviv, Kuwait), the screener's market cap is too."""
@@ -84,8 +120,7 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
     df["market"] = df["market_code"].map(_market_iso3)
     # foreign-share segments: London's International Order Book, Brazilian depositary receipts.
     df = df[~df["symbol"].str.endswith(".IL") & ~df["symbol"].str.contains(r"3[1-5]\.SA$", regex=True)]
-    american = set(df[(df["market"] == "USA") & (df["financial_currency"] == "USD")]["board"])
-    df = df[~df["board"].isin(american) & (df["market"] != "USA") & df["market"].notna()]
+    df = _drop_american(con, df)
 
     # A listing belongs to its market if it trades in the local currency or the
     # company reports in it. Toyota quoted in yen in London, a Brazilian receipt
@@ -98,7 +133,9 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
     # headquarters check in fundamentals() catches those.
     local, quote = local.loc[df.index], quote.loc[df.index]
     foreign_ccy = (df["financial_currency"] != local) & ~df["financial_currency"].isin(["USD", "EUR"]) \
-        & df["financial_currency"].isin({m.currency for m in markets.MARKETS})
+        & df["financial_currency"].isin({m.currency for m in markets.MARKETS}) \
+        & ~pd.Series([(m, c) in OWN_FOREIGN_CURRENCY for m, c in zip(df["market"], df["financial_currency"])],
+                     index=df.index)
     df = df[~foreign_ccy]
     quote = quote.loc[df.index]
 
@@ -164,7 +201,7 @@ def home_elsewhere(info: dict, market: "str | None") -> "str | None":
     market we cover and reporting in that market's currency.
     """
     hq = COUNTRY_TO_ISO.get(info.get("country"))
-    if not hq or not market or hq == market:
+    if not hq or not market or hq == market or (market, hq) in HOME_FROM_ELSEWHERE:
         return None
     reports = info.get("financialCurrency")
     hq_currency = markets.BY_ISO[hq].currency

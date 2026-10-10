@@ -26,6 +26,12 @@
     24 quarterly       the last quarters against a year earlier
     25 insiders        form 4 buys and sells
     26 peers           the closest companies in the same industry
+    27 china           ten years for a-shares, from eastmoney
+    28 taiwan          ten years for twse and tpex listings, from finmind
+    29 foreign         sec filings of companies listed elsewhere
+    30 india           twelve years for nse and bse listings, from screener.in
+    31 hongkong        up to twenty years of headline figures for hkex listings
+    32 brazil          eleven years for b3 listings, from the cvm
 
 entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
 """

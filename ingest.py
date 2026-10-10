@@ -2,7 +2,8 @@
 
 us companies come from sec edgar (10+ years of xbrl, plus 10-qs and form 4s).
 everything else comes from yahoo finance (about five years and five quarters),
-one home listing per company. re-running only fetches what can have changed.
+one home listing per company, with ten years or more from local sources where
+there is a free one. re-running only fetches what can have changed.
 
   python ingest.py                          # the whole world
   python ingest.py --us                     # us companies only (edgar)
@@ -13,12 +14,13 @@ one home listing per company. re-running only fetches what can have changed.
   python ingest.py --limit 30               # cap companies per market, for a quick look
   python ingest.py --insiders               # form 4s only, for ranked us companies
   python ingest.py --quarters               # quarters for stored non-us companies that lack them
+  python ingest.py --history                # ten years from local sources and sec filings of foreign companies
   python ingest.py --macro-only             # rates, gdp, market cap / gdp, inflation
 """
 
 import argparse
 
-from value_investor import config, ingestion, insiders, macro, markets, store
+from value_investor import config, foreign, ingestion, insiders, macro, markets, store
 from value_investor.logging_config import configure_logging
 
 
@@ -39,6 +41,21 @@ def refresh_insiders() -> None:
     print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
 
 
+def extend_history(refresh: bool = False) -> None:
+    for source in ingestion.HISTORY_SOURCES:
+        print(f"Ten-year history from {source}...")
+        with store.connect() as con:
+            counts = ingestion.extend_history(con, source, refresh=refresh)
+        print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
+    if not config.SEC_USER_AGENT:
+        print("Skipping SEC filings of foreign companies: set SEC_USER_AGENT in .env.")
+        return
+    print("SEC filings (20-F, 40-F) of companies listed elsewhere...")
+    with store.connect() as con:
+        counts = foreign.link(con)
+    print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -52,6 +69,7 @@ def main():
     parser.add_argument("--refresh", action="store_true", help="refetch even when nothing new is expected")
     parser.add_argument("--insiders", action="store_true", help="only form 4s")
     parser.add_argument("--quarters", action="store_true", help="only quarters for stored non-us companies")
+    parser.add_argument("--history", action="store_true", help="only the longer histories from local sources")
     parser.add_argument("--macro-only", action="store_true", help="skip companies, refresh macro series only")
     args = parser.parse_args()
 
@@ -63,6 +81,9 @@ def main():
     if args.quarters:
         with store.connect() as con:
             print(f"Quarters for {ingestion.world_quarters(con)} companies outside the US.")
+        return
+    if args.history:
+        extend_history(args.refresh)
         return
 
     print("Refreshing macro series (FRED, World Bank, benchmarks)...")
@@ -94,6 +115,7 @@ def main():
         print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
         with store.connect() as con:
             ingestion.world_quarters(con)
+        extend_history(args.refresh)
 
     print("Ingestion complete.")
 

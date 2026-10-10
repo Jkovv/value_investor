@@ -366,6 +366,11 @@
           {% for r in peers.rows %}<td class="num {% if r.me %}me{% endif %}">{{ r.cap_usd | compact }}</td>{% endfor %}
           <td class="num muted"></td>
         </tr>
+        <tr>
+          <td class="check-label">Years of history</td>
+          {% for r in peers.rows %}<td class="num {% if r.me %}me{% endif %} {% if r.history_years is number and r.history_years < config.HISTORY_YEARS %}tone-warn{% endif %}">{{ r.history_years | whole }}</td>{% endfor %}
+          <td class="num muted"></td>
+        </tr>
       </tbody>
       {% for group, rows in peers.sheet %}{% if rows %}
       <tbody>

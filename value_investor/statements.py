@@ -16,13 +16,24 @@ INSTANT_TOLERANCE_DAYS = 7
 TRACK_FILED = concepts.PER_SHARE | concepts.SHARE_COUNTS
 
 
+TAXONOMIES = ("us-gaap", "ifrs-full") + concepts.CANONICAL + ("yahoo",)
+
+
 def _taxonomy_order(facts: pd.DataFrame) -> list:
-    anchors = facts[facts["concept"].isin(["NetIncomeLoss", "ProfitLoss", "ProfitLossAttributableToOwnersOfParent"])]
-    if anchors.empty:
-        anchors = facts
-    latest = anchors.sort_values("filed").iloc[-1]["taxonomy"]
-    others = [t for t in ("us-gaap", "ifrs-full", "yahoo") if t != latest]
-    return [latest] + others
+    """which source leads. sec filings first (the taxonomy of the latest one); otherwise
+    the source with the longest history, so yahoo's four years only fill gaps."""
+    present = set(facts["taxonomy"].unique())
+    sec = [t for t in ("us-gaap", "ifrs-full") if t in present]
+    if sec:
+        anchors = facts[facts["concept"].isin(["NetIncomeLoss", "ProfitLoss", "ProfitLossAttributableToOwnersOfParent"])]
+        if anchors.empty:
+            anchors = facts[facts["taxonomy"].isin(sec)]
+        lead = [anchors.sort_values("filed").iloc[-1]["taxonomy"]]
+    else:
+        years = facts.groupby("taxonomy")["period_end"].nunique()
+        latest = facts.groupby("taxonomy")["filed"].max()
+        lead = sorted(present, key=lambda t: (years.get(t, 0), latest.get(t)), reverse=True)[:1]
+    return lead + [t for t in TAXONOMIES if t not in lead]
 
 
 def _currency(facts: pd.DataFrame, taxonomy: str) -> "str | None":

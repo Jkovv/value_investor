@@ -152,10 +152,10 @@ def render_report(text: str) -> Markup:
 
 
 @app.get("/", response_class=HTMLResponse)
-def ranking(request: Request, q: str = "", all: bool = False, profile: str = "", market: str = ""):
+def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = False):
     try:
         with store.connect(read_only=True) as con:
-            df = screener.ranking(con, only_gate=not all)
+            df = screener.ranking(con)
             readings = _market_readings(con)
     except duckdb.IOException:
         return _busy(request, "ranking")
@@ -169,13 +169,15 @@ def ranking(request: Request, q: str = "", all: bool = False, profile: str = "",
         df = df[df["profile"] == profile]
     if market:
         df = df[df["market"] == market]
+    if full:
+        df = df[df["history_years"] >= config.HISTORY_YEARS]
     rows = df.to_dict(orient="records")
     top = df["expected_return"].max(skipna=True) if not df.empty else None
     return templates.TemplateResponse(request, "ranking.html", {
-        "rows": rows, "q": q, "all": all, "profile": profile, "market": market, "count": len(rows),
+        "rows": rows, "q": q, "full": full, "profile": profile, "market": market, "count": len(rows),
         "markets_present": [(iso, markets.BY_ISO[iso].name) for iso in present if iso in markets.BY_ISO],
         "readings": readings, "top_return": None if _missing(top) else float(top),
-        "n_markets": len(present), "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
+        "n_markets": int(df["market"].nunique()) if not df.empty else 0, "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
     })
 
 
