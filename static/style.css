@@ -207,7 +207,7 @@ h3 {
   color: var(--muted);
   margin: 0 0 4px;
 }
-.sub { color: var(--ink-2); max-width: 68ch; margin: 0; }
+.sub { color: var(--ink-2); margin: 0; }
 .crumbs { font-size: 13px; color: var(--muted); margin: 0 0 16px; }
 .crumbs a { color: var(--ink-2); }
 .muted { color: var(--muted); }
