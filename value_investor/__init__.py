@@ -32,6 +32,7 @@
     30 india           twelve years for nse and bse listings, from screener.in
     31 hongkong        up to twenty years of headline figures for hkex listings
     32 brazil          eleven years for b3 listings, from the cvm
+    33 poland          up to twenty years for gpw listings, from biznesradar
 
 entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
 """

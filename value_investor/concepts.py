@@ -199,7 +199,7 @@ for _field, _names in YAHOO.items():
     FIELDS[_field][1][Y] = _names
 
 # longer-history sources outside the sec store facts under our own line names
-CANONICAL = ("eastmoney", "finmind", "screener", "eastmoney-hk", "cvm")
+CANONICAL = ("eastmoney", "finmind", "screener", "eastmoney-hk", "cvm", "biznesradar")
 for _field in FIELDS:
     for _taxonomy in CANONICAL:
         FIELDS[_field][1][_taxonomy] = [_field]

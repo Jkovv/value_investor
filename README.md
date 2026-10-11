@@ -6,7 +6,7 @@ sends research agents to read up on the ones worth a closer look: the filings, t
 and the signs of demand. Everything runs locally and costs nothing: filings come
 from SEC EDGAR, statements for the rest of the world and prices from Yahoo Finance, ten years of
 history from each market's own free source where there is one (EastMoney, FinMind, Screener.in,
-the CVM, and SEC filings of foreign companies), macro series from FRED and the World Bank, and
+the CVM, Biznesradar, and SEC filings of foreign companies), macro series from FRED and the World Bank, and
 the agents run on a local model through Ollama.
 
 The rules it scores against are written out in **[knowledge/principles.md](knowledge/principles.md)**.

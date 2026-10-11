@@ -230,3 +230,80 @@ def test_a_june_year_end_in_hong_kong_keeps_its_own_dates():
              "START_DATE": "2023-07-01 00:00:00", "HOLDER_PROFIT": 17.0}]
     facts = hongkong.facts_from(rows, "HKD")
     assert facts["period_end"].iloc[0] == date(2024, 6, 30) and facts["period_start"].iloc[0] == date(2023, 7, 1)
+
+
+def test_biznesradar_columns_are_dated_by_their_year_end():
+    from value_investor import poland
+    assert poland.period_end("2025 (gru 25)") == date(2025, 12, 31)
+    assert poland.period_end("2025 (sty 26)") == date(2026, 1, 31)        # lpp's year ends in january
+    assert poland.period_end("2017/Q4 (gru 17)") == date(2017, 12, 31)
+    assert poland.period_end("O4K (cze 26)*") is None
+
+
+def test_biznesradar_table_reads_thousands_and_report_dates():
+    from bs4 import BeautifulSoup
+    from value_investor import poland
+    soup = BeautifulSoup("""
+      <div class="report-disclaimer-above">dane w tys. PLN</div>
+      <table class="report-table">
+        <tr><th class="thname"></th><th class="thq h">2024 (gru 24)</th><th class="thq h">O4K (cze 26)*</th></tr>
+        <tr data-field="PrimaryReport"><td>Data publikacji</td><td><span class="value"><span>2025-03-20</span></span></td>
+          <td><span class="value">2026-08-20</span></td></tr>
+        <tr data-field="IncomeRevenues"><td>Przychody</td><td><span class="value">2 107 984</span></td>
+          <td><span class="value">9 999</span></td></tr>
+        <tr data-field="BalanceGoodwill"><td>Wartość firmy</td><td><span class="value">-</span></td><td></td></tr>
+      </table>""", "html.parser")
+    rows, filed, currency = poland.table(soup)
+    assert currency == "PLN"
+    assert rows["IncomeRevenues"] == {date(2024, 12, 31): 2_107_984_000.0}
+    assert rows["BalanceGoodwill"] == {}
+    assert filed == {date(2024, 12, 31): date(2025, 3, 20)}
+
+
+def test_biznesradar_rows_become_facts():
+    from value_investor import poland
+    end = date(2024, 12, 31)
+    one = lambda **kw: {k: {end: v} for k, v in kw.items()}
+    pl = one(IncomeRevenues=1000.0, IncomeCostOfSales=600.0, IncomeDistributionExpenses=150.0,
+             IncomeAdministrativExpenses=50.0, IncomeEBIT=200.0, IncomeFinanceCosts=20.0, IncomeBeforeTaxProfit=180.0,
+             IncomeNetProfit=150.0, IncomeShareholderNetProfit=140.0)
+    bs = one(BalanceTotalAssets=2000.0, BalanceCurrentInvestments=90.0, BalanceCash=70.0, BalanceCapital=800.0,
+             BalanceNonshareCapital=50.0, BalanceShareCapital=100.0, BalanceIntangibleAssets=40.0, BalanceGoodwill=30.0)
+    cf = one(CashflowCapex=-80.0, CashflowDividend=60.0)
+    facts = poland.facts_from(pl, bs, cf, {end: 70.0}, {end: date(2025, 3, 20)}, "PLN")
+    got = dict(zip(facts["concept"], facts["value"]))
+    assert got["revenue"] == 1000.0 and got["cost_of_revenue"] == 600.0 and got["sga"] == 200.0
+    assert got["net_income"] == 140.0 and got["income_tax"] == 30.0
+    assert got["cash"] == 70.0 and got["short_term_investments"] == 20.0
+    assert got["equity_incl_nci"] == 850.0 and got["total_liabilities"] == 1150.0
+    assert got["retained_earnings"] == 700.0 and got["intangibles"] == 10.0
+    assert got["capex"] == 80.0 and got["eps_diluted"] == 2.0 and got["shares_diluted"] == 70.0
+    assert set(facts["filed"]) == {date(2025, 3, 20)}
+
+
+def test_a_polish_bank_earns_its_revenue_before_costs():
+    from value_investor import poland
+    end = date(2024, 12, 31)
+    pl = {k: {end: v} for k, v in (("IncomeNetIntrestIncome", 24.0), ("IncomeNetFeeExpense", 5.0),
+                                     ("IncomeRealisedGains", 1.0), ("IncomeNetoperatingProfit", 15.0),
+                                     ("IncomeBeforTaxProfit", 14.0), ("IncomeNetProfit", 11.0),
+                                     ("IncomeShareholderNetProfit", 11.0))}
+    facts = poland.facts_from(pl, {}, {}, {}, {}, "PLN")
+    got = dict(zip(facts["concept"], facts["value"]))
+    assert got["revenue"] == 30.0 and got["pretax_income"] == 14.0
+    assert "operating_income" not in got and "interest_expense" not in got
+
+
+def test_biznesradar_is_kept_only_when_net_income_matches_yahoo(monkeypatch):
+    import pandas as pd
+    from value_investor import poland, statements, store
+    end = date(2024, 12, 31)
+    facts = poland.facts_from({"IncomeShareholderNetProfit": {end: 100.0}}, {}, {}, {}, {}, "PLN")
+    monkeypatch.setattr(store, "load_facts", lambda con, cik: pd.DataFrame({"taxonomy": ["yahoo"]}))
+    monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 101.0, "PLN"))
+    assert not poland.agrees(None, 1, facts).empty
+    # a euro reporter: biznesradar's zloty can't stand in for yahoo's euros
+    monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 100.0, "EUR"))
+    assert poland.agrees(None, 1, facts).empty
+    monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 130.0, "PLN"))
+    assert poland.agrees(None, 1, facts).empty

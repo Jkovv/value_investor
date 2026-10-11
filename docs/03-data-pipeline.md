@@ -94,6 +94,7 @@ a free source that goes further, its statements are stored next to Yahoo's under
 | Taiwan | FinMind (exchange filings) | 10+ | quarters summed into years; a free token raises the hourly limit |
 | India | Screener.in | 12 | consolidated where published; coarser lines, no cost of sales |
 | Brazil | CVM open data (DFP) | 11 | full statements, real filing dates; banks read by account name |
+| Poland | Biznesradar | up to 20 | full statements as the site shows them, real report dates; it converts euro and dollar reporters into zloty, so a company is kept only when net income matches Yahoo's in Yahoo's currency |
 | Anywhere | SEC 20-F / 40-F / 10-K | 10+ | home listings of companies that also file with the SEC (Toyota, ASML, HDFC Bank), linked only when revenue or net income agrees |
 
 Per-share numbers are moved into today's units with the bonus issues and splits found in the jump

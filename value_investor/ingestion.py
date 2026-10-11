@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-from value_investor import brazil, china, config, edgar, fx, hongkong, india, markets, store, taiwan, yahoo
+from value_investor import brazil, china, config, edgar, fx, hongkong, india, markets, poland, store, taiwan, yahoo
 from value_investor.http import NotFound
 
 logger = logging.getLogger(__name__)
@@ -240,6 +240,7 @@ HISTORY_SOURCES = {
     "screener": (india.statements, ("IND",), 2, None),
     "eastmoney-hk": (hongkong.statements, ("HKG",), 4, hongkong.settle),
     "cvm": (brazil.statements, ("BRA",), 4, None),
+    "biznesradar": (poland.statements, ("POL",), 1, poland.agrees),      # paced inside
 }
 HISTORY_REFRESH = timedelta(days=30)
 
