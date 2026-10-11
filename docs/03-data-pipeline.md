@@ -95,12 +95,20 @@ a free source that goes further, its statements are stored next to Yahoo's under
 | India | Screener.in | 12 | consolidated where published; coarser lines, no cost of sales |
 | Brazil | CVM open data (DFP) | 11 | full statements, real filing dates; banks read by account name |
 | Poland | Biznesradar | up to 20 | full statements as the site shows them, real report dates; it converts euro and dollar reporters into zloty, so a company is kept only when net income matches Yahoo's in Yahoo's currency |
+| Japan | IRBANK (EDINET filings) | up to 19 | headline lines, to the hundred million yen; IRBANK's debt and SG&A share left out, they didn't hold up against Yahoo; equity is book value per share times shares; REITs (half-year periods) stay on Yahoo |
+| South Korea | DART, the FSS's filing system | 12 | XBRL of every third annual report, three years each, from the public website without an API key; consolidated where published; SG&A left to Yahoo (Korean SG&A includes R&D); banks, insurers and brokers only file XBRL from 2023 and stay on Yahoo |
 | Anywhere | SEC 20-F / 40-F / 10-K | 10+ | home listings of companies that also file with the SEC (Toyota, ASML, HDFC Bank), linked only when revenue or net income agrees |
 
 Per-share numbers are moved into today's units with the bonus issues and splits found in the jump
 of the share count implied by net income over EPS. When sources overlap, SEC filings lead, then the
-source with the most years; Yahoo only fills lines and years the others don't have. The ranking can
-be limited to companies with ten full years.
+source with the most years; Yahoo only fills lines and years the others don't have. Biznesradar,
+IRBANK and DART are kept for a company only when their net income matches Yahoo's, in Yahoo's
+currency, for at least half the years both have. The ranking can be limited to companies with ten
+full years.
+
+The Polish, Japanese and Korean sources are read from public pages, paced at one request every
+1.5 to 3 seconds, so a first run takes about 20 minutes for Poland and an hour or two each for Japan
+and Korea. After that a company is refetched every 30 days.
 
 ## Known gaps
 
@@ -109,7 +117,7 @@ be limited to companies with ten full years.
   waits for dimensional XBRL parsing.
 - **US listings of foreign companies reporting in their own currency** (TSMC in TWD) are scored
   but kept out of the ranking; their home listing (2330.TW) is valued instead.
-- **History in the markets without a local source** (Japan, Korea, Europe and the rest) is four
+- **History in the markets without a local source** (Europe, Canada, Australia and the rest) is four
   to five years unless the company files with the SEC, so ten-year checks run on a shorter window
   there. The years of history show in the ranking and on the company page.
 - **No cost of sales filed** (payment networks, many services): operating

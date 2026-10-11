@@ -186,6 +186,29 @@ def bonus_factors(counts: dict, splits: list) -> dict:
     return factors
 
 
+def in_todays_units(facts: pd.DataFrame, splits: list) -> pd.DataFrame:
+    """share counts, eps and dividends per share of each year, moved into today's shares.
+    for the local sources outside china that give yearly counts as they stood."""
+    if not splits or facts.empty:
+        return facts
+    facts = facts.copy()
+    shares = facts[facts["concept"] == "shares_diluted"].set_index("period_end")["value"].to_dict()
+    factors = bonus_factors(shares, splits)
+    for concept, op in (("shares_diluted", lambda v, f: v * f), ("eps_diluted", lambda v, f: v / f),
+                        ("dps_declared", lambda v, f: v / f)):
+        mask = facts["concept"] == concept
+        facts.loc[mask, "value"] = [op(v, factors.get(e, 1.0)) for v, e in zip(facts.loc[mask, "value"], facts.loc[mask, "period_end"])]
+    return facts
+
+
+def splits_of(symbol: str) -> list:
+    """(date, ratio) of every split and bonus issue yahoo knows for a listing."""
+    try:
+        return [(pd.Timestamp(d).date(), float(r)) for d, r in yf.Ticker(symbol).splits.items() if r and r > 0]
+    except Exception:
+        return []
+
+
 def _shares(rec: dict) -> "float | None":
     """the share count behind the year's eps (net income / eps). the year-end share capital
     is the fallback: it can lag a restated eps by one bonus issue."""

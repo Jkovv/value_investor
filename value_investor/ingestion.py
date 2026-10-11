@@ -12,7 +12,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import pandas as pd
 
-from value_investor import brazil, china, config, edgar, fx, hongkong, india, markets, poland, store, taiwan, yahoo
+from value_investor import brazil, china, config, edgar, fx, hongkong, india, japan, korea, markets, poland, statements, store, taiwan, yahoo
 from value_investor.http import NotFound
 
 logger = logging.getLogger(__name__)
@@ -232,6 +232,26 @@ def world_quarters(con, workers: int = 3) -> int:
     return done
 
 
+AGREE = 0.03
+
+
+def matches_yahoo(con, cik: int, facts: pd.DataFrame) -> pd.DataFrame:
+    """the facts, if net income matches yahoo's, in yahoo's currency, for at least half the
+    years both have; nothing otherwise. a currency or company mix-up misses every year, a
+    restatement only some (biznesradar keeps orlen's 2022 as first reported, yahoo restated it)."""
+    if facts.empty:
+        return facts
+    stored = store.load_facts(con, cik)
+    ours = statements.annual_statements(stored[stored["taxonomy"] == "yahoo"])
+    if ours.empty or ours.attrs.get("currency") not in set(facts["unit"]):
+        return facts.iloc[0:0]
+    ni = facts[facts["concept"] == "net_income"]
+    mine = {(e.year, e.month): v for e, v in zip(pd.to_datetime(ni["period_end"]), ni["value"])}
+    hits = [abs(mine[(end.year, end.month)] / value - 1) <= AGREE
+            for end, value in ours["net_income"].dropna().items() if (end.year, end.month) in mine and value]
+    return facts if hits and sum(hits) >= max(1, len(hits) // 2) else facts.iloc[0:0]
+
+
 # sources with a longer history than yahoo's four years, and the markets they cover
 # source: (fetch for one ticker, markets, threads, check against what's stored or None)
 HISTORY_SOURCES = {
@@ -240,7 +260,9 @@ HISTORY_SOURCES = {
     "screener": (india.statements, ("IND",), 2, None),
     "eastmoney-hk": (hongkong.statements, ("HKG",), 4, hongkong.settle),
     "cvm": (brazil.statements, ("BRA",), 4, None),
-    "biznesradar": (poland.statements, ("POL",), 1, poland.agrees),      # paced inside
+    "biznesradar": (poland.statements, ("POL",), 1, matches_yahoo),      # paced inside
+    "irbank": (japan.statements, ("JPN",), 1, matches_yahoo),            # paced inside
+    "dart": (korea.statements, ("KOR",), 1, matches_yahoo),              # paced inside
 }
 HISTORY_REFRESH = timedelta(days=30)
 

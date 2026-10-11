@@ -4,7 +4,8 @@ biznesradar.pl shows each company's profit and loss, balance sheet and cash
 flow year by year, most of them back to the mid 2000s, with the date each
 report came out (robots.txt allows the report pages). figures are in thousands
 of zloty, also for companies that report in euros or dollars, so a company's
-years are only kept when its net income agrees with yahoo's in the same currency.
+years are only kept when its net income agrees with yahoo's in the same currency
+(ingestion.matches_yahoo).
 """
 
 import calendar
@@ -17,7 +18,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-from value_investor import statements as stmts
+from value_investor.china import in_todays_units, splits_of
 from value_investor.edgar import COLUMNS
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,6 @@ PAGES = {
 }
 TAXONOMY = "biznesradar"
 GAP = 2.0           # seconds between pages
-TOLERANCE = 0.03
 _lock = threading.Lock()
 _last = [0.0]
 MONTHS = {"sty": 1, "lut": 2, "mar": 3, "kwi": 4, "maj": 5, "cze": 6, "lip": 7, "sie": 8, "wrz": 9, "paź": 10,
@@ -141,26 +141,7 @@ def statements(symbol: str) -> pd.DataFrame:
     cf, _, _ = table(_page("cf", slug)[0])
     ratios, _, _ = table(_page("shares", slug)[0])
     facts = facts_from(pl, bs, cf, ratios.get("ShareAmount", {}), filed, currency)
-    try:
-        import yfinance as yf
-        splits =[(pd.Timestamp(d).date(), float(r)) for d, r in yf.Ticker(symbol).splits.items() if r and r > 0]
-    except Exception:
-        splits = []
-    return in_todays_units(facts, splits)
-
-
-def in_todays_units(facts: pd.DataFrame, splits: list) -> pd.DataFrame:
-    """share counts are as they stood at each year end; a split after that moves them."""
-    if not splits or facts.empty:
-        return facts
-    from value_investor.china import bonus_factors
-    facts = facts.copy()
-    shares = facts[facts["concept"] == "shares_diluted"].set_index("period_end")["value"].to_dict()
-    factors = bonus_factors(shares, splits)
-    for concept, op in (("shares_diluted", lambda v, f: v * f), ("eps_diluted", lambda v, f: v / f)):
-        mask = facts["concept"] == concept
-        facts.loc[mask, "value"] = [op(v, factors.get(e, 1.0)) for v, e in zip(facts.loc[mask, "value"], facts.loc[mask, "period_end"])]
-    return facts
+    return in_todays_units(facts, splits_of(symbol))
 
 
 def _plus(*values) -> "float | None":
@@ -241,21 +222,3 @@ def facts_from(pl: dict, bs: dict, cf: dict, shares: dict, filed: dict, currency
             rows.append((TAXONOMY, field, unit, None if field in INSTANT else start, end, float(value), "biznesradar",
                          when, None))
     return pd.DataFrame(rows, columns=COLUMNS)
-
-
-def agrees(con, cik: int, facts: pd.DataFrame) -> pd.DataFrame:
-    """the facts, if net income matches yahoo's, in yahoo's currency, for at least half the
-    years both have. biznesradar converts euro and dollar reporters into zloty, and keeps a
-    year as first reported where yahoo has it restated (orlen's 2022)."""
-    if facts.empty:
-        return facts
-    from value_investor import store
-    yahoo = store.load_facts(con, cik)
-    ours = stmts.annual_statements(yahoo[yahoo["taxonomy"] == "yahoo"])
-    if ours.empty or ours.attrs.get("currency") not in set(facts["unit"]):
-        return facts.iloc[0:0]
-    ni = facts[facts["concept"] == "net_income"]
-    mine = {(e.year, e.month): v for e, v in zip(pd.to_datetime(ni["period_end"]), ni["value"])}
-    hits = [abs(mine[(end.year, end.month)] / value - 1) <= TOLERANCE
-            for end, value in ours["net_income"].dropna().items() if (end.year, end.month) in mine and value]
-    return facts if hits and sum(hits) >= max(1, len(hits) // 2) else facts.iloc[0:0]

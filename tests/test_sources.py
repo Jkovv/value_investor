@@ -294,16 +294,101 @@ def test_a_polish_bank_earns_its_revenue_before_costs():
     assert "operating_income" not in got and "interest_expense" not in got
 
 
-def test_biznesradar_is_kept_only_when_net_income_matches_yahoo(monkeypatch):
+def test_a_local_source_is_kept_only_when_net_income_matches_yahoo(monkeypatch):
     import pandas as pd
-    from value_investor import poland, statements, store
+    from value_investor import ingestion, poland, statements, store
     end = date(2024, 12, 31)
     facts = poland.facts_from({"IncomeShareholderNetProfit": {end: 100.0}}, {}, {}, {}, {}, "PLN")
     monkeypatch.setattr(store, "load_facts", lambda con, cik: pd.DataFrame({"taxonomy": ["yahoo"]}))
     monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 101.0, "PLN"))
-    assert not poland.agrees(None, 1, facts).empty
+    assert not ingestion.matches_yahoo(None, 1, facts).empty
     # a euro reporter: biznesradar's zloty can't stand in for yahoo's euros
     monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 100.0, "EUR"))
-    assert poland.agrees(None, 1, facts).empty
+    assert ingestion.matches_yahoo(None, 1, facts).empty
     monkeypatch.setattr(statements, "annual_statements", lambda facts: table(900.0, 130.0, "PLN"))
-    assert poland.agrees(None, 1, facts).empty
+    assert ingestion.matches_yahoo(None, 1, facts).empty
+
+
+def test_irbank_amounts_read_in_yen():
+    from value_investor import japan
+    assert japan.amount("26兆2892億") == pytest.approx(26.2892e12)
+    assert japan.amount("-2779億8200万") == pytest.approx(-2779.82e8)
+    assert japan.amount("12.15円") == 12.15 and japan.amount("7.92%") == 7.92
+    assert japan.amount("-") is None and japan.amount("赤字") is None
+    assert japan.heading("利益(IFRS)#1#2") == "利益" and japan.heading("設備投資#6#7*") == "設備投資"
+
+
+def test_irbank_sections_skip_forecasts():
+    from value_investor import japan
+    html = """<div id="c_1"><h2>売上高<a>#1</a></h2><dl class="gdl">
+      <dt>2025/03</dt><dd><span class="text">2兆5000億</span></dd>
+      <dt><a>2026/03</a><span>+4%</span></dt><dd><span class="text">2兆6000億</span></dd>
+      <dt>2027/03 予</dt><dd><span class="text">3兆</span></dd></dl></div>"""
+    assert japan.sections(html) == {"売上高": {date(2025, 3, 31): 2.5e12, date(2026, 3, 31): 2.6e12}}
+
+
+def test_irbank_sections_become_facts():
+    from value_investor import japan
+    ends = [date(y, 3, 31) for y in (2023, 2024, 2025)]
+    secs = {"売上高": dict(zip(ends, (100.0, 110.0, 120.0))), "当期純利益": dict(zip(ends, (10.0, 11.0, 12.0))),
+            "EPS": dict(zip(ends, (1.0, 1.1, 1.2))), "BPS": dict(zip(ends, (8.0, 9.0, 10.0))),
+            "売上原価率": dict(zip(ends, (60.0, 60.0, 50.0))), "設備投資額": dict(zip(ends, (-5.0, -6.0, -7.0))),
+            "有利子負債": dict(zip(ends, (30.0, 30.0, 30.0))), "現金等": dict(zip(ends, (4.0, 4.0, 4.0)))}
+    facts = japan.facts_from(secs)
+    got = {(c, e): v for c, e, v in zip(facts["concept"], facts["period_end"], facts["value"])}
+    assert got[("cost_of_revenue", ends[2])] == 60.0 and got[("capex", ends[2])] == 7.0
+    assert got[("shares_diluted", ends[2])] == pytest.approx(10.0) and got[("equity", ends[2])] == pytest.approx(100.0)
+    assert ("long_term_debt", ends[0]) not in got
+    assert not any(c == "cash" for c, _ in got)            # one balance three years running is a copy
+
+
+def test_irbank_drops_reits_and_short_years():
+    from value_investor import japan
+    halves = [date(2024, 3, 31), date(2024, 9, 30), date(2025, 3, 31), date(2025, 9, 30)]
+    assert japan.facts_from({"当期純利益": {e: 1.0 for e in halves}}).empty
+    ends = [date(2014, 3, 31), date(2014, 12, 31), date(2015, 12, 31)]
+    facts = japan.facts_from({"当期純利益": {e: 1.0 for e in ends}})
+    assert sorted(set(facts["period_end"])) == [date(2014, 3, 31), date(2015, 12, 31)]
+
+
+DART_XBRL = """<xbrli:xbrl>
+  <xbrli:context id="C25"><xbrli:entity><xbrli:segment>
+    <xbrldi:explicitMember dimension="ifrs-full:ConsolidatedAndSeparateFinancialStatementsAxis">ifrs-full:ConsolidatedMember</xbrldi:explicitMember>
+  </xbrli:segment></xbrli:entity><xbrli:period><xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2025-12-31</xbrli:endDate></xbrli:period></xbrli:context>
+  <xbrli:context id="C25e"><xbrli:entity></xbrli:entity><xbrli:period><xbrli:instant>2025-12-31</xbrli:instant></xbrli:period></xbrli:context>
+  <xbrli:context id="S25"><xbrli:entity><xbrli:segment>
+    <xbrldi:explicitMember dimension="ifrs-full:ConsolidatedAndSeparateFinancialStatementsAxis">ifrs-full:SeparateMember</xbrldi:explicitMember>
+  </xbrli:segment></xbrli:entity><xbrli:period><xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2025-12-31</xbrli:endDate></xbrli:period></xbrli:context>
+  <xbrli:context id="C25o"><xbrli:entity><xbrli:segment>
+    <xbrldi:explicitMember dimension="ifrs-full:ConsolidatedAndSeparateFinancialStatementsAxis">ifrs-full:ConsolidatedMember</xbrldi:explicitMember>
+    <xbrldi:explicitMember dimension="ifrs-full:ClassesOfShareCapitalAxis">ifrs-full:OrdinarySharesMember</xbrldi:explicitMember>
+  </xbrli:segment></xbrli:entity><xbrli:period><xbrli:startDate>2025-01-01</xbrli:startDate><xbrli:endDate>2025-12-31</xbrli:endDate></xbrli:period></xbrli:context>
+  <xbrli:unit id="KRW"><xbrli:measure>iso4217:KRW</xbrli:measure></xbrli:unit>
+  <ifrs-full:Revenue contextRef="C25" unitRef="KRW" decimals="-6">1000</ifrs-full:Revenue>
+  <ifrs-full:Revenue contextRef="S25" unitRef="KRW" decimals="-6">700</ifrs-full:Revenue>
+  <dart:OperatingIncomeLoss contextRef="C25" unitRef="KRW" decimals="-6">150</dart:OperatingIncomeLoss>
+  <ifrs-full:ProfitLossFromOperatingActivities contextRef="C25" unitRef="KRW" decimals="-6">140</ifrs-full:ProfitLossFromOperatingActivities>
+  <ifrs-full:ProfitLossAttributableToOwnersOfParent contextRef="C25" unitRef="KRW" decimals="-6">100</ifrs-full:ProfitLossAttributableToOwnersOfParent>
+  <ifrs-full:DilutedEarningsLossPerShare contextRef="C25o" unitRef="KRW" decimals="0">5</ifrs-full:DilutedEarningsLossPerShare>
+  <ifrs-full:Assets contextRef="C25e" unitRef="KRW" decimals="-6">5000</ifrs-full:Assets>
+</xbrli:xbrl>"""
+
+
+def test_dart_xbrl_keeps_the_group_figures():
+    from value_investor import korea
+    tags, currency = korea.parse(DART_XBRL)
+    assert currency == "KRW"
+    assert tags["Revenue"] == {("2025-01-01", "2025-12-31"): 1000.0}
+    facts = korea.facts_from(tags, currency, date(2026, 3, 10))
+    got = dict(zip(facts["concept"], facts["value"]))
+    assert got["revenue"] == 1000.0 and got["operating_income"] == 150.0       # dart's own tag leads
+    assert got["eps_diluted"] == 5.0 and got["shares_diluted"] == 20.0       # the common shares' eps
+    assert got["total_assets"] == 5000.0
+    assert set(facts["filed"]) == {date(2026, 3, 10)}
+
+
+def test_dart_profit_without_minority_holders_still_counts():
+    from value_investor import korea
+    tags, currency = korea.parse(DART_XBRL.replace("ProfitLossAttributableToOwnersOfParent", "ProfitLoss"))
+    facts = korea.facts_from(tags, currency, date(2026, 3, 10))
+    assert currency == "KRW" and dict(zip(facts["concept"], facts["value"]))["net_income"] == 100.0
