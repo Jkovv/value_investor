@@ -102,9 +102,9 @@ a { color: var(--accent-ink); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 
 .wrap {
-  max-width: 1200px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding-inline: 24px;
+  padding-inline: clamp(16px, 2.5vw, 32px);
 }
 
 /* top bar */
