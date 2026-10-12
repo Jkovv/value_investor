@@ -28,7 +28,9 @@
   --font: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --display: "Inter", "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, sans-serif;
   --mono: "JetBrains Mono", "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
-  --radius: 12px;
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-xs: 2px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -149,7 +151,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   line-height: 1;
   white-space: nowrap;
   color: var(--ink-2);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 .tabs a:hover { color: var(--ink); background: var(--surface-2); text-decoration: none; }
 .tabs a[aria-current="page"] { color: var(--ink); background: var(--surface-2); }
@@ -160,7 +162,7 @@ a:hover { text-decoration: underline; text-underline-offset: 3px; }
   place-items: center;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink-2);
@@ -278,7 +280,7 @@ a.stat:hover { background: var(--surface-2); text-decoration: none; }
   height: 22px;
   line-height: 1;
   padding: 0 9px;
-  border-radius: 999px;
+  border-radius: 3px;
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-2);
@@ -306,7 +308,7 @@ a.stat:hover { background: var(--surface-2); text-decoration: none; }
   white-space: nowrap;
   height: 24px;
   padding: 0 9px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   font-size: 12.5px;
@@ -319,7 +321,7 @@ a.stat:hover { background: var(--surface-2); text-decoration: none; }
   min-width: 52px;
   height: 24px;
   padding: 0 7px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--surface-2);
   border: 1px solid var(--border);
   font-family: var(--mono);
@@ -361,7 +363,7 @@ a.stat:hover { background: var(--surface-2); text-decoration: none; }
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   height: 36px;
   padding: 0 12px;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -383,7 +385,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
 .switch .track {
   width: 32px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   background: var(--border-strong);
   position: relative;
   transition: background 0.2s;
@@ -396,7 +398,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
   left: 2px;
   width: 14px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: 3px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s cubic-bezier(.2,.8,.2,1);
@@ -417,7 +419,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
   white-space: nowrap;
   height: 36px;
   padding: 0 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   background: var(--ink);
   color: var(--surface);
@@ -456,7 +458,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
   color: var(--ink-2);
   background: none;
   border: 1px dashed var(--border-strong);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 .chip-add::before { content: "+"; font-size: 15px; line-height: 1; color: var(--muted); }
@@ -474,7 +476,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
   color: var(--muted);
   background: none;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
 }
 .remove svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
@@ -491,7 +493,7 @@ textarea.input { height: auto; padding: 9px 12px; line-height: 1.45; resize: ver
   line-height: 1;
   color: var(--accent-ink);
   background: var(--accent-soft);
-  border-radius: 7px;
+  border-radius: 3px;
 }
 
 /* tables */
@@ -543,11 +545,11 @@ table.data {
 .bar {
   width: 56px;
   height: 6px;
-  border-radius: 999px;
+  border-radius: 1px;
   background: var(--track);
   overflow: hidden;
 }
-.bar span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+.bar span { display: block; height: 100%; border-radius: 1px; background: var(--accent); }
 .ret { font-weight: 650; min-width: 48px; display: inline-block; }
 .years { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); white-space: nowrap; }
 
@@ -561,7 +563,7 @@ code, pre { font-family: var(--mono); font-size: 12.5px; }
 pre {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius);
   padding: 14px 16px;
 }
 
@@ -595,7 +597,7 @@ pre {
   align-items: flex-start;
   gap: 10px;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--warning-soft);
   font-size: 13px;
   color: var(--ink);
@@ -612,7 +614,7 @@ pre {
 }
 .step {
   padding: 14px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   font-size: 13px;
   color: var(--ink-2);
@@ -622,7 +624,7 @@ pre {
   place-items: center;
   width: 20px;
   height: 20px;
-  border-radius: 6px;
+  border-radius: var(--radius-xs);
   background: var(--surface);
   border: 1px solid var(--border);
   font-size: 11px;
@@ -652,7 +654,7 @@ pre {
   height: 32px;
   padding: 0 12px 0 8px;
   margin-bottom: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--ink-2);
@@ -672,7 +674,7 @@ pre {
   place-items: center;
   width: 52px;
   height: 52px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--accent-soft);
   color: var(--accent-ink);
   font-family: var(--mono);
@@ -692,7 +694,7 @@ pre {
   gap: 2px;
   padding: 3px;
   margin: 8px 0 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
@@ -711,7 +713,7 @@ pre {
   color: var(--ink-2);
   background: transparent;
   border: 0;
-  border-radius: 7px;
+  border-radius: 3px;
   padding: 0 14px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
@@ -791,7 +793,7 @@ pre {
 .sortable th.num .sort-btn { justify-content: flex-end; }
 .sortable th:first-child .sort-btn { padding-left: 20px; }
 .sort-btn:hover { color: var(--ink); }
-.sort-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 6px; }
+.sort-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-xs); }
 .sort-icon { width: 8px; height: 11px; flex: none; }
 .sort-icon path { fill: currentColor; opacity: 0.25; transition: opacity 0.15s; }
 .sort-btn:hover .sort-icon path { opacity: 0.45; }
@@ -846,7 +848,7 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 }
 .chart-card { padding: 16px 18px 12px; }
 .chart { margin: 0; position: relative; outline: none; }
-.chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 6px; }
+.chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: var(--radius-xs); }
 .chart figcaption { font-size: 12.5px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
 .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart .grid line { stroke: var(--border); stroke-width: 1; shape-rendering: crispEdges; }
@@ -866,7 +868,7 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
   pointer-events: none;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
   padding: 8px 10px;
   font-size: 12.5px;
@@ -944,7 +946,7 @@ th.num .th-tip { justify-content: flex-end; }
   align-items: flex-start;
   gap: 4px;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface-2);
 }
 .mini-stats strong { font-family: var(--display); font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
@@ -988,7 +990,7 @@ th.num .th-tip { justify-content: flex-end; }
   top: 50%;
   height: 2px;
   translate: 0 -50%;
-  border-radius: 999px;
+  border-radius: 1px;
   background: linear-gradient(90deg, var(--track), var(--border-strong));
 }
 .strip-dot, .strip-median { position: absolute; top: 50%; translate: -50% -50%; }
