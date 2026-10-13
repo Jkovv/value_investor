@@ -15,7 +15,7 @@ data/
 .venv/
 venv/
 
-# reference material and old attempts, not part of the app
+# previous attempts 
 inspo/
 
 # os / editor
