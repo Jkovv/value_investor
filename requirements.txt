@@ -1,6 +1,6 @@
 python-dotenv==1.2.4
 
-# data: filings come straight from public APIs, everything lands in one DuckDB file
+# data: filings come from public APIs, everything lands in one DuckDB file
 requests==2.34.2
 duckdb==1.5.6
 pandas==3.0.6
