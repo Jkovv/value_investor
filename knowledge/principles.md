@@ -156,7 +156,7 @@ of 25%+ every six or so. Have cash ready for them.
 
 ## Behaviour (guardrails, not score)
 
-These don't enter the score. They shape how the app asks you to act.
+These don't enter the score. They shape how the app asks the user to act.
 
 - Write the thesis down before buying; it's the only defence against "I knew it all along".
 - Before selling, ask whether the thesis changed or only the price did. People sell
