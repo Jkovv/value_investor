@@ -215,9 +215,13 @@ def cross_sections(panel: pd.DataFrame, signal: str, horizon: int, subset=None) 
         excess = r - r.mean()
         fifths = pd.qcut(g[signal].rank(method="first"), 5, labels=False) + 1
         means = excess.groupby(fifths).mean()
+        # the median company of each fifth against the market's median, which a few huge winners can't move
+        medians = (g[ret] - g[ret].median()).groupby(fifths).median()
         out.append({"market": market, "date": when, "n": len(g), "ic": _spearman(g[signal], g[ret]),
                     **{f"q{q}": float(means.get(q, np.nan)) for q in range(1, 6)},
-                    "spread": float(means.get(5, np.nan) - means.get(1, np.nan))})
+                    **{f"m{q}": float(medians.get(q, np.nan)) for q in range(1, 6)},
+                    "spread": float(means.get(5, np.nan) - means.get(1, np.nan)),
+                    "median_spread": float(medians.get(5, np.nan) - medians.get(1, np.nan))})
     return pd.DataFrame(out)
 
 
@@ -226,13 +230,17 @@ def summarise(cs: pd.DataFrame, horizon: int) -> dict:
     that allow for overlapping holding periods."""
     if cs.empty:
         return {}
-    by_year = cs.groupby("date")[["ic", "spread", "q1", "q2", "q3", "q4", "q5"]].mean()
+    cols = ["ic", "spread", "median_spread"] + [f"q{q}" for q in range(1, 6)] + [f"m{q}" for q in range(1, 6)]
+    by_year = cs.groupby("date")[cols].mean()
     lags = horizon - 1
     pooled = {"years": int(len(by_year)), "markets": int(cs["market"].nunique()), "groups": int(len(cs)),
               "company_years": int(cs["n"].sum()), "ic": float(by_year["ic"].mean()),
               "ic_t": newey_west_t(by_year["ic"], lags), "ic_positive": float((cs["ic"] > 0).mean()),
               "spread": float(by_year["spread"].mean()), "spread_t": newey_west_t(by_year["spread"], lags),
               "fifths": [float(by_year[f"q{q}"].mean()) for q in range(1, 6)],
+              "median_fifths": [float(by_year[f"m{q}"].mean()) for q in range(1, 6)],
+              "median_spread": float(by_year["median_spread"].mean()),
+              "median_spread_t": newey_west_t(by_year["median_spread"], lags),
               "ic_by_year": {str(d): float(v) for d, v in by_year["ic"].items()}}
     markets = {}
     for market, g in cs.groupby("market"):
@@ -322,9 +330,9 @@ def _style(ax) -> None:
     ax.set_axisbelow(True)
 
 
-def _pct_axis(ax, digits: int = 0) -> None:
-    from matplotlib.ticker import FuncFormatter
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, _: f"{v * 100:.{digits}f}%"))
+def _pct_axis(ax, digits=None) -> None:
+    from matplotlib.ticker import PercentFormatter
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=digits))
 
 
 def figures(res: dict, out_dir) -> list:
@@ -341,27 +349,26 @@ def figures(res: dict, out_dir) -> list:
     out_dir.mkdir(parents=True, exist_ok=True)
     made = []
 
-    panels = [(s, label) for s, label in SIGNALS.items() if (res["signals"][s].get("1y") or {}).get("pooled")]
+    panels = [(s, label) for s, label in SIGNALS.items() if (res["signals"][s].get("3y") or {}).get("pooled")]
     if panels:
-        fig, axes = plt.subplots(1, len(panels), figsize=(3.4 * len(panels), 3.4), sharey=True)
+        fig, axes = plt.subplots(1, len(panels), figsize=(3.6 * len(panels), 3.6), sharey=True)
         axes = np.atleast_1d(axes)
+        w = 0.36
         for ax, (signal, label) in zip(axes, panels):
-            p = res["signals"][signal]["1y"]["pooled"]
-            values = p["fifths"]
-            ax.bar(range(5), values, width=0.62, color=TEAL)
-            for i, v in enumerate(values):
-                text = f"{v * 100:+.1f}%" if abs(v) >= 0.0005 else "0.0%"
-                ax.annotate(text, (i, v), xytext=(0, 4 if v >= 0 else -12), textcoords="offset points",
-                            ha="center", fontsize=8.5, color=INK)
+            p = res["signals"][signal]["3y"]["pooled"]
+            x = np.arange(5)
+            ax.bar(x - w / 2 - 0.01, p["fifths"], width=w, color=TEAL, label="average company")
+            ax.bar(x + w / 2 + 0.01, p["median_fifths"], width=w, color=ORANGE, label="median company")
             ax.axhline(0, color=AXIS, linewidth=1)
-            ax.set_xticks(range(5), ["Lowest", "2", "3", "4", "Highest"])
+            ax.set_xticks(x, ["Lowest", "2", "3", "4", "Highest"])
             title = label if signal != "expected_return" else f"{label}, passers"
             t = f", t {p['ic_t']:.1f}" if p.get("ic_t") is not None else ""
             ax.set_title(f"{title}\nrank corr. {p['ic']:.3f}{t}", fontsize=10, color=INK, loc="left")
-            ax.margins(y=0.16)
+            ax.margins(y=0.12)
             _style(ax)
-        _pct_axis(axes[0], 1)
-        axes[0].set_ylabel("next year's return less the market's")
+        _pct_axis(axes[0])
+        axes[0].set_ylabel("three years' return less the market's")
+        axes[-1].legend(frameon=False, fontsize=8.5, loc="upper left")
         fig.tight_layout()
         path = out_dir / "study_fifths.png"
         fig.savefig(path, dpi=200)

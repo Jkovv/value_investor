@@ -189,14 +189,14 @@ def cmd_study(args):
     console.print(f"{res['company_years']:,} company-years, {res['companies']:,} companies, "
                   f"{len(res['markets'])} markets, {res['first']} to {res['last']}")
     t = Table(title="Each signal against the next year's return, within market and year", header_style="bold")
-    for col in ("Signal", "Horizon", "Years", "Rank corr.", "t", "Top fifth less bottom", "t"):
+    for col in ("Signal", "Horizon", "Years", "Rank corr.", "t", "Top fifth less bottom", "t", "Medians", "t"):
         t.add_column(col, justify="left" if col in ("Signal", "Horizon") else "right")
     for signal, label in study.SIGNALS.items():
         for h in study.HORIZONS:
             p = (res["signals"][signal].get(f"{h}y") or {}).get("pooled")
             if p:
                 t.add_row(label, f"{h} year{'s' if h > 1 else ''}", str(p["years"]), f"{p['ic']:.3f}", _t(p["ic_t"]),
-                          pct(p["spread"]), _t(p["spread_t"]))
+                          pct(p["spread"]), _t(p["spread_t"]), pct(p["median_spread"]), _t(p["median_spread_t"]))
     console.print(t)
     for h in study.HORIZONS:
         g = res["gate"].get(f"{h}y") or {}
