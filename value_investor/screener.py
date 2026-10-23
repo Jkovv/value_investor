@@ -131,8 +131,9 @@ def looks_like_fund(name: "str | None", industry: "str | None", summary: "str | 
 
 
 SOURCE_NAMES = {"us-gaap": "SEC XBRL", "ifrs-full": "SEC XBRL", "eastmoney": "EastMoney", "finmind": "FinMind",
-                "screener": "Screener.in", "eastmoney-hk": "EastMoney", "cvm": "CVM", "yahoo": "Yahoo Finance"}
-ESTIMATED_DATES = {"yahoo", "finmind", "screener", "eastmoney-hk"}
+                "screener": "Screener.in", "eastmoney-hk": "EastMoney", "cvm": "CVM", "biznesradar": "Biznesradar",
+                "irbank": "IRBANK", "dart": "DART", "yahoo": "Yahoo Finance"}
+ESTIMATED_DATES = {"yahoo", "finmind", "screener", "eastmoney-hk", "irbank"}
 
 
 def _name_key(name: "str | None") -> str:
