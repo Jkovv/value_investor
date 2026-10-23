@@ -70,7 +70,7 @@ def _get(dataset: str, code: str, start: str) -> pd.DataFrame:
     token = os.getenv("FINMIND_TOKEN")
     if token:
         params["token"] = token
-    for attempt in range(4):
+    for _ in range(4):
         with _lock:
             wait = _last[0] + GAP - time.monotonic()
             if wait > 0:

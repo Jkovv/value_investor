@@ -86,8 +86,10 @@ def market_cap_to_gdp(con, as_of=None) -> "dict | None":
     trend = float(np.exp(slope * now_years + intercept))
     z = (np.log(value) - np.log(trend)) / residual_std
 
-    for upper, label, cash in REGIMES:
+    label, cash = REGIMES[-1][1:]
+    for upper, name, share in REGIMES:
         if z < upper:
+            label, cash = name, share
             break
     history = pd.DataFrame({"ratio": ratio, "trend": np.exp(slope * years + intercept)}, index=ratio.index)
     if pd.Timestamp(value_date) > history.index[-1]:

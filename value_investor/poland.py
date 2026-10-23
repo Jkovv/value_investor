@@ -155,9 +155,9 @@ def facts_from(pl: dict, bs: dict, cf: dict, shares: dict, filed: dict, currency
     at = lambda rows, field, end: rows.get(field, {}).get(end)
     rows = []
     for end in sorted(set(pl.get("IncomeShareholderNetProfit", {})) | set(pl.get("IncomeRevenues", {}))):
-        p = lambda f: at(pl, f, end)
-        b = lambda f: at(bs, f, end)
-        c = lambda f: at(cf, f, end)
+        p = lambda f, e=end: at(pl, f, e)
+        b = lambda f, e=end: at(bs, f, e)
+        c = lambda f, e=end: at(cf, f, e)
         v = {"net_income": p("IncomeShareholderNetProfit"),
              "pretax_income": p("IncomeBeforeTaxProfit") if p("IncomeBeforeTaxProfit") is not None else p("IncomeBeforTaxProfit"),
              "depreciation": c("CashflowAmortization"), "total_assets": b("BalanceTotalAssets"),

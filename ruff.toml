@@ -1,0 +1,9 @@
+line-length = 120
+
+[lint]
+select = ["E4", "E7", "E9", "F", "B"]
+# zip without strict= is fine on columns of one table; one-line lambdas read better inline
+ignore = ["B905", "E731"]
+
+[lint.per-file-ignores]
+"value_investor/concepts.py" = ["E741"]   # G and I are the two taxonomy prefixes
