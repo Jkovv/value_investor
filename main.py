@@ -182,6 +182,8 @@ def cmd_study(args):
     panel = study.load_panel() if args.reuse else None
     if panel is None:
         panel = study.build_panel(workers=args.workers)
+    elif args.returns:
+        panel = study.add_returns(panel)
     res = study.results(panel)
     study.save(panel, res)
     console.print(f"{res['company_years']:,} company-years, {res['companies']:,} companies, "
@@ -267,6 +269,7 @@ def main():
     p = sub.add_parser("study")
     p.add_argument("--workers", type=int, help="processes scoring companies at once")
     p.add_argument("--reuse", action="store_true", help="reuse the last scored panel, only redo the statistics")
+    p.add_argument("--returns", action="store_true", help="with --reuse, also work the returns out again")
     p.set_defaults(func=cmd_study)
 
     p = sub.add_parser("evals")

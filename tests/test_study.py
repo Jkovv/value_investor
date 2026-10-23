@@ -78,3 +78,15 @@ def test_gate_gap_and_calibration():
     cal = study.calibration(p, 3)
     assert [c["bucket"] for c in cal] == ["10 to 15%", "15 to 20%"]
     assert cal[1]["realised"] > cal[0]["realised"]
+
+
+def test_a_broken_split_adjustment_is_not_a_return():
+    p = prices([("2020-06-30", 100.0, 0.0), ("2020-09-01", 0.0005, 0.0), ("2020-09-02", 0.0005, 0.0),
+                ("2021-06-30", 0.00055, 0.0)])
+    tri = study.total_return_index(p)
+    assert study.forward_return(tri, "2020-06-30", 1) == pytest.approx(0.1)
+
+
+def test_one_wild_return_doesnt_carry_the_average():
+    r = pd.Series([0.05] * 99 + [1000.0])
+    assert study.trimmed(r).max() < 20 and study.trimmed(r).mean() < 0.3

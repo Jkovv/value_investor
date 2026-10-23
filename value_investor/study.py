@@ -30,6 +30,8 @@ FIRST_YEAR = 2010
 HORIZONS = (1, 3)
 MIN_GROUP = 20          # companies a market needs in a year to be ranked against each other
 TOLERANCE_DAYS = 7      # how far a price may be from the day it stands for
+GLITCH = 3.0            # a day that triples or thirds the price is a broken split adjustment, not a return
+TRIM = 0.01             # averages leave out the top and bottom 1% of each market's year
 SIGNALS = {"quality": "Quality score", "expected_return": "Expected return", "f_score": "Piotroski F-score"}
 BUCKETS = [-np.inf, 0.0, 0.05, 0.10, 0.15, 0.20, np.inf]
 BUCKET_NAMES = ["below 0%", "0 to 5%", "5 to 10%", "10 to 15%", "15 to 20%", "above 20%"]
@@ -41,7 +43,9 @@ def formation_dates(today=None) -> list:
 
 
 def total_return_index(prices: pd.DataFrame) -> pd.Series:
-    """a share's value with its dividends put back in, from yahoo's split-adjusted closes."""
+    """a share's value with its dividends put back in, from yahoo's split-adjusted closes. a day
+    that moves the price more than threefold either way counts as no move: for companies this
+    size it is a split yahoo adjusted wrongly (sbi shinsei's 1 for 20,000,000), not a return."""
     p = prices.dropna(subset=["close"])
     p = p[p["close"] > 0]
     if p.empty:
@@ -50,6 +54,7 @@ def total_return_index(prices: pd.DataFrame) -> pd.Series:
     dividend = p["dividend"].fillna(0).to_numpy(dtype=float)
     step = np.ones(len(close))
     step[1:] = (close[1:] + dividend[1:]) / close[:-1]
+    step[(step > GLITCH) | (step < 1 / GLITCH)] = 1.0
     return pd.Series(np.cumprod(step), index=pd.DatetimeIndex(p["date"]))
 
 
@@ -154,7 +159,28 @@ def build_panel(workers: "int | None" = None, ciks=None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def add_returns(panel: pd.DataFrame) -> pd.DataFrame:
+    """the forward returns again from stored prices, keeping the scores: for when the return
+    rules change and scoring every company over would take hours."""
+    out = panel.copy()
+    with store.connect(read_only=True) as con:
+        for ticker, rows in out.groupby("ticker"):
+            prices = store.load_prices(con, ticker)
+            if prices.empty:
+                continue
+            prices["date"] = pd.to_datetime(prices["date"])
+            tri = total_return_index(prices)
+            for h in HORIZONS:
+                out.loc[rows.index, f"r{h}"] = [forward_return(tri, d, h) for d in rows["date"]]
+    return out
+
+
 # statistics
+
+def trimmed(r: pd.Series) -> pd.Series:
+    """returns with the top and bottom 1% held at the 1st and 99th percentile."""
+    return r.clip(r.quantile(TRIM), r.quantile(1 - TRIM))
+
 
 def _spearman(x: pd.Series, y: pd.Series) -> float:
     return float(np.corrcoef(x.rank(), y.rank())[0, 1])
@@ -184,7 +210,8 @@ def cross_sections(panel: pd.DataFrame, signal: str, horizon: int, subset=None) 
     for (market, when), g in df.groupby(["market", "date"]):
         if len(g) < MIN_GROUP or g[signal].nunique() < 5:
             continue
-        excess = g[ret] - g[ret].mean()
+        r = trimmed(g[ret])
+        excess = r - r.mean()
         fifths = pd.qcut(g[signal].rank(method="first"), 5, labels=False) + 1
         means = excess.groupby(fifths).mean()
         out.append({"market": market, "date": when, "n": len(g), "ic": _spearman(g[signal], g[ret]),
@@ -219,7 +246,8 @@ def gate_gap(panel: pd.DataFrame, horizon: int) -> dict:
     ret = f"r{horizon}"
     gaps = []
     for (market, when), g in panel.dropna(subset=[ret]).groupby(["market", "date"]):
-        passed, failed = g.loc[g["gate"], ret], g.loc[~g["gate"], ret]
+        r = trimmed(g[ret])
+        passed, failed = r[g["gate"]], r[~g["gate"]]
         if len(g) >= MIN_GROUP and len(passed) >= 5 and len(failed) >= 5:
             gaps.append({"date": when, "market": market, "gap": float(passed.mean() - failed.mean()),
                          "share": float(len(passed) / len(g))})
@@ -236,6 +264,7 @@ def calibration(panel: pd.DataFrame, horizon: int = 3) -> list:
     returned a year, and against their market's average that year."""
     ret = f"r{horizon}"
     df = panel.dropna(subset=[ret]).copy()
+    df[ret] = df.groupby(["market", "date"])[ret].transform(trimmed)
     df["realised"] = (1 + df[ret]).clip(lower=0) ** (1 / horizon) - 1
     df["excess"] = df["realised"] - df.groupby(["market", "date"])["realised"].transform("mean")
     df = df[df["gate"] & df["expected_return"].notna()]
