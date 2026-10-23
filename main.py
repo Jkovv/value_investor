@@ -9,6 +9,7 @@ run `python ingest.py` first, then:
   python main.py macro                   # rates, Market Cap / GDP, suggested cash share
   python main.py audit                   # how each history source agrees with yahoo, line by line
   python main.py study                   # would the ranking have picked the better companies?
+  python main.py evals                   # do the research briefs say what their sources say?
 """
 
 import argparse
@@ -209,6 +210,31 @@ def cmd_study(args):
     console.print(f"[dim]saved to {study.DIR}[/]")
 
 
+def cmd_evals(args):
+    from value_investor import evals
+    tickers = [t.upper() for t in args.tickers] if args.tickers else evals.briefs()
+    if not tickers:
+        console.print("No briefs with saved evidence yet. Run research.py on a few companies first.")
+        return
+    rows = evals.grade(tickers)
+    res = evals.summarise(rows, tickers)
+    res["human"] = evals.human_agreement(rows)
+    evals.save(res, rows)
+    t = Table(title=f"Cited sentences, judged by {res['judge']}", header_style="bold")
+    for col in ("Brief", "Sentences", "Cited", "Supported", "Partly", "Not in source", "Contradicted"):
+        t.add_column(col, justify="left" if col == "Brief" else "right")
+    for name, s in [*res["by_brief"].items(), ("All", res["overall"])]:
+        t.add_row(name, f"{s['judged']}/{s['sentences']}", pct(s.get("cited_share"), 0),
+                  *(pct(s[v], 0) for v in evals.VERDICTS))
+    console.print(t)
+    if args.sample:
+        console.print(f"Mark these by hand, then run again: {evals.write_sample(rows, args.sample)}")
+    if res["human"]:
+        h = res["human"]
+        console.print(f"Judge against your marks: {h['agreement']:.0%} agree on {h['marked']} sentences, "
+                      f"kappa {h['kappa']:.2f}" if h["kappa"] is not None else "")
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -241,6 +267,11 @@ def main():
     p.add_argument("--workers", type=int, help="processes scoring companies at once")
     p.add_argument("--reuse", action="store_true", help="reuse the last scored panel, only redo the statistics")
     p.set_defaults(func=cmd_study)
+
+    p = sub.add_parser("evals")
+    p.add_argument("--tickers", nargs="+", help="only these briefs")
+    p.add_argument("--sample", type=int, help="write this many sentences to mark by hand")
+    p.set_defaults(func=cmd_evals)
 
     args = parser.parse_args()
     args.func(args)
