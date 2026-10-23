@@ -207,7 +207,8 @@ def cmd_study(args):
     for b in res["calibration"]:
         c.add_row(b["bucket"], str(b["n"]), pct(b["realised"]), pct(b["excess"]))
     console.print(c)
-    console.print(f"[dim]saved to {study.DIR}[/]")
+    charts = study.figures(res, config.ROOT / "docs" / "img")
+    console.print(f"[dim]saved to {study.DIR}, charts in docs/img ({len(charts)})[/]")
 
 
 def cmd_evals(args):

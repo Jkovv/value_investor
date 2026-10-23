@@ -28,5 +28,8 @@ python-multipart==0.0.32
 # cli output
 rich==15.0.0
 
+# charts in the study write-up
+matplotlib==3.11.2
+
 # tests
 pytest==9.1.1
