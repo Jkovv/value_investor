@@ -224,11 +224,12 @@ def cmd_evals(args):
     res["human"] = evals.human_agreement(rows)
     evals.save(res, rows)
     t = Table(title=f"Cited sentences, judged by {res['judge']}", header_style="bold")
-    for col in ("Brief", "Sentences", "Cited", "Supported", "Partly", "Not in source", "Contradicted"):
+    for col in ("Brief", "Sentences", "Cited", "Supported", "Partly", "Not in source", "Contradicted",
+                "Names in no source"):
         t.add_column(col, justify="left" if col == "Brief" else "right")
     for name, s in [*res["by_brief"].items(), ("All", res["overall"])]:
         t.add_row(name, f"{s['judged']}/{s['sentences']}", pct(s.get("cited_share"), 0),
-                  *(pct(s[v], 0) for v in evals.VERDICTS))
+                  *(pct(s[v], 0) for v in evals.VERDICTS), str(s.get("unsourced_names", "")))
     console.print(t)
     if args.sample:
         console.print(f"Mark these by hand, then run again: {evals.write_sample(rows, args.sample)}")

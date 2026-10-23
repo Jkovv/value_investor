@@ -20,7 +20,7 @@ from collections import deque
 import litellm
 
 from value_investor import config
-from value_investor.research import EVIDENCE_BUDGET, EXCERPT_CHARS
+from value_investor.research import EVIDENCE_BUDGET, EXCERPT_CHARS, NAME
 from value_investor.research_tools import RESEARCH_DIR
 
 logger = logging.getLogger(__name__)
@@ -72,6 +72,24 @@ def claims(report: str) -> list:
                 flagged = FLAG in sentence
                 clean = sentence.replace(FLAG, "").strip()
                 out.append({"section": section, "claim": clean, "cited": cited, "flagged": flagged})
+    return out
+
+
+def unsourced_names(report: str, items: list) -> list:
+    """sentences that cite nothing and name someone or something no source mentions; a small
+    model fills gaps with names it remembers (a ceo who left years ago)."""
+    body = re.split(r"\n## Sources\b", report)[0]
+    haystack = " ".join((e["title"] + " " + e["text"]).lower() for e in items)
+    out = []
+    for block in body.split("\n"):
+        if block.startswith("#"):
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", block):
+            if re.search(r"\[\d+\]", sentence):
+                continue
+            missing = [n for n in NAME.findall(sentence) if n.lower() not in haystack]
+            if missing:
+                out.append({"sentence": sentence.strip()[:300], "names": missing})
     return out
 
 
@@ -183,11 +201,13 @@ def _shares(rows: list) -> dict:
 
 def summarise(rows: list, tickers=None) -> dict:
     tickers = tickers or sorted({r["ticker"] for r in rows})
-    cited_share = {}
+    cited_share, unsourced = {}, {}
     for t in tickers:
         report = (RESEARCH_DIR / f"{t}.md").read_text(encoding="utf-8")
+        items = json.loads((RESEARCH_DIR / f"{t}.evidence.json").read_text(encoding="utf-8"))
         total = sentences(report)
         cited_share[t] = len([r for r in rows if r["ticker"] == t]) / total if total else None
+        unsourced[t] = unsourced_names(report, items)
     by_kind = {}
     for r in rows:
         for k in r["kinds"]:
@@ -199,7 +219,9 @@ def summarise(rows: list, tickers=None) -> dict:
                                               for r in flagged),
     }
     return {"overall": _shares(rows), "by_brief": {t: {**_shares([r for r in rows if r["ticker"] == t]),
-                                                       "cited_share": cited_share[t]} for t in tickers},
+                                                       "cited_share": cited_share[t],
+                                                       "unsourced_names": len(unsourced[t])} for t in tickers},
+            "unsourced_examples": {t: v[:5] for t, v in unsourced.items()},
             "by_section": {s: _shares([r for r in rows if r["section"] == s])
                            for s in sorted({r["section"] for r in rows})},
             "by_source": {k: _shares(v) for k, v in sorted(by_kind.items())}, "name_check": name_check,

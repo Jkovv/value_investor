@@ -66,3 +66,11 @@ def test_agreement_with_hand_marked_sentences(monkeypatch, tmp_path):
             {"id": "c", "verdict": "supported"}, {"id": "d", "verdict": "partly"}]
     got = evals.human_agreement(rows)
     assert got["marked"] == 3 and got["agreement"] == pytest.approx(2 / 3)
+
+
+def test_names_no_source_mentions_are_caught_in_uncited_sentences():
+    items = [{"title": "Annual report", "where": "page 1", "text": "Michael Miebach is chief executive."}]
+    report = ("# X\n\nThe chief executive is Ajay Banga. Michael Miebach runs it.\n"
+              "Revenue grew [1]. Someone Else said so [1].\n\n## Sources\n\n1. Annual report\n")
+    found = evals.unsourced_names(report, items)
+    assert [f["names"] for f in found] == [["Ajay Banga"]]
