@@ -10,6 +10,9 @@
       if (saved === "light" || saved === "dark") document.documentElement.dataset.theme = saved;
     } catch (e) {}
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="/static/style.css?v={{ asset_version }}">
 </head>
 <body>
@@ -17,7 +20,7 @@
     <div class="wrap topbar-row">
       <a class="brand" href="/">
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
-          <rect width="24" height="24" rx="7" fill="currentColor"/>
+          <rect width="24" height="24" rx="4" fill="currentColor"/>
           <path d="M6 15.5l3.6-3.6 2.8 2.8L18 9" fill="none" style="stroke: var(--surface)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="brand-name">Value Investor</span>
