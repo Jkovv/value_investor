@@ -1,5 +1,7 @@
 # Value Investor
 
+[![tests](https://github.com/Jkovv/value_investor/actions/workflows/tests.yml/badge.svg)](https://github.com/Jkovv/value_investor/actions/workflows/tests.yml)
+
 A screener for the whole world's stock markets that looks for one thing: businesses with a durable
 competitive advantage, at a price that still leaves a good return. It reads ten years of financial
 statements for about 8,000 companies in 47 markets, scores each one against a written checklist,
