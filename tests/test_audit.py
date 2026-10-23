@@ -39,3 +39,19 @@ def test_summary_counts_years_within_two_and_ten_percent():
     assert s["name"] == "IRBANK" and s["companies"] == 2 and s["markets"] == ["JPN"]
     line = s["lines"]["net_income"]
     assert line["pairs"] == 3 and line["close"] == pytest.approx(1 / 3) and line["near"] == pytest.approx(2 / 3)
+
+
+def test_the_data_page_shows_the_last_audit(monkeypatch):
+    from fastapi.testclient import TestClient
+    import app as dashboard
+    result = {"run_at": "2026-10-23T22:00", "companies_checked": 1,
+              "sources": audit.summarise([(1, "JPN", "irbank", "net_income", date(2025, 3, 31), 0.01)]),
+              "markets": [{"market": "JPN", "name": "Japan", "companies": 2, "ten_years": 1, "median_years": 9.5,
+                           "sources": {"irbank": 1, "yahoo": 2}}],
+              "freshness": [{"source": "irbank", "name": "IRBANK", "companies": 2, "with_years": 1, "most_years": 19,
+                             "last_fetch": "2026-10-12 10:00"}]}
+    monkeypatch.setattr(audit, "load", lambda: result)
+    page = TestClient(dashboard.app).get("/data")
+    assert page.status_code == 200 and "IRBANK" in page.text and "Japan" in page.text and "100%" in page.text
+    monkeypatch.setattr(audit, "load", lambda: None)
+    assert "No audit yet" in TestClient(dashboard.app).get("/data").text

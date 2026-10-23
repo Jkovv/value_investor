@@ -25,6 +25,7 @@
       <nav class="tabs">
         <a href="/" {% if request.url.path == '/' or request.url.path.startswith('/company') %}aria-current="page"{% endif %}>Ranking</a>
         <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Markets</a>
+        <a href="/data" {% if request.url.path == '/data' %}aria-current="page"{% endif %}>Data</a>
       </nav>
       <button class="icon-button theme-toggle" type="button" aria-label="Switch to dark theme">
         <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
+{% block title %}Data · Value Investor{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Data</h1>
+  <p class="sub">Where each market's years come from, and how often each source agrees with Yahoo Finance on the
+    years both report.</p>
+</div>
+
+{% if not audit %}
+<section class="card section">
+  <div class="card-body"><p>No audit yet. Run <code>python main.py audit</code>.</p></div>
+</section>
+{% else %}
+{% set ten = audit.markets | sum(attribute="ten_years") %}
+{% set total = audit.markets | sum(attribute="companies") %}
+<section class="stats" aria-label="Coverage">
+  <div class="stat">
+    <span class="stat-label">Companies</span>
+    <span class="stat-value">{{ "{:,}".format(total) }}</span>
+    <span class="stat-note">in {{ audit.markets | length }} markets</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">With ten years</span>
+    <span class="stat-value">{{ "{:,}".format(ten) }}</span>
+    <span class="stat-note">{{ (ten / total) | pct(0) if total else "-" }} of them</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Checked against Yahoo</span>
+    <span class="stat-value">{{ "{:,}".format(audit.companies_checked) }}</span>
+    <span class="stat-note">from {{ audit.sources | length }} sources</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Audit run</span>
+    <span class="stat-value small-list">{{ audit.run_at[:10] }}</span>
+    <span class="stat-note"><code>python main.py audit</code></span>
+  </div>
+</section>
+
+<section class="card section">
+  <div class="card-head">
+    <h2>Agreement with Yahoo Finance</h2>
+    <span class="hint">share of years within 2%, hover for the count</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data sortable" id="agreement">
+    <thead>
+      <tr>
+        {{ sort_head("Source", "text", "") }}
+        {{ sort_head("Markets", "text", "") }}
+        {{ sort_head("Companies", initial="descending") }}
+        {% for line, label in lines %}{{ sort_head(label) }}{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+    {% for s in audit.sources %}
+      <tr>
+        <td>{{ s.name }}</td>
+        <td><span class="years">{{ s.markets | join(", ") if s.markets | length <= 4 else (s.markets | length) ~ " markets" }}</span></td>
+        <td class="num" data-value="{{ s.companies }}">{{ "{:,}".format(s.companies) }}</td>
+        {% for line, label in lines %}
+          {% set v = s.lines.get(line) %}
+          {% if v %}
+          <td class="num {{ 'tone-pass' if v.close >= 0.95 else 'tone-warn' if v.close >= 0.8 else 'tone-fail' }}"
+              data-value="{{ v.close }}" title="{{ '{:,}'.format(v.pairs) }} years, median gap {{ v.median_gap | pct(1) }}">{{ v.close | pct(0) }}</td>
+          {% else %}
+          <td class="num tone-na" data-value="-1">-</td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card section">
+  <div class="card-head">
+    <h2>History by market</h2>
+    <span class="hint">years of annual statements behind each score</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data sortable" id="coverage">
+    <thead>
+      <tr>
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Companies", initial="descending") }}
+        {{ sort_head("Ten years") }}
+        {{ sort_head("Median years") }}
+        {{ sort_head("Sources", "text", "") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in audit.markets %}
+      {% set share = m.ten_years / m.companies if m.companies else 0 %}
+      <tr>
+        <td><span class="ticker">{{ m.market }}</span> {{ m.name }}</td>
+        <td class="num" data-value="{{ m.companies }}">{{ "{:,}".format(m.companies) }}</td>
+        <td class="num" data-value="{{ share }}">
+          <span class="bar-cell">
+            <span class="bar" aria-hidden="true"><span style="width: {{ (share * 100) | round(0) }}%"></span></span>
+            {{ share | pct(0) }}
+          </span>
+        </td>
+        <td class="num" data-value="{{ m.median_years }}">{{ "%.0f" | format(m.median_years) }}</td>
+        <td data-value="{{ m.sources | length }}">
+          {% for src, n in m.sources | dictsort(by="value", reverse=true) %}{{ names.get(src, src) }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card section">
+  <div class="card-head">
+    <h2>Last fetched</h2>
+    <span class="hint">each source is refetched after 30 days</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data">
+    <thead>
+      <tr><th>Source</th><th class="num">Companies tried</th><th class="num">With years</th><th class="num">Most years</th><th class="num">Last fetch</th></tr>
+    </thead>
+    <tbody>
+    {% for f in audit.freshness %}
+      <tr>
+        <td>{{ f.name }}</td>
+        <td class="num">{{ "{:,}".format(f.companies) }}</td>
+        <td class="num">{{ "{:,}".format(f.with_years) }}</td>
+        <td class="num">{{ f.most_years }}</td>
+        <td class="num">{{ f.last_fetch or "-" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}

@@ -22,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import config, llm, macro, markets, peers, research, screener, store
+from value_investor import audit, config, llm, macro, markets, peers, research, screener, store
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -281,6 +281,13 @@ def ask_status(ticker: str):
 def research_status(ticker: str):
     return JSONResponse(json.loads(json.dumps(research.status(ticker) or {"state": "none"}, default=str)),
                         headers={"Cache-Control": "no-store"})
+
+
+@app.get("/data", response_class=HTMLResponse)
+def data(request: Request):
+    names = {**audit.NAMES, "sec": "SEC"}
+    return templates.TemplateResponse(request, "data.html", {"audit": audit.load(), "lines": audit.SHOWN,
+                                                             "names": names})
 
 
 @app.get("/market", response_class=HTMLResponse)
