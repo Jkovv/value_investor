@@ -81,6 +81,23 @@ python main.py show KO
 python main.py macro
 ```
 
+## Checking the work
+
+```bash
+# How often each history source agrees with Yahoo Finance, line by line (also on /data)
+python main.py audit
+
+# Every company scored again each June since 2010 with only what was known then, against
+# what its shares returned next; charts land in docs/img (an hour or two on a laptop)
+python main.py study
+python main.py study --reuse          # redo the statistics on the last scored panel
+
+# The research briefs, sentence by sentence against their sources (needs GROQ_API_KEY for
+# the judge; carries on the next day if the free daily limit runs out)
+python main.py evals
+python main.py evals --sample 60      # also write 60 sentences to mark by hand
+```
+
 ## Research
 
 ```bash
@@ -102,7 +119,7 @@ Questions about a company are asked on its Research tab.
 
 ```bash
 uvicorn app:app --port 8001
-# http://127.0.0.1:8001: ranking, company pages, markets
+# http://127.0.0.1:8001: ranking, company pages, markets, data
 
 # Showing it to other people: PUBLIC_DASHBOARD=true in .env turns off research runs
 # and questions, so nobody else can spend your API credits

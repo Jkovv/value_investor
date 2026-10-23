@@ -35,6 +35,9 @@
     33 poland          up to twenty years for gpw listings, from biznesradar
     34 japan           up to nineteen years of headline figures for tse listings, from irbank
     35 korea           twelve years for krx listings, from dart's xbrl
+    36 audit           every history source against yahoo, line by line
+    37 study           each june since 2010 scored again, against what the shares did next
+    38 evals           research briefs checked sentence by sentence against their sources
 
 entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
 """
