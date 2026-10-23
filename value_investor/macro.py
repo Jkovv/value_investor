@@ -47,6 +47,8 @@ def refresh(con) -> None:
 
 def latest(con, name: str, as_of=None) -> "tuple[float, pd.Timestamp] | tuple[None, None]":
     s = store.load_macro(con, name)
+    if s.empty:
+        return None, None
     if as_of is not None:
         s = s[s.index <= pd.Timestamp(as_of)]
     if s.empty:
