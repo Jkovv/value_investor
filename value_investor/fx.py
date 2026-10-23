@@ -73,11 +73,11 @@ def to_major(prices: pd.DataFrame, currency: "str | None") -> "tuple[pd.DataFram
     return out, code
 
 
-def convert_prices(con, prices: pd.DataFrame, base: str, quote: str) -> "pd.DataFrame | None":
+def convert_prices(con, prices: pd.DataFrame, base: str, quote: str, fetch: bool = True) -> "pd.DataFrame | None":
     """re-express a price frame from `base` into `quote`, day by day."""
     if base == quote or prices.empty:
         return prices
-    s = series(con, base, quote)
+    s = series(con, base, quote, fetch)
     if s.empty:
         return None
     rates = s.reindex(prices["date"], method="ffill").to_numpy()

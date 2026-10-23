@@ -319,6 +319,11 @@ def mark_fetched(con, cik: int, source: str, years: int) -> None:
     con.execute("INSERT INTO source_fetches VALUES (?, ?, now(), ?)", [cik, source, years])
 
 
+def fetched_at(con, cik: int, source: str):
+    row = con.execute("SELECT fetched_at FROM source_fetches WHERE cik = ? AND source = ?", [cik, source]).fetchone()
+    return None if row is None else row[0]
+
+
 def fetched(con, source: str) -> dict:
     """cik -> when a source was last fetched for it."""
     return dict(con.execute("SELECT cik, fetched_at FROM source_fetches WHERE source = ?", [source]).fetchall())

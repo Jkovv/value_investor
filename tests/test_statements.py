@@ -89,3 +89,26 @@ def test_scale_errors_are_not_mistaken_for_splits():
         year("WeightedAverageNumberOfDilutedSharesOutstanding", 2021, 751.8, "2024-02-15", unit="shares"),
     ])
     assert statements.inferred_splits(facts).empty
+
+
+def test_old_prices_are_put_back_in_the_share_units_of_their_day():
+    import pandas as pd
+    from value_investor import prices as px
+    frame = pd.DataFrame({"date": pd.to_datetime(["2020-06-30", "2021-07-20", "2024-06-10"]),
+                          "high": [10.0, 12.0, 13.0], "low": [9.0, 11.0, 12.0], "close": [9.5, 11.5, 12.5],
+                          "dividend": [0.1, 0.0, 0.0], "split": [0.0, 4.0, 10.0]})
+    then = px.as_quoted_on(frame, "2020-06-30")
+    assert len(then) == 1 and then["close"].iloc[0] == 9.5 * 40 and then["dividend"].iloc[0] == 0.1 * 40
+    assert px.as_quoted_on(frame, "2025-01-01")["close"].tolist() == [9.5, 11.5, 12.5]
+
+
+def test_a_local_source_already_in_todays_units_is_not_split_again():
+    import pandas as pd
+    from value_investor import screener
+    priced = pd.DataFrame({"date": pd.to_datetime(["2026-06-01", "2026-09-29"]), "close": [1.0, 1.0],
+                           "split": [0.0, 5.0]})
+    facts = pd.DataFrame({"filed": pd.to_datetime(["2026-06-29"])})
+    # irbank fetched after tokyo electron's 5-for-1: its eps already counts it
+    assert screener._splits(facts, priced, None, "irbank", fetched="2026-10-12").empty
+    # fetched before the split: the split is still missing from its figures
+    assert screener._splits(facts, priced, None, "irbank", fetched="2026-09-01").tolist() == [5.0]

@@ -64,6 +64,21 @@ def until(prices: pd.DataFrame, as_of) -> pd.DataFrame:
     return prices[prices["date"] <= pd.Timestamp(as_of)]
 
 
+def as_quoted_on(prices: pd.DataFrame, when) -> pd.DataFrame:
+    """prices up to `when`, in the share units of that day. yahoo moves every past close into
+    today's units, so a split after `when` has to be taken back out."""
+    past = until(prices, when)
+    later = splits(prices)
+    later = later[later.index > pd.Timestamp(when)]
+    if later.empty or past.empty:
+        return past
+    factor = float(later.prod())
+    past = past.copy()
+    for col in ("high", "low", "close", "dividend"):
+        past[col] = past[col] * factor
+    return past
+
+
 def last_close(prices: pd.DataFrame) -> "tuple[float, pd.Timestamp] | tuple[None, None]":
     # Yahoo sometimes ends with today's row before the close is known (Tokyo).
     closed = prices.dropna(subset=["close"]) if not prices.empty else prices

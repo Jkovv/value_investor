@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from value_investor import (config, fx, insiders, lenses, markets, metrics, prices as px, quarterly, rules,
-                            statements, store, valuation)
+from value_investor import (concepts, config, fx, insiders, lenses, markets, metrics, prices as px, quarterly,
+                            rules, statements, store, valuation)
 
 logger = logging.getLogger(__name__)
 
@@ -98,8 +98,18 @@ class Analysis:
         }
 
 
-def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of) -> pd.Series:
-    """splits from the filings, plus any newer split the filings can't know about yet."""
+SEC_TAXONOMIES = ("us-gaap", "ifrs-full")
+
+
+def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of, lead: "str | None", fetched=None) -> pd.Series:
+    """the splits per-share figures still need. sec filings are in the units of their own date:
+    splits are read off them, plus any newer one from the prices. every other source hands over
+    figures already in the units of the day it was fetched, so only a split after that is missing."""
+    if lead not in SEC_TAXONOMIES:
+        if priced.empty or fetched is None:
+            return pd.Series(dtype=float)
+        late = px.splits(priced)
+        return late[late.index > pd.Timestamp(fetched)]
     found = statements.inferred_splits(facts, as_of)
     if not priced.empty and not facts.empty:
         filed = pd.to_datetime(facts["filed"])
@@ -110,6 +120,13 @@ def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of) -> pd.Series:
         if not late.empty:
             found = pd.concat([found, late]).sort_index()
     return found
+
+
+def _fetched(con, cik: int, comp: dict, lead: "str | None"):
+    """when the lead source was last fetched for a company."""
+    if lead in concepts.CANONICAL:
+        return store.fetched_at(con, cik, lead) or comp.get("facts_updated_at")
+    return comp.get("facts_updated_at")
 
 
 FUND_NAME = re.compile(r"\sOrd$|\bPhysical\b|\bFund\b(?! Management)|\bETF\b", re.I)
@@ -154,12 +171,12 @@ def _home_listing(con, name: "str | None") -> "str | None":
     return None
 
 
-def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield) -> dict:
+def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield, fetch: bool = True) -> dict:
     """valuation in statement currency, then price and buy price back in the quote currency."""
     quoted, quote_ccy = fx.to_major(priced, a.company.get("price_currency") or "USD")
     work = quoted
     if quote_ccy and a.currency and quote_ccy != a.currency:
-        work = fx.convert_prices(con, quoted, quote_ccy, a.currency)
+        work = fx.convert_prices(con, quoted, quote_ccy, a.currency, fetch=fetch)
         if work is None or work.empty:
             return {"available": False, "reason": f"no {quote_ccy}/{a.currency} exchange rate"}
     v = valuation.value(a.yearly, a.summary, work, bond_yield)
@@ -172,7 +189,7 @@ def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield) -> dict:
         v["market_cap"] = cap
         v["shareholder_yield"] = v["dividend_yield"] + net_buyback / cap
     if quote_ccy != a.currency:
-        rate = fx.rate(con, a.currency, quote_ccy) or 1.0
+        rate = fx.rate(con, a.currency, quote_ccy, when=a.as_of, fetch=fetch) or 1.0
         v["price"] = px.last_close(quoted)[0]
         v["buy_price"] *= rate
         v["statement_currency"] = a.currency
@@ -180,13 +197,16 @@ def _value(con, a: "Analysis", priced: pd.DataFrame, bond_yield) -> dict:
     return v
 
 
-def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_yield=None) -> Analysis:
+def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_yield=None,
+            facts: "pd.DataFrame | None" = None, prices: "pd.DataFrame | None" = None, light: bool = False) -> Analysis:
+    """one company, today or as it looked on `as_of`. facts and prices can come in already loaded;
+    given prices, nothing is fetched. light stops after the valuation and the f-score."""
     comp = store.company(con, cik) or {"cik": cik}
     profile = rules.profile_for(comp.get("sic"))
     a = Analysis(cik=cik, ticker=comp.get("ticker"), name=comp.get("name"), profile=profile,
                  company=comp, as_of=as_of)
 
-    facts = store.load_facts(con, cik)
+    facts = store.load_facts(con, cik) if facts is None else facts
     table = statements.annual_statements(facts, as_of=as_of)
     if table.empty:
         a.flags.append("no usable annual statements")
@@ -194,8 +214,14 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
     a.currency = table.attrs.get("currency")
     source = comp.get("source") or "sec"
 
-    priced = px.until(px.ensure(con, a.ticker), as_of) if (with_prices and a.ticker) else pd.DataFrame()
-    splits = _splits(facts, priced, as_of)
+    lead = table.attrs.get("taxonomy")
+    full = pd.DataFrame()
+    if with_prices and a.ticker:
+        full = prices if prices is not None else px.ensure(con, a.ticker)
+    priced = px.until(full, as_of)
+    if as_of is not None and lead in SEC_TAXONOMIES:
+        priced = px.as_quoted_on(full, as_of)
+    splits = _splits(facts, priced, as_of, lead, _fetched(con, cik, comp, lead))
     a.yearly = metrics.yearly(table, splits=splits)
     a.summary = metrics.summary(a.yearly)
     a.checks = rules.evaluate(a.summary, profile)
@@ -231,7 +257,8 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
     if with_prices is None:
         with_prices = a.passes_gate
         if with_prices and a.ticker:
-            return analyze(con, cik, as_of=as_of, with_prices=True, bond_yield=bond_yield)
+            return analyze(con, cik, as_of=as_of, with_prices=True, bond_yield=bond_yield, facts=facts,
+                           prices=prices, light=light)
 
     if with_prices:
         if not a.rankable:
@@ -239,7 +266,11 @@ def analyze(con, cik: int, as_of=None, with_prices: "bool | None" = None, bond_y
         else:
             if bond_yield is None:
                 bond_yield = markets.bond_yield(con, a.market, as_of)
-            a.valuation = _value(con, a, priced, bond_yield)
+            a.valuation = _value(con, a, priced, bond_yield, fetch=prices is None)
+
+    if light:
+        a.lenses = {"piotroski": lenses.piotroski(table)}
+        return a
 
     v = a.valuation
     to_quote = (fx.rate(con, a.currency, v["currency"]) or 1.0) if v.get("statement_currency") else 1.0
