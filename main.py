@@ -8,6 +8,7 @@ run `python ingest.py` first, then:
   python main.py show KO                 # checklist, valuation and ten years of ratios
   python main.py macro                   # rates, Market Cap / GDP, suggested cash share
   python main.py audit                   # how each history source agrees with yahoo, line by line
+  python main.py study                   # would the ranking have picked the better companies?
 """
 
 import argparse
@@ -16,7 +17,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from value_investor import audit, config, macro, screener, store
+from value_investor import audit, config, macro, screener, store, study
 from value_investor.logging_config import configure_logging
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -172,6 +173,42 @@ def cmd_audit(args):
     console.print(f"[dim]{result['companies_checked']} companies checked, saved to {audit.PATH}[/]")
 
 
+def _t(v):
+    return "-" if v is None else f"{v:.1f}"
+
+
+def cmd_study(args):
+    panel = study.load_panel() if args.reuse else None
+    if panel is None:
+        panel = study.build_panel(workers=args.workers)
+    res = study.results(panel)
+    study.save(panel, res)
+    console.print(f"{res['company_years']:,} company-years, {res['companies']:,} companies, "
+                  f"{len(res['markets'])} markets, {res['first']} to {res['last']}")
+    t = Table(title="Each signal against the next year's return, within market and year", header_style="bold")
+    for col in ("Signal", "Horizon", "Years", "Rank corr.", "t", "Top fifth less bottom", "t"):
+        t.add_column(col, justify="left" if col in ("Signal", "Horizon") else "right")
+    for signal, label in study.SIGNALS.items():
+        for h in study.HORIZONS:
+            p = (res["signals"][signal].get(f"{h}y") or {}).get("pooled")
+            if p:
+                t.add_row(label, f"{h} year{'s' if h > 1 else ''}", str(p["years"]), f"{p['ic']:.3f}", _t(p["ic_t"]),
+                          pct(p["spread"]), _t(p["spread_t"]))
+    console.print(t)
+    for h in study.HORIZONS:
+        g = res["gate"].get(f"{h}y") or {}
+        if g:
+            console.print(f"Passing the checklist, {h}y: {pct(g['gap'])} against the rest of the market "
+                          f"(t {_t(g['t'])}, {g['passing_share']:.0%} pass)")
+    c = Table(title="Promised against delivered, companies that passed, three years", header_style="bold")
+    for col in ("Promised a year", "Companies", "Delivered a year", "Against their market"):
+        c.add_column(col, justify="right")
+    for b in res["calibration"]:
+        c.add_row(b["bucket"], str(b["n"]), pct(b["realised"]), pct(b["excess"]))
+    console.print(c)
+    console.print(f"[dim]saved to {study.DIR}[/]")
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -199,6 +236,11 @@ def main():
 
     p = sub.add_parser("audit")
     p.set_defaults(func=cmd_audit)
+
+    p = sub.add_parser("study")
+    p.add_argument("--workers", type=int, help="processes scoring companies at once")
+    p.add_argument("--reuse", action="store_true", help="reuse the last scored panel, only redo the statistics")
+    p.set_defaults(func=cmd_study)
 
     args = parser.parse_args()
     args.func(args)
