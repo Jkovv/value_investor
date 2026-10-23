@@ -171,7 +171,8 @@ def add_returns(panel: pd.DataFrame) -> pd.DataFrame:
             prices["date"] = pd.to_datetime(prices["date"])
             tri = total_return_index(prices)
             for h in HORIZONS:
-                out.loc[rows.index, f"r{h}"] = [forward_return(tri, d, h) for d in rows["date"]]
+                values = [forward_return(tri, d, h) for d in rows["date"]]
+                out.loc[rows.index, f"r{h}"] = [np.nan if v is None else v for v in values]
     return out
 
 
