@@ -21,8 +21,11 @@ PATH = config.DATA_DIR / "audit.json"
 LINES = ["revenue", "operating_income", "net_income", "eps_diluted", "total_assets", "equity", "retained_earnings",
          "cash", "operating_cash_flow", "capex", "dividends_paid", "long_term_debt"]
 CLOSE, NEAR = 0.02, 0.10
+SHOWN = [("net_income", "Net income"), ("revenue", "Revenue"), ("total_assets", "Assets"), ("equity", "Equity"),
+         ("operating_cash_flow", "Op. cash flow"), ("capex", "Capex"), ("eps_diluted", "EPS")]
 NAMES = {"eastmoney": "EastMoney", "finmind": "FinMind", "screener": "Screener.in", "eastmoney-hk": "EastMoney HK",
-         "cvm": "CVM", "biznesradar": "Biznesradar", "irbank": "IRBANK", "dart": "DART", "sec": "SEC 20-F / 40-F"}
+         "cvm": "CVM", "biznesradar": "Biznesradar", "irbank": "IRBANK", "dart": "DART", "sec": "SEC 20-F / 40-F",
+         "sec-foreign": "SEC 20-F / 40-F", "yahoo": "Yahoo Finance"}
 
 
 def deviations(facts: pd.DataFrame) -> list:

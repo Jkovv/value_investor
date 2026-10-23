@@ -7,6 +7,7 @@ run `python ingest.py` first, then:
   python main.py rank                    # the last ranking, best expected return first
   python main.py show KO                 # checklist, valuation and ten years of ratios
   python main.py macro                   # rates, Market Cap / GDP, suggested cash share
+  python main.py audit                   # how each history source agrees with yahoo, line by line
 """
 
 import argparse
@@ -15,7 +16,7 @@ import sys
 from rich.console import Console
 from rich.table import Table
 
-from value_investor import config, macro, screener, store
+from value_investor import audit, config, macro, screener, store
 from value_investor.logging_config import configure_logging
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -152,6 +153,25 @@ def cmd_macro(args):
         console.print("[red]Sahm rule triggered: unemployment is rising fast.[/]")
 
 
+def cmd_audit(args):
+    with store.connect(read_only=True) as con:
+        result = audit.run(con)
+    audit.save(result)
+    t = Table(title="Years within 2% of Yahoo Finance", header_style="bold")
+    t.add_column("Source")
+    t.add_column("Companies", justify="right")
+    for _, label in audit.SHOWN:
+        t.add_column(label, justify="right")
+    for s in result["sources"]:
+        cells = []
+        for line, _ in audit.SHOWN:
+            v = s["lines"].get(line)
+            cells.append("-" if not v else f"{v['close']:.0%} [dim]({v['pairs']})[/]")
+        t.add_row(s["name"], str(s["companies"]), *cells)
+    console.print(t)
+    console.print(f"[dim]{result['companies_checked']} companies checked, saved to {audit.PATH}[/]")
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -176,6 +196,9 @@ def main():
     p = sub.add_parser("macro")
     p.add_argument("--refresh", action="store_true")
     p.set_defaults(func=cmd_macro)
+
+    p = sub.add_parser("audit")
+    p.set_defaults(func=cmd_audit)
 
     args = parser.parse_args()
     args.func(args)
