@@ -278,8 +278,8 @@ def load_panel() -> "pd.DataFrame | None":
 
 # charts for the write-up, in the dashboard's own colours
 
-INK, INK_2, GRID, AXIS = "#111114", "#55555f", "#e6e6e9", "#d4d4d9"
-BLUE, ORANGE = "#2a78d6", "#eb6834"
+INK, INK_2, GRID, AXIS = "#12171b", "#46515a", "#dbe0e4", "#c3cad0"
+TEAL, ORANGE = "#0a7c86", "#eb6834"
 
 
 def _style(ax) -> None:
@@ -318,7 +318,7 @@ def figures(res: dict, out_dir) -> list:
         for ax, (signal, label) in zip(axes, panels):
             p = res["signals"][signal]["1y"]["pooled"]
             values = p["fifths"]
-            ax.bar(range(5), values, width=0.62, color=BLUE)
+            ax.bar(range(5), values, width=0.62, color=TEAL)
             for i, v in enumerate(values):
                 text = f"{v * 100:+.1f}%" if abs(v) >= 0.0005 else "0.0%"
                 ax.annotate(text, (i, v), xytext=(0, 4 if v >= 0 else -12), textcoords="offset points",
@@ -338,7 +338,7 @@ def figures(res: dict, out_dir) -> list:
         plt.close(fig)
         made.append(path)
 
-    series = [("quality", BLUE), ("expected_return", ORANGE)]
+    series = [("quality", TEAL), ("expected_return", ORANGE)]
     lines = [(s, c, res["signals"][s]["1y"]["pooled"]["ic_by_year"]) for s, c in series
              if (res["signals"][s].get("1y") or {}).get("pooled")]
     if lines:
@@ -365,7 +365,7 @@ def figures(res: dict, out_dir) -> list:
         fig, ax = plt.subplots(figsize=(8, 3.4))
         x = np.arange(len(cal))
         w = 0.36
-        ax.bar(x - w / 2 - 0.01, [c["realised"] for c in cal], width=w, color=BLUE, label="delivered a year")
+        ax.bar(x - w / 2 - 0.01, [c["realised"] for c in cal], width=w, color=TEAL, label="delivered a year")
         ax.bar(x + w / 2 + 0.01, [c["excess"] for c in cal], width=w, color=ORANGE, label="against their market")
         ax.axhline(0, color=AXIS, linewidth=1)
         ax.set_xticks(x, [f"{c['bucket']}\n{c['n']:,} cases" for c in cal])
