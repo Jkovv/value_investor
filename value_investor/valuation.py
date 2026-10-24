@@ -22,6 +22,29 @@ def _growth(s: dict) -> "tuple[float | None, dict]":
     return g, {"historical": hist, "sustainable": sustainable}
 
 
+def implied_growth(initial_return: float, pe_exit: float, payout: float, hurdle: float = config.HURDLE_RATE,
+                   years: int = config.PROJECTION_YEARS) -> "float | None":
+    """the yearly eps growth today's price needs to return the hurdle: the same ten-year sum as
+    value(), run backwards. everything is per unit of price, so the currency drops out."""
+    if not initial_return or initial_return <= 0 or not pe_exit:
+        return None
+    target = (1 + hurdle) ** years
+
+    def total(g):
+        path = [(1 + g) ** k for k in range(1, years + 1)]
+        return initial_return * (path[-1] * pe_exit + payout * sum(path))
+
+    lo, hi = -0.5, 1.5
+    if total(hi) < target:
+        return None
+    if total(lo) > target:
+        return lo
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if total(mid) < target else (lo, mid)
+    return (lo + hi) / 2
+
+
 def historical_pe(yearly: pd.DataFrame, prices: pd.DataFrame, years: int = config.HISTORY_YEARS) -> "dict | None":
     rows = []
     for end, rec in yearly.tail(years).iterrows():
@@ -110,5 +133,6 @@ def value(yearly: pd.DataFrame, s: dict, prices: pd.DataFrame, bond_yield: "floa
         "bond_equivalent_value": eps / bond_yield if bond_yield else None,
         "dividend_yield": trailing_div / price if trailing_div else (s.get("dps") or 0.0) / price,
         "sell_signal": pe_now >= config.SELL_PE,
+        "implied_growth": implied_growth(eps / price, pe["mid"], payout),
     })
     return out

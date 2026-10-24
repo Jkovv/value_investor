@@ -22,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import audit, config, llm, macro, markets, peers, research, screener, store
+from value_investor import audit, config, llm, macro, markets, peers, research, screener, store, valuation
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -226,6 +226,9 @@ def company(request: Request, ticker: str):
                 charts.append({"title": title, "format": fmt, "series": json.dumps([
                     {"name": title, "points": json.loads(_series(zip(years, values)))}])})
 
+    v = payload["valuation"]
+    if v.get("available") and "implied_growth" not in v:
+        v["implied_growth"] = valuation.implied_growth(v["initial_return"], v["pe"]["mid"], v["payout"])
     groups = {"income": "Income statement", "balance": "Balance sheet", "cash": "Cash flow"}
     checks = {key: [c for c in payload["checks"] if c["group"] == key] for key in groups}
     text = research.report(ticker)

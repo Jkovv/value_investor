@@ -157,6 +157,40 @@
       </ol>
     </div>
   </section>
+
+  {% set need = v.implied_growth %}
+  {% set had = v.growth_inputs.historical %}
+  <section class="card section">
+    <div class="card-head">
+      <h2>What the price assumes</h2>
+      <span class="hint">the same ten years, run backwards</span>
+    </div>
+    <div class="card-body">
+      <div class="mini-stats">
+        <div>
+          <span class="muted">Needed for {{ config.HURDLE_RATE | pct(0) }} a year</span>
+          <strong>{{ need | pct if need is not none else "over 150%" }}</strong>
+          <span class="muted">EPS growth a year, sold at {{ "%.1f" | format(v.pe.mid) }}× earnings</span>
+        </div>
+        <div>
+          <span class="muted">The last ten years</span>
+          <strong>{{ had | pct }}</strong>
+          <span class="muted">EPS growth a year, smoothed</span>
+        </div>
+        <div>
+          <span class="muted">The projection uses</span>
+          <strong>{{ v.growth | pct }}</strong>
+          <span class="muted">the lower of history and ROE × retention</span>
+        </div>
+      </div>
+      <p class="assume-note">
+        {% if need is none %}<span class="tone-fail">No plausible growth gets {{ config.HURDLE_RATE | pct(0) }} a year from this price.</span>
+        {% elif need <= v.growth %}<span class="tone-pass">The price asks for less growth than the projection already assumes,</span> so there is room for things to go worse than planned.
+        {% elif had is not none and need <= had %}<span class="tone-warn">The price asks for growth the business has managed before,</span> but more than the cautious projection: it has to keep its best pace.
+        {% else %}<span class="tone-fail">The price asks for more growth than the last ten years delivered.</span> Paying it means betting on a better decade than the last.{% endif %}
+      </p>
+    </div>
+  </section>
   {% endif %}
 
   {% if peers.metrics %}

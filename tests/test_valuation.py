@@ -64,3 +64,14 @@ def test_a_pe_under_three_is_treated_as_bad_data():
                            "dividend": [0.0], "split": [0.0]})
     v = valuation.value(pd.DataFrame(), {"eps": 5.0}, prices, 0.04)
     assert not v["available"] and "bad data" in v["reason"]
+
+
+def test_implied_growth_runs_the_projection_backwards():
+    from value_investor import config, valuation
+    # a 5% earnings yield, no dividends, sold at a P/E of 20 in ten years
+    g = valuation.implied_growth(0.05, 20.0, 0.0)
+    assert (1 + g) ** 10 * 20.0 * 0.05 == pytest.approx((1 + config.HURDLE_RATE) ** 10, rel=1e-6)
+    # dividends carry part of the return, so less growth is needed
+    assert valuation.implied_growth(0.05, 20.0, 0.5) < g
+    assert valuation.implied_growth(0.0, 20.0, 0.0) is None
+    assert valuation.implied_growth(0.00001, 5.0, 0.0) is None         # would need more than 150% a year
