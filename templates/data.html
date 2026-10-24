@@ -17,7 +17,7 @@
 {% set total = audit.markets | sum(attribute="companies") %}
 <section class="stats" aria-label="Coverage">
   <div class="stat">
-    <span class="stat-label">Companies</span>
+    <span class="stat-label"># Companies</span>
     <span class="stat-value">{{ "{:,}".format(total) }}</span>
     <span class="stat-note">in {{ audit.markets | length }} markets</span>
   </div>
@@ -49,7 +49,7 @@
       <tr>
         {{ sort_head("Source", "text", "") }}
         {{ sort_head("Markets", "text", "") }}
-        {{ sort_head("Companies", initial="descending") }}
+        {{ sort_head("# Companies", initial="descending") }}
         {% for line, label in lines %}{{ sort_head(label) }}{% endfor %}
       </tr>
     </thead>
@@ -85,7 +85,7 @@
     <thead>
       <tr>
         {{ sort_head("Market", "text", "") }}
-        {{ sort_head("Companies", initial="descending") }}
+        {{ sort_head("# Companies", initial="descending") }}
         {{ sort_head("Ten years") }}
         {{ sort_head("Median years") }}
         {{ sort_head("Sources", "text", "") }}
@@ -122,7 +122,7 @@
   <div class="table-scroll">
   <table class="data">
     <thead>
-      <tr><th>Source</th><th class="num">Companies tried</th><th class="num">With years</th><th class="num">Most years</th><th class="num">Last fetch</th></tr>
+      <tr><th>Source</th><th class="num"># Companies tried</th><th class="num">With years</th><th class="num">Most years</th><th class="num">Last fetch</th></tr>
     </thead>
     <tbody>
     {% for f in audit.freshness %}
