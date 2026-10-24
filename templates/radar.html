@@ -40,51 +40,17 @@
   </div>
 </section>
 
-<section class="card section">
-  <div class="card-head">
-    <h2>Where the analysts aren't</h2>
-    <span class="hint">markets with ten or more companies, thinnest coverage first</span>
-  </div>
-  <div class="table-scroll">
-  <table class="data sortable" id="radar-markets">
-    <thead>
-      <tr>
-        {{ sort_head("Market", "text", "") }}
-        {{ sort_head("# Companies") }}
-        {{ sort_head("Median analysts", first="ascending", initial="ascending") }}
-        {{ sort_head("With none", unit="pct") }}
-        {{ sort_head("Off the radar", tip="Companies there that pass the checklist, have a price, and that " ~ few ~ " analysts or fewer follow.") }}
-        {{ sort_head("Best return a year", unit="pct") }}
-      </tr>
-    </thead>
-    <tbody>
-    {% for m in markets %}
-      <tr {% if m.market == market %}class="current"{% endif %}>
-        <td data-value="{{ names.get(m.market, m.market) }}">
-          <a href="/radar?market={{ m.market }}#companies"><span class="ticker">{{ m.market }}</span> {{ names.get(m.market, m.market) }}</a>
-        </td>
-        <td class="num" data-value="{{ m.companies }}">{{ "{:,}".format(m.companies) }}</td>
-        <td class="num" data-value="{{ m.median }}">{{ "%.0f" | format(m.median) }}</td>
-        <td class="num" data-value="{{ m.none }}">
-          <span class="bar-cell">
-            <span class="bar" aria-hidden="true"><span style="width: {{ (m.none * 100) | round(0) }}%"></span></span>
-            {{ m.none | pct(0) }}
-          </span>
-        </td>
-        <td class="num {% if m.off_radar %}good{% else %}muted{% endif %}" data-value="{{ m.off_radar }}">{{ m.off_radar }}</td>
-        <td class="num" data-value="{{ m.best if m.best is not none else '' }}">{{ m.best | pct }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  </div>
-</section>
-
 <section class="card section" id="companies">
-  <div class="card-head">
-    <h2>{% if market %}{{ names.get(market, market) }}, best return first{% else %}Best return first{% endif %}</h2>
-    <span class="hint">{% if market %}<a href="/radar#companies">every market</a>{% else %}pick a market above to narrow it down{% endif %}</span>
-  </div>
+  <form class="toolbar" method="get" action="/radar#companies">
+    <h2 class="toolbar-title">Best return first</h2>
+    <select class="select" name="market" aria-label="Market" onchange="this.form.submit()">
+      <option value="" {% if not market %}selected{% endif %}>All markets</option>
+      {% for m in markets | sort(attribute="market") %}
+      <option value="{{ m.market }}" {% if market == m.market %}selected{% endif %}>{{ names.get(m.market, m.market) }} ({{ m.off_radar }})</option>
+      {% endfor %}
+    </select>
+    <span class="count">{{ rows | length }} {{ "company" if rows | length == 1 else "companies" }}</span>
+  </form>
   {% if rows %}
   <div class="table-scroll">
   <table class="data sortable" id="radar">
@@ -136,6 +102,46 @@
   <div class="empty">Nothing here passes the checklist with {{ few }} analysts or fewer.</div>
   {% endif %}
 </section>
+<section class="card section">
+  <div class="card-head">
+    <h2>Where the analysts aren't</h2>
+    <span class="hint">markets with ten or more companies, thinnest coverage first</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data sortable" id="radar-markets">
+    <thead>
+      <tr>
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("# Companies") }}
+        {{ sort_head("Median analysts", first="ascending", initial="ascending") }}
+        {{ sort_head("With none", unit="pct") }}
+        {{ sort_head("Off the radar", tip="Companies there that pass the checklist, have a price, and that " ~ few ~ " analysts or fewer follow.") }}
+        {{ sort_head("Best return a year", unit="pct") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in markets %}
+      <tr {% if m.market == market %}class="current"{% endif %}>
+        <td data-value="{{ names.get(m.market, m.market) }}">
+          <a href="/radar?market={{ m.market }}#companies"><span class="ticker">{{ m.market }}</span> {{ names.get(m.market, m.market) }}</a>
+        </td>
+        <td class="num" data-value="{{ m.companies }}">{{ "{:,}".format(m.companies) }}</td>
+        <td class="num" data-value="{{ m.median }}">{{ "%.0f" | format(m.median) }}</td>
+        <td class="num" data-value="{{ m.none }}">
+          <span class="bar-cell">
+            <span class="bar" aria-hidden="true"><span style="width: {{ (m.none * 100) | round(0) }}%"></span></span>
+            {{ m.none | pct(0) }}
+          </span>
+        </td>
+        <td class="num {% if m.off_radar %}good{% else %}muted{% endif %}" data-value="{{ m.off_radar }}">{{ m.off_radar }}</td>
+        <td class="num" data-value="{{ m.best if m.best is not none else '' }}">{{ m.best | pct }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
 {% endif %}
 {% endblock %}
 

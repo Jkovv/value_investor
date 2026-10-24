@@ -836,6 +836,7 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 
 /* off the radar */
 .data tr.current td { background: var(--accent-soft); }
+.toolbar-title { margin: 0 6px 0 4px; }
 
 /* research */
 
