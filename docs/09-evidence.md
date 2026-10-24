@@ -11,7 +11,8 @@ Three questions, each answered with the project's own data:
 The short answers: the sources mostly agree, with known exceptions that were taken out; the
 valuation ranks companies in the right order but promises more than it delivers; the quality
 checklist on its own barely separates winners from losers; and the local model ties under a
-quarter of what it writes to a source, and calls every company a strong candidate.
+quarter of what it writes to a source (about half once its own numbers could be cited), and calls
+every company a strong candidate.
 
 ## 1. The data
 
@@ -174,9 +175,10 @@ figures (peers, quarters, insiders) were supported more often than those citing 
 against 31%), but 32% of them weren't in the cited source. Most of those are true: the figure is
 in the block of computed numbers the writer is given first, which had no number of its own, so the
 writer put it on the nearest source. Moutai's 92% gross margin is cited to its quarterly results;
-the Hugel brief invented a "[computed numbers]" label. The block is now source [0]. It is also
-where the weakest section, *Competitive advantage* (2 of 10 cited sentences supported, 5 not in
-the source), takes its margins from.
+the Hugel brief invented a "[computed numbers]" label. It is also where the weakest section,
+*Competitive advantage* (2 of 10 cited sentences supported, 5 not in the source), takes its margins
+from. So the block became source [0], and three briefs were written again to see what that changed
+(below).
 
 **Every contradiction is a slip with a number.** Keyence's revenue growth given as 12.1% where the
 source shows about 5%; its 14% return on equity called "below" a peer median of 12%; Hugel's P/E
@@ -185,7 +187,8 @@ sentence with those in its source, which a model of this size can't be relied on
 
 **Every brief ends on "Strong candidate"**, including Keyence, RELX and Ambev, whose price promises
 9% a year or less against the 15% the valuation asks for. A verdict that never changes adds
-nothing to the checklist the nine had already passed.
+nothing to the checklist the nine had already passed. The rewritten briefs and Adobe's say the
+same.
 
 **Names from nowhere are rare**: four sentences in nine briefs name something no source the writer
 had mentions. One is real but unsourced (WeChat's Mini Programs); the rest can't be confirmed from
@@ -201,10 +204,30 @@ A check against sources can't catch that.
 to `data/evals/labels.csv` to mark by hand; the next run reports how often the judge agrees, and
 Cohen's kappa.
 
-Read a brief, then, as a reading list with commentary: the sources are real and listed, but under
-a quarter of what it says is tied to one, and its verdict carries no information. What would
-change that: figures checked in code before a sentence is kept, a larger writer model, and a
-verdict that has to square with the price.
+### After giving the numbers a citation
+
+The Moutai, Keyence and Tencent briefs, the three that cited least or worst, were written again with
+the numbers block as source [0], and Adobe's for the first time. Same model, same prompt otherwise.
+
+| Brief | Sentences citing a source | Supported | Partly | Not in the source | Contradicted |
+|---|---|---|---|---|---|
+| Kweichow Moutai | 4 of 41, then 18 of 40 | 0%, then 67% | 25%, then 28% | 75%, then 6% | 0%, then 0% |
+| Keyence | 14 of 36, then 26 of 40 | 29%, then 38% | 7%, then 38% | 50%, then 15% | 14%, then 8% |
+| Tencent | 0 of 41, then 21 of 41 | then 52% | then 29% | then 19% | then 0% |
+| The three together | 15%, then 54% | 22%, then 51% | 11%, then 32% | 56%, then 14% | 11%, then 3% |
+| Adobe, new | 27 of 46 | 67% | 33% | 0% | 0% |
+
+One rewrite each, so some of the change is the model's own variation and the web results of a
+different day, but the direction is the same in all three: given a way to cite what it knew, the
+writer cited three times as often, and "not in the source" fell from over half of the cited
+sentences to one in seven. Both contradictions left are Keyence misreading its own numbers: an ROE
+above 15% in 30% of years read as a strength, and a DCF value of 37,913 yen said to exceed a price
+of 80,540.
+
+Read a brief, then, as a reading list with commentary: the sources are real and listed, about half
+of what it says is now tied to one, and its verdict carries no information. What would change the
+rest: figures checked in code before a sentence is kept, a larger writer model, and a verdict that
+has to square with the price.
 
 ## Reproduce
 

@@ -62,10 +62,12 @@ day, and set against what its shares returned next, within its own market (37,25
   much, so it reads better as a ranking than as a forecast.
 - **The checklist alone barely separates winners from losers** (rank correlation 0.03 to 0.05, not
   significant). It narrows the field; the price decides.
-- **The research briefs cite too little.** Nine briefs were graded sentence by sentence by a larger
-  model: 22% of their sentences cite a source, and of those 41% are fully supported and 4%
-  contradict it, every time with a wrong number. All nine end on "Strong candidate", so read them
-  for the sources, not the verdict.
+- **The research briefs cited too little, and one fix tripled it.** Nine briefs were graded
+  sentence by sentence by a larger model: 22% of their sentences cited a source, and most of the
+  unsupported ones were true figures pinned on the wrong source, because the writer's own numbers
+  had no citation number. Once they did, three rewritten briefs cited in 54% of sentences instead
+  of 15%, and "not in the source" fell from 56% to 14%. Every brief still ends on "Strong
+  candidate", so read them for the sources, not the verdict.
 
 ![Promised against delivered](docs/img/study_calibration.png)
 
