@@ -19,12 +19,15 @@ A scheduled run (ingest, screen, then a short digest of what entered or left the
 sell signals, new insider buying). Insider trades themselves are in: US only, since EDGAR is the
 one free and complete source.
 
-## Backtest (parked)
+## A fuller test
 
-The engine can rebuild statements as of any date, so a backtest is possible for US companies
-(XBRL from ~2009). Parked for now. When it comes back, three limits apply: free price data has no
-delisted companies (survivorship bias, so results come as a range), XBRL history makes ten-year
-checks possible only from ~2020, and the agents can't be backtested honestly because the model has
-read the future.
+`python main.py study` already scores every company as of each June since 2010 and sets the score
+against what followed ([09 Does it work?](09-evidence.md)). What would make it stronger:
+
+- the whole US market instead of the 397 large companies stored now (`python ingest.py --us`);
+- prices for delisted companies, which no free source has, so the sample stays survivors only;
+- the figures as first filed for the sources that only give restated ones.
+
+The agents can't be tested on the past: the model has read what happened since.
 
 Next: **[07 Research agents](07-research-agents.md)**.

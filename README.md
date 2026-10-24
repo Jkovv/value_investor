@@ -117,7 +117,8 @@ Read `docs/` in order:
 [05 Markets](docs/05-market-regime.md) ·
 [06 Roadmap](docs/06-roadmap.md) ·
 [07 Research agents](docs/07-research-agents.md) ·
-[08 Compared with other projects](docs/08-compared.md)
+[08 Compared with other projects](docs/08-compared.md) ·
+[09 Does it work?](docs/09-evidence.md)
 
 Every command, in order: **[commands.md](commands.md)**.
 

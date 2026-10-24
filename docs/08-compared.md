@@ -21,7 +21,7 @@ thing lives here, or why it doesn't.
 | Market valuation | rarely | Market Cap / GDP per market, each against its own trend, with a suggested cash share. |
 | Coverage | TradingAgents covers several markets through Yahoo; most value screeners are US only | 50 markets, one home listing per company, returns in the currency each listing trades in. |
 | Data and model cost | ai-hedge-fund and FinRobot use paid data APIs and hosted models; TradingAgents can run on free data and Ollama | Free: SEC EDGAR, Yahoo Finance, FRED, World Bank, Wikipedia, GDELT, a local model through Ollama, Groq and Hugging Face only as free fallbacks. |
-| Backtest | ai-hedge-fund, TradingAgents | Parked on purpose. See [06 Roadmap](06-roadmap.md) for the limits a free backtest runs into. |
+| Backtest | ai-hedge-fund, TradingAgents | No trading simulation. Instead every company is scored again each June since 2010 with only what was known then, and the score is set against what followed, market by market: [09 Does it work?](09-evidence.md). |
 | Technical, sentiment and social-media analysts | TradingAgents | Left out on purpose. They answer "where will the price go next week", which this method doesn't ask. |
 | Price targets, LBO, crypto | FinRobot, TradingAgents | Left out: a ten-year owner doesn't need a 12-month target, and the rest isn't investing in businesses. |
 
@@ -35,4 +35,4 @@ thing lives here, or why it doesn't.
 - A read of the market before a read of the company: the same business is a different buy when
   its market sits far above its own trend.
 
-Next: back to **[01 Overview](01-overview.md)**.
+Next: **[09 Does it work?](09-evidence.md)**
