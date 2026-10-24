@@ -33,7 +33,7 @@ The rules are written out in **[knowledge/principles.md](knowledge/principles.md
 | Market level | Market Cap / GDP for 50 countries, each against its own trend |
 | Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model; started from its own page, a queue, or a company's header |
 | Decision aids | The growth today's price needs for 15% a year against the last decade; the kind of moat the statements point to; a watchlist with a digest of what changed |
-| Checked | Every source against a second one, line by line; the ranking against what followed, each June since 2010; the briefs sentence by sentence against their sources |
+| Checked | The ranking against what followed, each June since 2010; the briefs sentence by sentence against their sources |
 | Cost | Nothing: SEC EDGAR, Yahoo Finance, regulator open data, FRED, World Bank, a local LLM |
 
 Figures as of October 2026.
@@ -52,8 +52,6 @@ day, and set against what its shares returned next, within its own market (37,25
   much, so it reads better as a ranking than as a forecast.
 - **The checklist alone barely separates winners from losers** (rank correlation 0.03 to 0.05, not
   significant). It narrows the field; the price decides.
-- **The sources hold up.** Net income agrees with a second source in 84% to 99% of years for every
-  source but India's (74%). Lines that didn't agree were taken out.
 - **The research briefs cite too little.** Nine briefs were graded sentence by sentence by a larger
   model: 22% of their sentences cite a source, and of those 41% are fully supported and 4%
   contradict it, every time with a wrong number. All nine end on "Strong candidate", so read them

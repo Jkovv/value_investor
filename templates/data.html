@@ -4,13 +4,12 @@
 {% block content %}
 <div class="page-head">
   <h1>Data</h1>
-  <p class="sub">Where each market's years come from, and how often each source agrees with Yahoo Finance on the
-    years both report.</p>
+  <p class="sub">How many years of statements stand behind each market's scores, and where they come from.</p>
 </div>
 
 {% if not audit %}
 <section class="card section">
-  <div class="card-body"><p>No audit yet. Run <code>python main.py audit</code>.</p></div>
+  <div class="card-body"><p>Nothing counted yet. Run <code>python main.py audit</code>.</p></div>
 </section>
 {% else %}
 {% set ten = audit.markets | sum(attribute="ten_years") %}
@@ -27,51 +26,14 @@
     <span class="stat-note">{{ (ten / total) | pct(0) if total else "-" }} of them</span>
   </div>
   <div class="stat">
-    <span class="stat-label">Checked against Yahoo</span>
-    <span class="stat-value">{{ "{:,}".format(audit.companies_checked) }}</span>
-    <span class="stat-note">from {{ audit.sources | length }} sources</span>
+    <span class="stat-label">Sources</span>
+    <span class="stat-value">{{ audit.freshness | length }}</span>
+    <span class="stat-note">free, no api keys</span>
   </div>
   <div class="stat">
-    <span class="stat-label">Audit run</span>
+    <span class="stat-label">Updated</span>
     <span class="stat-value small-list">{{ audit.run_at[:10] }}</span>
     <span class="stat-note"><code>python main.py audit</code></span>
-  </div>
-</section>
-
-<section class="card section">
-  <div class="card-head">
-    <h2>Agreement with Yahoo Finance</h2>
-    <span class="hint">share of years within 2%, hover for the count</span>
-  </div>
-  <div class="table-scroll">
-  <table class="data sortable" id="agreement">
-    <thead>
-      <tr>
-        {{ sort_head("Source", "text", "") }}
-        {{ sort_head("Markets", "text", "") }}
-        {{ sort_head("# Companies", initial="descending") }}
-        {% for line, label in lines %}{{ sort_head(label) }}{% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-    {% for s in audit.sources %}
-      <tr>
-        <td>{{ s.name }}</td>
-        <td><span class="years">{{ s.markets | join(", ") if s.markets | length <= 4 else (s.markets | length) ~ " markets" }}</span></td>
-        <td class="num" data-value="{{ s.companies }}">{{ "{:,}".format(s.companies) }}</td>
-        {% for line, label in lines %}
-          {% set v = s.lines.get(line) %}
-          {% if v %}
-          <td class="num {{ 'tone-pass' if v.close >= 0.95 else 'tone-warn' if v.close >= 0.8 else 'tone-fail' }}"
-              data-value="{{ v.close }}" title="{{ '{:,}'.format(v.pairs) }} years, median gap {{ v.median_gap | pct(1) }}">{{ v.close | pct(0) }}</td>
-          {% else %}
-          <td class="num tone-na" data-value="-1">-</td>
-          {% endif %}
-        {% endfor %}
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
   </div>
 </section>
 

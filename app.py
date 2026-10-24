@@ -389,8 +389,7 @@ def research_status(ticker: str):
 @app.get("/data", response_class=HTMLResponse)
 def data(request: Request):
     names = {**audit.NAMES, "sec": "SEC"}
-    return templates.TemplateResponse(request, "data.html", {"audit": audit.load(), "lines": audit.SHOWN,
-                                                             "names": names})
+    return templates.TemplateResponse(request, "data.html", {"audit": audit.load(), "names": names})
 
 
 def cheapest(readings: dict) -> "str | None":

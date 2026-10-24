@@ -45,9 +45,7 @@ What the disagreements turned out to be:
   value per share instead.
 
 A source is stored for a company only when its net income agrees with Yahoo's in at least half the
-years both have. The same table is on the dashboard's **Data** page.
-
-![The Data page](img/data.png)
+years both have.
 
 ## 2. The ranking, tested on the past
 
