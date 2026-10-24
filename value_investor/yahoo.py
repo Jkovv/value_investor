@@ -122,7 +122,7 @@ def universe(con, iso3s: list, min_cap_usd: float, limit_per_market: "int | None
     df = df[~df["symbol"].str.endswith(".IL") & ~df["symbol"].str.contains(r"3[1-5]\.SA$", regex=True)]
     df = _drop_american(con, df)
 
-    # A listing belongs to its market if it trades in the local currency or the
+    # a listing belongs to its market if it trades in the local currency or the
     # company reports in it. Toyota quoted in yen in London, a Brazilian receipt
     # on TSMC, Santander in pence: all someone else's company.
     local = df["market"].map(lambda iso: markets.BY_ISO[iso].currency)

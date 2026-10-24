@@ -2,9 +2,7 @@
 
 a name and the day it was added, nothing more: no positions, no amounts. a digest
 compares each name with the previous digest: did the price fall under buy below,
-did a sell signal appear, did insiders buy, did the checklist verdict change. a good
-business is bought when its price falls, rarely on the day its brief is read, and
-this is what sends you back to it.
+did a sell signal appear, did insiders buy, did it fall below the gate.
 """
 
 import json

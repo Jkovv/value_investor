@@ -101,7 +101,7 @@ def _fiscal_year_ends(index: dict, taxonomies: list) -> list:
                     ends.update(index.get((taxonomy, alt), {}).keys())
     kept: list = []
     for end in sorted(ends):
-        # A fiscal-year change leaves two overlapping "years"; keep the later one.
+        # a fiscal-year change leaves two overlapping "years"; keep the later one
         while kept and (end - kept[-1]).days < 300:
             kept.pop()
         kept.append(end)

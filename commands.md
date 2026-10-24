@@ -113,7 +113,7 @@ python main.py evals --sample 60      # also write 60 sentences to mark by hand
 ## Research
 
 ```bash
-# A brief for one company (tens of minutes on the local model)
+# A brief for one company (an hour or more on the local model)
 python research.py KO
 
 # The top five of the ranking, one after another
