@@ -54,6 +54,10 @@ day, and set against what its shares returned next, within its own market (37,25
   significant). It narrows the field; the price decides.
 - **The sources hold up.** Net income agrees with a second source in 84% to 99% of years for every
   source but India's (74%). Lines that didn't agree were taken out.
+- **The research briefs cite too little.** Nine briefs were graded sentence by sentence by a larger
+  model: 22% of their sentences cite a source, and of those 41% are fully supported and 4%
+  contradict it, every time with a wrong number. All nine end on "Strong candidate", so read them
+  for the sources, not the verdict.
 
 ![Promised against delivered](docs/img/study_calibration.png)
 
@@ -162,4 +166,7 @@ Every command, in order: **[commands.md](commands.md)**.
   - **Russia**: dropped by Yahoo after the 2022 sanctions.
   - **Latvia, Venezuela, Suriname**: nothing above the $1B floor (Venezuela's market caps read as
     zero), so these only matter if the floor comes down.
-- [ ] A backtest on the point-in-time statements, parked for now ([06 Roadmap](docs/06-roadmap.md)).
+- [ ] A fuller test of the ranking: the whole US market, and delisted companies if a free source
+      turns up ([06 Roadmap](docs/06-roadmap.md)).
+- [ ] Briefs: check every figure against its source in code before a sentence is kept, and mark the
+      judge's sample by hand ([09 Does it work?](docs/09-evidence.md)).

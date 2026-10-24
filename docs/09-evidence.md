@@ -10,7 +10,8 @@ Three questions, each answered with the project's own data:
 
 The short answers: the sources mostly agree, with known exceptions that were taken out; the
 valuation ranks companies in the right order but promises more than it delivers; the quality
-checklist on its own barely separates winners from losers; and the local model cites too little.
+checklist on its own barely separates winners from losers; and the local model ties under a
+quarter of what it writes to a source, and calls every company a strong candidate.
 
 ## 1. The data
 
@@ -141,14 +142,71 @@ rest of their market (t -1.2). What it buys is a smaller field in which the pric
 cites a source against the excerpt of that source the writer was given. The judge is a larger
 model than the writer (gpt-oss-120b on Groq's free tier, against qwen3:8b running locally), with
 four verdicts: supported, partly, not in the source, contradicted. Sentences that cite nothing are
-checked for names of people or places that appear in no source, the way small models fill gaps.
+checked for names that appear nowhere in what the writer was given, the way small models fill gaps.
 A sample can be written out for marking by hand (`--sample 60`) to measure how far the judge
 itself agrees with a person.
 
-Results are added here once the batch of briefs has finished. A first one is telling: the
-Mastercard brief cites a source in only 17% of its sentences, and names a chief executive who
-stepped down at the start of 2021, faithfully copied from an outdated page among its sources. Being faithful to a source
-isn't the same as being right today, and a check against sources can't catch that.
+**Sample.** Nine briefs, one company per market, each passing the checklist. Each took the local
+model between one and three hours and drew on 21 to 38 sources.
+
+| Brief | Market | Sentences citing a source | Supported | Partly | Not in the source | Contradicted |
+|---|---|---|---|---|---|---|
+| Mastercard | US | 7 of 41 | 57% | 43% | 0% | 0% |
+| Keyence | Japan | 14 of 36 | 29% | 7% | 50% | 14% |
+| Kweichow Moutai | China | 4 of 41 | 0% | 25% | 75% | 0% |
+| Tencent | Hong Kong | 0 of 41 | | | | |
+| TCS | India | 10 of 34 | 40% | 30% | 30% | 0% |
+| Dom Development | Poland | 12 of 37 | 42% | 42% | 17% | 0% |
+| Ambev | Brazil | 11 of 42 | 45% | 36% | 18% | 0% |
+| RELX | UK | 0 of 40 | | | | |
+| Hugel | Korea | 18 of 34 | 50% | 39% | 6% | 6% |
+| All nine | | 76 of 346 | 41% | 32% | 24% | 4% |
+
+**They cite too little.** The writer is told to cite every claim; at best half its sentences do,
+and the Tencent and RELX briefs cite nothing at all. Over three quarters of what the briefs say
+can only be checked against the reader's own knowledge.
+
+**What is cited mostly holds.** Of the cited sentences, 41% say what the source says and 32% go
+further than it. A typical "partly" joins a figure that is in the source to a claim that isn't:
+the 77% gross margin is there, the strong brand recognition isn't. A quarter aren't in the cited
+source at all.
+
+**The writer had nothing to cite its own numbers by.** Sentences citing the project's computed
+figures (peers, quarters, insiders) were supported more often than those citing web pages (47%
+against 31%), but 32% of them weren't in the cited source. Most of those are true: the figure is
+in the block of computed numbers the writer is given first, which had no number of its own, so the
+writer put it on the nearest source. Moutai's 92% gross margin is cited to its quarterly results;
+the Hugel brief invented a "[computed numbers]" label. The block is now source [0]. It is also
+where the weakest section, *Competitive advantage* (2 of 10 cited sentences supported, 5 not in
+the source), takes its margins from.
+
+**Every contradiction is a slip with a number.** Keyence's revenue growth given as 12.1% where the
+source shows about 5%; its 14% return on equity called "below" a peer median of 12%; Hugel's P/E
+given as 14.3 against 12.7 in the source. Code can catch these by comparing the figures in a
+sentence with those in its source, which a model of this size can't be relied on to do.
+
+**Every brief ends on "Strong candidate"**, including Keyence, RELX and Ambev, whose price promises
+9% a year or less against the 15% the valuation asks for. A verdict that never changes adds
+nothing to the checklist the nine had already passed.
+
+**Names from nowhere are rare**: four sentences in nine briefs name something no source the writer
+had mentions. One is real but unsourced (WeChat's Mini Programs); the rest can't be confirmed from
+the sources (a Keyence Foundation among the shareholders, a "Moutai Organic" product line, and a
+Moutai chairman, vice chairman and director). The check shows what a reader can't verify, not
+what is wrong.
+
+**Faithful to a source isn't the same as right.** The Mastercard brief names a chief executive
+who stepped down at the start of 2021, copied faithfully from an outdated page among its sources.
+A check against sources can't catch that.
+
+**The judge itself hasn't been checked against a person yet.** `--sample 40` writes 40 sentences
+to `data/evals/labels.csv` to mark by hand; the next run reports how often the judge agrees, and
+Cohen's kappa.
+
+Read a brief, then, as a reading list with commentary: the sources are real and listed, but under
+a quarter of what it says is tied to one, and its verdict carries no information. What would
+change that: figures checked in code before a sentence is kept, a larger writer model, and a
+verdict that has to square with the price.
 
 ## Reproduce
 
@@ -156,7 +214,7 @@ isn't the same as being right today, and a check against sources can't catch tha
 python main.py audit                  # section 1, a few minutes
 python main.py study                  # section 2, an hour or two on a laptop
 python main.py study --reuse          # the statistics again on the last scored panel
-python research.py MA ADBE 6861.T     # briefs to grade
+python research.py MA 6861.T 0700.HK   # briefs to grade
 python main.py evals                  # section 3, needs GROQ_API_KEY for the judge
 ```
 
