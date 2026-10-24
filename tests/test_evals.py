@@ -81,3 +81,10 @@ def test_names_from_the_numbers_block_or_in_brackets_count_as_sourced():
     report = "# X\n\nZhang Xiulan bought shares in North America. The Magic Formula likes it. It is chaired by Hua Chen.\n"
     found = evals.unsourced_names(report, items, numbers="Magic Formula: earnings yield 7.5%")
     assert [f["names"] for f in found] == [["Hua Chen"]]
+
+
+def test_the_numbers_block_is_source_zero():
+    items = [{"title": "News", "where": "https://n.example", "text": "sales rose"}]
+    got = evals.excerpts(items, [0, 1], numbers="Gross margin: 92%")
+    assert got.startswith("[0] Computed numbers") and "Gross margin: 92%" in got and "[1] News" in got
+    assert evals.excerpts(items, [1], numbers="Gross margin: 92%").startswith("[1] News")

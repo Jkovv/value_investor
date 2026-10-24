@@ -136,13 +136,14 @@ Question: {question}
 
 Rules:
 - Use ONLY the computed numbers and the numbered evidence below. Do not add facts from memory.
-- Cite evidence as [1], [2] right after the claim. Never cite a number that isn't in the list.
+- Cite the computed numbers as [0] and the evidence as [1], [2] right after the claim. Never cite a number
+  that isn't in the list.
 - If the evidence doesn't answer the question, say so and say what would.
 - Before writing "higher" or "lower", check which of the two numbers is larger.
 - Answer in a few short paragraphs or bullet points, under 300 words. No headings, no sources section.
 {STYLE}
 
-COMPUTED NUMBERS:
+COMPUTED NUMBERS [0]:
 {numbers}
 
 EVIDENCE:
@@ -161,7 +162,8 @@ def writer(title: str, numbers: str, evidence: str, notes: str) -> str:
 {PRINCIPLES}
 Rules, which matter more than anything else:
 - Use ONLY the computed numbers and the numbered evidence below. Do not add facts from memory.
-- Cite evidence as [1], [2] etc. right after the claim it supports. Never cite a number that isn't in the list.
+- Cite the computed numbers as [0] and the evidence as [1], [2] etc. right after the claim it supports.
+  Never cite a number that isn't in the list.
 - Every financial figure must come from the computed numbers, quoted as given.
 - If the evidence doesn't cover something (for example insider trades), write that the sources don't say.
 - Do not write a Sources section; it is added automatically.
@@ -169,7 +171,7 @@ Rules, which matter more than anything else:
 {REPORT_FORMAT}
 {STYLE}
 
-COMPUTED NUMBERS (from filings, authoritative):
+COMPUTED NUMBERS [0] (from filings, authoritative):
 {numbers}
 
 EVIDENCE:

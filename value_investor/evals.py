@@ -20,7 +20,7 @@ from collections import deque
 import litellm
 
 from value_investor import config
-from value_investor.research import EVIDENCE_BUDGET, EXCERPT_CHARS, NAME
+from value_investor.research import EVIDENCE_BUDGET, EXCERPT_CHARS, NAME, NUMBERS_SOURCE
 from value_investor.research_tools import RESEARCH_DIR
 
 logger = logging.getLogger(__name__)
@@ -116,11 +116,12 @@ def sentences(report: str) -> int:
     return len([s for s in re.split(r"(?<=[.!?])\s+", body) if len(s.strip()) > 20])
 
 
-def excerpts(items: list, cited: list) -> str:
-    """the cited sources cut to the length the writer saw them at."""
+def excerpts(items: list, cited: list, numbers: str = "") -> str:
+    """the cited sources cut to the length the writer saw them at; [0] is the numbers block, seen whole."""
     each = max(400, min(EXCERPT_CHARS, EVIDENCE_BUDGET // max(len(items), 1)))
-    return "\n\n".join(f"[{n}] {items[n - 1]['title']} ({items[n - 1]['where']})\n{items[n - 1]['text'][:each]}"
-                       for n in cited if 1 <= n <= len(items))
+    parts = [f"[0] {NUMBERS_SOURCE}\n{numbers}"] if 0 in cited and numbers else []
+    return "\n\n".join(parts + [f"[{n}] {items[n - 1]['title']} ({items[n - 1]['where']})\n{items[n - 1]['text'][:each]}"
+                                for n in cited if 1 <= n <= len(items)])
 
 
 def kind_of(item: dict) -> str:
@@ -195,12 +196,12 @@ def grade(tickers=None, judge: "Judge | None" = None) -> list:
     rows = []
     for ticker in tickers or briefs():
         report = (RESEARCH_DIR / f"{ticker}.md").read_text(encoding="utf-8")
-        items, _ = evidence(ticker)
+        items, numbers = evidence(ticker)
         for c in claims(report):
-            sources = excerpts(items, c["cited"])
+            sources = excerpts(items, c["cited"], numbers)
             verdict = judge(ticker, c["claim"], sources) if sources else None
-            rows.append({"ticker": ticker, **c, "kinds": sorted({kind_of(items[n - 1]) for n in c["cited"]
-                                                                  if 1 <= n <= len(items)}),
+            kinds = {kind_of(items[n - 1]) for n in c["cited"] if 1 <= n <= len(items)}
+            rows.append({"ticker": ticker, **c, "kinds": sorted(kinds | ({"our own numbers"} if 0 in c["cited"] else set())),
                          "id": _key(ticker, c["claim"], sources),
                          "verdict": verdict["verdict"] if verdict else None,
                          "reason": verdict["reason"] if verdict else None})
@@ -259,8 +260,8 @@ def write_sample(rows: list, n: int = 60, seed: int = 7) -> "str | None":
         w = csv.writer(fh)
         w.writerow(["id", "ticker", "claim", "sources", "your_verdict"])
         for r in sample:
-            items, _ = evidence(r["ticker"])
-            w.writerow([r["id"], r["ticker"], r["claim"], excerpts(items, r["cited"]), ""])
+            items, numbers = evidence(r["ticker"])
+            w.writerow([r["id"], r["ticker"], r["claim"], excerpts(items, r["cited"], numbers), ""])
     return str(path)
 
 

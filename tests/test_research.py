@@ -24,11 +24,12 @@ def test_search_output_is_parsed_into_hits():
 
 def test_finish_keeps_real_citations_and_replaces_the_source_list():
     e = evidence(("Annual report, business", "page 1", "text"), ("News", "https://n.example", "text"))
-    out = research._finish("# Whatever\n\n**Verdict:** Pass [1][2][9] \u2014 maybe.\n\n## Sources\n1. made up",
+    out = research._finish("# Whatever\n\n**Verdict:** Pass [0][1][2][9] \u2014 maybe.\n\n## Sources\n1. made up",
                            e, "Coca-Cola: research brief")
     assert out.startswith("# Coca-Cola: research brief\n\n**Verdict:**")
-    assert "[1][2]" in out and "[9]" not in out
+    assert "[0][1][2]" in out and "[9]" not in out
     assert "made up" not in out
+    assert "0. Computed numbers" in out
     assert "1. Annual report, business, page 1" in out
     assert "2. News <https://n.example>" in out
     assert "\u2014" not in out and "\u2013" not in out

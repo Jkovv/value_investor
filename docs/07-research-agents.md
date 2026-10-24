@@ -44,7 +44,8 @@ up, so the looking-up is guaranteed:
    A LangChain callback records every tool call as evidence, so what they read counts even if
    they summarise badly.
 3. **One writer call.** The brief is written from the numbered evidence and the agents' notes only,
-   trimmed to fit a 16k context. It must cite `[n]` after each claim and quote our figures as given.
+   trimmed to fit a 16k context. It must cite `[n]` after each claim, `[0]` for our own computed
+   numbers, and quote our figures as given.
 4. **Code has the last word on sources.** The model's sources section is dropped, the real list is
    appended, citations past the list are removed, and names not found in the cited source are
    marked. Em and en dashes are replaced.

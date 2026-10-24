@@ -36,6 +36,7 @@ AGENT_STEPS = 40
 QUESTION_STEPS = 30
 EXCERPT_CHARS = 2500
 EVIDENCE_BUDGET = 30_000     # characters of evidence the writer sees; keeps a 16k context from overflowing
+NUMBERS_SOURCE = "Computed numbers, from the stored statements and prices"
 RESUME_DAYS = 7
 STALLED_AFTER = 30 * 60
 _running: dict = {}
@@ -334,7 +335,7 @@ def _clean(text: str, evidence: Evidence, numbers: str) -> str:
     text = _strip_thinking(text)
     text = re.split(r"\n#+\s*Sources\b", text)[0].rstrip()
     n = len(evidence.items)
-    text = re.sub(r"\[(\d+)\]", lambda m: m.group(0) if 1 <= int(m.group(1)) <= n else "", text)
+    text = re.sub(r"\[(\d+)\]", lambda m: m.group(0) if 0 <= int(m.group(1)) <= n else "", text)
     return _flag_unsupported(text, evidence, numbers)
 
 
@@ -350,7 +351,7 @@ def _finish(text: str, evidence: Evidence, title: str, numbers: str = "") -> str
     lines = [f"# {title}", ""] + lines
     while len(lines) > 2 and not lines[2].strip():
         del lines[2]
-    sources = [_source(i, e) for i, e in enumerate(evidence.items, start=1)]
+    sources = [f"0. {NUMBERS_SOURCE}"] + [_source(i, e) for i, e in enumerate(evidence.items, start=1)]
     body = "\n".join(lines) + "\n\n## Sources\n\n" + "\n".join(sources) + "\n"
     return _no_dashes(body)
 
@@ -540,7 +541,7 @@ def ask(ticker: str, question: str, qid: str, name: "str | None" = None) -> "str
         reply = llm.get_llm().invoke(llm.tune(prompt))
         text = _clean(getattr(reply, "content", str(reply)), evidence, numbers)
         cited = sorted({int(n) for n in re.findall(r"\[(\d+)\]", text)})
-        sources = [_source(i, evidence.items[i - 1]) for i in cited]
+        sources = [f"0. {NUMBERS_SOURCE}" if i == 0 else _source(i, evidence.items[i - 1]) for i in cited]
         answer = _no_dashes(text + ("\n\n" + "\n".join(sources) if sources else ""))
         _update_question(ticker, qid, state="done", answer=answer, answered_at=datetime.now().isoformat())
         return answer
