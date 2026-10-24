@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from value_investor import (concepts, config, fx, insiders, lenses, markets, metrics, prices as px, quarterly,
-                            rules, statements, store, valuation)
+from value_investor import (concepts, config, coverage, fx, insiders, lenses, markets, metrics, prices as px,
+                            quarterly, rules, statements, store, valuation)
 
 logger = logging.getLogger(__name__)
 
@@ -327,6 +327,7 @@ def ranking(con, only_gate: bool = True) -> pd.DataFrame:
         return df
     if only_gate:
         df = df[df["passes_gate"]]
+    df = df.merge(coverage.load(con), on="cik", how="left")
     df = df.assign(_has=df["expected_return"].notna(), magic_rank=magic_rank(df))
     return (df.sort_values(["_has", "expected_return", "quality"], ascending=[False, False, False])
               .drop(columns=["_has"]).reset_index(drop=True))

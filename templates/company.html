@@ -32,6 +32,12 @@
           {{ reading.name }} market: <span class="tone-{{ regime_tone[reading.regime] }}">{{ reading.regime }}</span>
         </a>
       {% endif %}
+      {% if coverage %}
+        <span class="chip" title="Analysts publishing estimates, from Yahoo Finance; the share of the company that funds hold">
+          {{ coverage.analysts }} {{ "analyst" if coverage.analysts == 1 else "analysts" }}{% if coverage.institutions is not none %} · funds hold {{ coverage.institutions | pct(0) }}{% endif %}
+        </span>
+        {% if coverage.analysts <= few %}<a class="pill pill-accent" href="/radar">Off the radar</a>{% endif %}
+      {% endif %}
       {% if row %}
         {% if row.passes_gate %}<span class="pill pill-pass">Passes the gate</span>
         {% else %}<span class="pill pill-na">Below the gate</span>{% endif %}

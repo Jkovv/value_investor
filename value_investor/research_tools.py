@@ -27,7 +27,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
-from value_investor import config, moat, peers, rules, store, valuation
+from value_investor import config, coverage, moat, peers, rules, store, valuation
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ def _company(ticker: str) -> "dict | None":
             return None
         comp = store.company(con, cik) or {}
         comp["payload"] = store.analysis_payload(con, cik)
+        comp["coverage"] = coverage.one(con, cik)
         return comp
 
 
@@ -110,6 +111,11 @@ def company_numbers(ticker: str) -> str:
     ins = p.get("insiders")
     if ins:
         lines.append(_insider_line(ins))
+    cov = comp.get("coverage")
+    if cov and cov.get("analysts") is not None:
+        held = f"; funds hold {cov['institutions'] * 100:.0f}%" if cov.get("institutions") is not None else ""
+        few = " Few people follow it, which can be part of why it is cheap." if cov["analysts"] <= coverage.FEW else ""
+        lines.append(f"Analysts publishing estimates (Yahoo Finance): {cov['analysts']}{held}.{few}")
     for flag in p.get("flags") or []:
         lines.append(f"Flag: {flag}")
     return "\n".join(lines)

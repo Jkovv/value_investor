@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
+{% block title %}Off the radar · Value Investor{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Off the radar</h1>
+  <p class="sub">Businesses that pass the checklist at a price worth paying, and that {{ few }} analysts or fewer
+    follow. Fewer people pricing a company means more room for someone who reads it carefully. Analyst counts come
+    from Yahoo Finance and leave out local brokers outside its feed.</p>
+</div>
+
+{% if not read %}
+<section class="card section">
+  <div class="card-body"><p>No analyst counts yet. Run <code>python ingest.py --coverage</code>.</p></div>
+</section>
+{% else %}
+{% set thin = markets[0] if markets else none %}
+<section class="stats" aria-label="Coverage">
+  <div class="stat">
+    <span class="stat-label">Off the radar</span>
+    <span class="stat-value">{{ "{:,}".format(found) }}</span>
+    <span class="stat-note">of {{ "{:,}".format(gate) }} that pass the checklist</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">No analyst at all</span>
+    <span class="stat-value">{{ "{:,}".format(uncovered) }}</span>
+    <span class="stat-note">not one published estimate</span>
+  </div>
+  {% if thin %}
+  <a class="stat" href="/radar?market={{ thin.market }}#companies">
+    <span class="stat-label">Thinnest coverage</span>
+    <span class="stat-value small-list">{{ names.get(thin.market, thin.market) }}</span>
+    <span class="stat-note">{{ "%.0f" | format(thin.median) }} {{ "analyst" if thin.median == 1 else "analysts" }} on the median company</span>
+  </a>
+  {% endif %}
+  <div class="stat">
+    <span class="stat-label"># Companies read</span>
+    <span class="stat-value">{{ "{:,}".format(read) }}</span>
+    <span class="stat-note"><code>python ingest.py --coverage</code></span>
+  </div>
+</section>
+
+<section class="card section">
+  <div class="card-head">
+    <h2>Where the analysts aren't</h2>
+    <span class="hint">markets with ten or more companies, thinnest coverage first</span>
+  </div>
+  <div class="table-scroll">
+  <table class="data sortable" id="radar-markets">
+    <thead>
+      <tr>
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("# Companies") }}
+        {{ sort_head("Median analysts", first="ascending", initial="ascending") }}
+        {{ sort_head("With none", unit="pct") }}
+        {{ sort_head("Off the radar", tip="Companies there that pass the checklist, have a price, and that " ~ few ~ " analysts or fewer follow.") }}
+        {{ sort_head("Best return a year", unit="pct") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in markets %}
+      <tr {% if m.market == market %}class="current"{% endif %}>
+        <td data-value="{{ names.get(m.market, m.market) }}">
+          <a href="/radar?market={{ m.market }}#companies"><span class="ticker">{{ m.market }}</span> {{ names.get(m.market, m.market) }}</a>
+        </td>
+        <td class="num" data-value="{{ m.companies }}">{{ "{:,}".format(m.companies) }}</td>
+        <td class="num" data-value="{{ m.median }}">{{ "%.0f" | format(m.median) }}</td>
+        <td class="num" data-value="{{ m.none }}">
+          <span class="bar-cell">
+            <span class="bar" aria-hidden="true"><span style="width: {{ (m.none * 100) | round(0) }}%"></span></span>
+            {{ m.none | pct(0) }}
+          </span>
+        </td>
+        <td class="num {% if m.off_radar %}good{% else %}muted{% endif %}" data-value="{{ m.off_radar }}">{{ m.off_radar }}</td>
+        <td class="num" data-value="{{ m.best if m.best is not none else '' }}">{{ m.best | pct }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="card section" id="companies">
+  <div class="card-head">
+    <h2>{% if market %}{{ names.get(market, market) }}, best return first{% else %}Best return first{% endif %}</h2>
+    <span class="hint">{% if market %}<a href="/radar#companies">every market</a>{% else %}pick a market above to narrow it down{% endif %}</span>
+  </div>
+  {% if rows %}
+  <div class="table-scroll">
+  <table class="data sortable" id="radar">
+    <thead>
+      <tr>
+        {{ sort_head("Company", "text", "") }}
+        {{ sort_head("Market", "text", "") }}
+        {{ sort_head("Analysts", first="ascending") }}
+        {{ sort_head("Funds hold", unit="pct", tip="Share of the company held by institutions such as funds and pension plans, from Yahoo Finance. Low: the big money isn't looking either.") }}
+        {{ sort_head("Quality") }}
+        {{ sort_head("Moat", "text", "") }}
+        {{ sort_head("Price") }}
+        {{ sort_head("Buy below") }}
+        {{ sort_head("Return a year", initial="descending", unit="pct") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td data-value="{{ r.name | nice_name }}">
+          <a class="company-cell" href="/company/{{ r.ticker }}">
+            <span class="ticker">{{ r.ticker }}</span>
+            <span class="company-name">{{ r.name | nice_name }}</span>
+            {% if (r.ticker or "") | upper in briefs %}
+            <svg class="brief-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Research brief available"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+            {% endif %}
+          </a>
+        </td>
+        <td data-value="{{ r.market | text_or }}"><span class="market-code">{{ r.market | text_or }}</span></td>
+        <td class="num {% if r.analysts == 0 %}good{% endif %}" data-value="{{ r.analysts | whole('') }}">{{ r.analysts | whole }}</td>
+        {% set inst = r.institutions if r.institutions is number and r.institutions == r.institutions else none %}
+        <td class="num" data-value="{{ inst if inst is not none else '' }}">{{ inst | pct(0) }}</td>
+        <td class="num" data-value="{{ r.quality }}">
+          <span class="bar-cell">
+            <span class="bar" aria-hidden="true"><span style="width: {{ r.quality }}%"></span></span>
+            {{ "%.0f" | format(r.quality) }}
+          </span>
+        </td>
+        <td class="{% if r.moat in ('None', '-') %}muted{% endif %}" data-value="{{ r.moat }}">{{ r.moat }}</td>
+        <td class="num" data-value="{{ r.price }}">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
+        <td class="num" data-value="{{ r.buy_price }}">{{ r.buy_price | money }}</td>
+        <td class="num" data-value="{{ r.expected_return }}">{{ r.expected_return | pct }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">Nothing here passes the checklist with {{ few }} analysts or fewer.</div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}

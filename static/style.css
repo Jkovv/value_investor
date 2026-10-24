@@ -834,6 +834,9 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 .sortable th:first-child .sort-btn { padding-left: 16px; }
 .sortable th:last-child .sort-btn { padding-right: 16px; }
 
+/* off the radar */
+.data tr.current td { background: var(--accent-soft); }
+
 /* research */
 
 .research-card .card-head { align-items: center; }

@@ -22,8 +22,8 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import (audit, config, llm, macro, markets, moat, peers, research, screener, store, valuation,
-                            watchlist)
+from value_investor import (audit, config, coverage, llm, macro, markets, moat, peers, research, screener, store,
+                            valuation, watchlist)
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -168,7 +168,8 @@ def _moat_kinds(con) -> dict:
 
 
 @app.get("/", response_class=HTMLResponse)
-def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = True):
+def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = True,
+            radar: bool = False):
     try:
         with store.connect(read_only=True) as con:
             df = screener.ranking(con)
@@ -190,10 +191,13 @@ def ranking(request: Request, q: str = "", profile: str = "", market: str = "", 
         df = df[df["market"] == market]
     if full:
         df = df[df["history_years"] >= config.HISTORY_YEARS]
+    if radar:
+        df = df[df["analysts"].notna() & (df["analysts"] <= coverage.FEW)]
     rows = df.to_dict(orient="records")
     top = df["expected_return"].max(skipna=True) if not df.empty else None
     return templates.TemplateResponse(request, "ranking.html", {
-        "rows": rows, "q": q, "full": full, "profile": profile, "market": market, "count": len(rows),
+        "rows": rows, "q": q, "full": full, "radar": radar, "few": coverage.FEW, "profile": profile, "market": market,
+        "count": len(rows),
         "markets_present": [(iso, markets.BY_ISO[iso].name) for iso in present if iso in markets.BY_ISO],
         "readings": readings, "top_return": None if _missing(top) else float(top),
         "n_markets": int(df["market"].nunique()) if not df.empty else 0, "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
@@ -211,10 +215,11 @@ def company(request: Request, ticker: str):
                 found = store.analyses(con)
                 found = found[found["cik"] == cik]
                 row = None if found.empty else found.iloc[0].to_dict()
-            reading, peer = None, {"rows": []}
+            reading, peer, cov = None, {"rows": []}, None
             if payload:
                 reading = _market_readings(con).get(payload["company"].get("market"))
                 peer = peers.find(con, cik)
+                cov = coverage.one(con, cik)
     except duckdb.IOException:
         return _busy(request, "company")
     if payload is None:
@@ -259,6 +264,7 @@ def company(request: Request, ticker: str):
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
         "brief_verdict": research.verdict(text), "moat": advantage, "watched": ticker.upper() in watchlist.load(),
+        "coverage": cov, "few": coverage.FEW,
         "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
         "insiders": payload.get("insiders"),
         "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)
@@ -325,6 +331,27 @@ def watch_page(request: Request):
     return templates.TemplateResponse(request, "watchlist.html", {
         "rows": rows, "since": state.get("at"),
         "events": watchlist.changes(state.get("companies", {}), now) if state else [],
+    })
+
+
+@app.get("/radar", response_class=HTMLResponse)
+def radar(request: Request, market: str = ""):
+    try:
+        with store.connect(read_only=True) as con:
+            df = screener.ranking(con, only_gate=False)
+            kinds = _moat_kinds(con)
+    except duckdb.IOException:
+        return _busy(request, "radar")
+    read = df[df["analysts"].notna()] if not df.empty else df
+    found = coverage.off_radar(read) if not read.empty else read
+    gate = int(read["passes_gate"].sum()) if not read.empty else 0
+    shown = found[found["market"] == market.upper()] if market else found
+    rows = shown.assign(moat=shown["cik"].map(kinds).fillna("-")).to_dict(orient="records") if not shown.empty else []
+    return templates.TemplateResponse(request, "radar.html", {
+        "rows": rows, "markets": coverage.by_market(read) if not read.empty else [], "market": market.upper(),
+        "names": {iso: m.name for iso, m in markets.BY_ISO.items()}, "few": coverage.FEW,
+        "found": len(found), "uncovered": int((found["analysts"] == 0).sum()) if len(found) else 0, "gate": gate,
+        "read": len(read), "briefs": {path.stem.upper() for path in RESEARCH_DIR.glob("*.md")},
     })
 
 

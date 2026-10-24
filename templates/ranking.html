@@ -51,6 +51,11 @@
       <span class="track"></span>
       {{ config.HISTORY_YEARS }}-year history only
     </label>
+    <label class="switch">
+      <input type="checkbox" name="radar" value="true" {% if radar %}checked{% endif %} onchange="this.form.submit()">
+      <span class="track"></span>
+      {{ few }} analysts or fewer
+    </label>
     <button class="button" type="submit">Apply</button>
     <span class="count" data-count>{{ count }} {{ "company" if count == 1 else "companies" }}</span>
   </form>
@@ -79,6 +84,7 @@
         {{ sort_head("Market", "text", "", key="market") }}
         {{ sort_head("Quality") }}
         {{ sort_head("Moat", "text", "", tip="The kind of durable advantage ten years of statements point to. Product: a high gross margin that barely moves (a brand). Service: a high operating margin with no cost of sales and little capex (a toll bridge). Low cost: a thin but steady margin and a high return on equity every year. None: none of these shows.") }}
+        {{ sort_head("Analysts", first="ascending", tip="How many analysts publish estimates for it, from Yahoo Finance. " ~ few ~ " or fewer: hardly anyone is paid to look at it, so the price is set by fewer people. Local brokers outside Yahoo's feed aren't counted.") }}
         {{ sort_head("F-score", tip="Piotroski F-score: nine pass-or-fail checks on the last year against the year before, such as a profit, cash flow above profit, less debt, better margins and no new shares. 7 to 9 is a business getting stronger, 0 to 3 one getting weaker.") }}
         {{ sort_head("Price") }}
         {{ sort_head("Buy below") }}
@@ -122,6 +128,8 @@
                 title="years of annual statements behind the score">{{ r.history_years | whole }} {{ "year" if r.history_years == 1 else "years" }}</span>
         </td>
         <td class="{% if r.moat in ('None', '-') %}muted{% endif %}" data-value="{{ r.moat }}">{{ r.moat }}</td>
+        {% set an = r.analysts if r.analysts is number and r.analysts == r.analysts else none %}
+        <td class="num {% if an is not none and an <= few %}good{% endif %}" data-value="{{ an | whole('') }}">{{ an | whole }}</td>
         <td class="num {% if r.f_score is number and r.f_score >= 7 %}good{% elif r.f_score is number and r.f_score <= 3 %}muted{% endif %}" data-value="{{ r.f_score | whole('') }}">{{ r.f_score | whole }}</td>
         <td class="num" data-value="{{ r.price }}">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
         <td class="num" data-value="{{ r.buy_price }}">{{ r.buy_price | money }}</td>
