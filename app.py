@@ -22,7 +22,8 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import audit, config, llm, macro, markets, moat, peers, research, screener, store, valuation
+from value_investor import (audit, config, llm, macro, markets, moat, peers, research, screener, store, valuation,
+                            watchlist)
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -257,7 +258,7 @@ def company(request: Request, ticker: str):
         "yearly": payload["yearly"][-12:], "reading": reading,
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
-        "brief_verdict": research.verdict(text), "moat": advantage,
+        "brief_verdict": research.verdict(text), "moat": advantage, "watched": ticker.upper() in watchlist.load(),
         "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
         "insiders": payload.get("insiders"),
         "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)
@@ -293,6 +294,38 @@ def _grades() -> dict:
         return json.loads(path.read_text(encoding="utf-8")).get("by_brief", {})
     except (OSError, ValueError):
         return {}
+
+
+@app.post("/watch/{ticker}")
+def watch(request: Request, ticker: str):
+    _owner_only()
+    watchlist.toggle(ticker)
+    back = request.headers.get("referer") or f"/company/{ticker}"
+    return RedirectResponse(back if back.startswith(str(request.base_url)) else f"/company/{ticker}", status_code=303)
+
+
+@app.get("/watchlist", response_class=HTMLResponse)
+def watch_page(request: Request):
+    items = watchlist.load()
+    try:
+        with store.connect(read_only=True) as con:
+            now = watchlist.snapshot(con, items)
+            names = dict(con.execute("SELECT ticker, name FROM companies").fetchall())
+            ciks = dict(con.execute("SELECT ticker, cik FROM companies").fetchall())
+            kinds = _moat_kinds(con)
+    except duckdb.IOException:
+        return _busy(request, "watchlist")
+    state = watchlist.last_state()
+    rows = []
+    for ticker, added in items.items():
+        r = now.get(ticker, {})
+        rows.append({"ticker": ticker, "name": names.get(ticker), "added": added.get("added"), **r,
+                     "moat": kinds.get(ciks.get(ticker), "-"), "verdict": research.verdict(research.report(ticker))})
+    rows.sort(key=lambda r: r.get("gap") if r.get("gap") is not None else 9)
+    return templates.TemplateResponse(request, "watchlist.html", {
+        "rows": rows, "since": state.get("at"),
+        "events": watchlist.changes(state.get("companies", {}), now) if state else [],
+    })
 
 
 @app.get("/research", response_class=HTMLResponse)

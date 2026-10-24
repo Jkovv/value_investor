@@ -28,6 +28,7 @@
       <nav class="tabs">
         <a href="/" {% if request.url.path == '/' or request.url.path.startswith('/company') %}aria-current="page"{% endif %}>Ranking</a>
         <a href="/research" {% if request.url.path == '/research' %}aria-current="page"{% endif %}>Research</a>
+        <a href="/watchlist" {% if request.url.path == '/watchlist' %}aria-current="page"{% endif %}>Watchlist</a>
         <a href="/market" {% if request.url.path == '/market' %}aria-current="page"{% endif %}>Markets</a>
         <a href="/data" {% if request.url.path == '/data' %}aria-current="page"{% endif %}>Data</a>
       </nav>

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
+{% block title %}Watchlist · Value Investor{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Watchlist</h1>
+  <p class="sub">Good businesses waiting for a better price. Star a company on its page to add it;
+    <code>python main.py digest</code> fetches fresh prices and records what changed.</p>
+</div>
+
+{% set in_zone = rows | selectattr("in_zone") | list %}
+<section class="stats" aria-label="Watchlist">
+  <div class="stat">
+    <span class="stat-label"># Companies</span>
+    <span class="stat-value">{{ rows | length }}</span>
+    <span class="stat-note">on the watchlist</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">In the buy zone</span>
+    <span class="stat-value">{{ in_zone | length }}</span>
+    <span class="stat-note">price under buy below</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Last digest</span>
+    <span class="stat-value small-list">{{ since[:10] if since else "-" }}</span>
+    <span class="stat-note"><code>python main.py digest</code></span>
+  </div>
+</section>
+
+{% if since %}
+<section class="card section">
+  <div class="card-head">
+    <h2>Since the last digest</h2>
+    <span class="hint">{{ since[:16] | replace("T", " ") }}</span>
+  </div>
+  <div class="card-body">
+    {% if events %}
+    <ul class="events">
+      {% for e in events %}
+      <li><a href="/company/{{ e.ticker }}" class="mono">{{ e.ticker }}</a> <strong>{{ e.what }}</strong> <span class="muted">{{ e.detail }}</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">Nothing has moved since then.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card section">
+  <div class="card-head">
+    <h2>Closest to a buy first</h2>
+    <span class="hint">gap: how far the price is above buy below</span>
+  </div>
+  {% if rows %}
+  <div class="table-scroll">
+  <table class="data sortable" id="watchlist">
+    <thead>
+      <tr>
+        {{ sort_head("Company", "text", "") }}
+        {{ sort_head("Moat", "text", "") }}
+        {{ sort_head("Price") }}
+        {{ sort_head("Buy below") }}
+        {{ sort_head("Gap", initial="ascending") }}
+        {{ sort_head("Return a year") }}
+        {{ sort_head("Signals", "text", "") }}
+        {{ sort_head("Brief", "text", "") }}
+        {{ sort_head("Added", "text", "") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td data-value="{{ r.ticker }}">
+          <a class="company-cell" href="/company/{{ r.ticker }}">
+            <span class="ticker">{{ r.ticker }}</span><span class="company-name">{{ r.name or "" }}</span>
+          </a>
+        </td>
+        <td class="{% if r.moat in ('None', '-') %}muted{% endif %}" data-value="{{ r.moat }}">{{ r.moat }}</td>
+        <td class="num" data-value="{{ r.price or '' }}">{{ r.price | money }} <span class="ccy">{{ r.currency | text_or }}</span></td>
+        <td class="num" data-value="{{ r.buy_price or '' }}">{{ r.buy_price | money }}</td>
+        <td class="num {% if r.in_zone %}good{% endif %}" data-value="{{ r.gap if r.gap is not none else '' }}">
+          {% if r.gap is none %}-{% elif r.in_zone %}under by {{ (-r.gap) | pct(0) }}{% else %}{{ r.gap | pct(0) }} above{% endif %}
+        </td>
+        <td class="num" data-value="{{ r.expected_return if r.expected_return is not none else '' }}">{{ r.expected_return | pct }}</td>
+        <td data-value="{{ (1 if r.in_zone else 0) + (1 if r.sell_signal else 0) }}">
+          {% if r.in_zone %}<span class="pill pill-pass">Buy zone</span>{% endif %}
+          {% if r.sell_signal %}<span class="pill pill-fail">Sell signal</span>{% endif %}
+          {% if r.insider_buyers %}<span class="pill pill-accent">Insiders buying</span>{% endif %}
+          {% if r.passes_gate is defined and not r.passes_gate %}<span class="pill pill-warn">Below the gate</span>{% endif %}
+        </td>
+        <td data-value="{{ r.verdict.label if r.verdict else '' }}">
+          {% if r.verdict %}<a href="/company/{{ r.ticker }}#research"><span class="pill pill-{{ verdict_tone[r.verdict.label] }}">{{ r.verdict.label }}</span></a>{% else %}<span class="muted">-</span>{% endif %}
+        </td>
+        <td data-value="{{ r.added or '' }}" class="muted">{{ r.added or "" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">Nothing here yet. Open a company and press the star next to its name.</div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}<script src="/static/sort.js?v={{ asset_version }}" defer></script>{% endblock %}

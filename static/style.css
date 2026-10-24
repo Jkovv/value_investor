@@ -676,6 +676,25 @@ pre {
 .back:hover svg { transform: translateX(-2px); }
 
 .hero-id { min-width: 0; }
+.hero-title { display: flex; align-items: center; gap: 10px; }
+.hero-title form { display: contents; }
+.watch-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.watch-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.watch-btn:hover { color: var(--ink); border-color: var(--border-strong); }
+.watch-btn[aria-pressed="true"] { color: var(--warning); border-color: var(--warning); }
+.watch-btn[aria-pressed="true"] svg { fill: currentColor; }
+.watch-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hero-research { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; font-size: 13px; color: var(--ink-2); }
 .hero-research form { display: contents; }
 .hero-reason { max-width: 70ch; }
@@ -822,6 +841,8 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 .research-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .research-form .input { flex: 1 1 260px; max-width: 420px; }
 .brief-why { min-width: 280px; max-width: 60ch; font-size: 13px; color: var(--ink-2); }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; }
+.events .mono { margin-right: 6px; }
 .button[disabled] { opacity: 0.45; cursor: default; }
 .research-meta { margin: 0 0 4px; color: var(--ink-2); font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .spinner {

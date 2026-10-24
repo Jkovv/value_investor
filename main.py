@@ -10,6 +10,7 @@ run `python ingest.py` first, then:
   python main.py audit                   # how each history source agrees with yahoo, line by line
   python main.py study                   # would the ranking have picked the better companies?
   python main.py evals                   # do the research briefs say what their sources say?
+  python main.py digest                  # fresh prices for the watchlist, and what changed since last time
 """
 
 import argparse
@@ -239,6 +240,37 @@ def cmd_evals(args):
                       f"kappa {h['kappa']:.2f}" if h["kappa"] is not None else "")
 
 
+def cmd_digest(args):
+    from value_investor import watchlist
+    items = watchlist.load()
+    if not items:
+        console.print("The watchlist is empty: star a company on its page first.")
+        return
+    if not args.no_refresh:
+        with store.connect(read_only=True) as con:
+            ciks = [store.find_cik(con, t) for t in items]
+        screener.run(ciks=[c for c in ciks if c], with_prices=True)
+    with store.connect(read_only=True) as con:
+        now = watchlist.snapshot(con, items)
+    before = watchlist.last_state()
+    events = watchlist.changes(before.get("companies", {}), now)
+    path = watchlist.write_digest(events, now)
+    watchlist.save_state(now)
+    if before:
+        console.print(f"Since {before.get('at', '')[:10]}:")
+        for e in events or [{"ticker": "", "what": "nothing changed", "detail": ""}]:
+            console.print(f"  [bold]{e['ticker']}[/] {e['what']} [dim]{e['detail']}[/]")
+    t = Table(title="Watchlist", header_style="bold")
+    for col in ("Company", "Price", "Buy below", "Gap", "Signals"):
+        t.add_column(col, justify="left" if col in ("Company", "Signals") else "right")
+    for ticker, r in sorted(now.items(), key=lambda kv: kv[1]["gap"] if kv[1]["gap"] is not None else 9):
+        signals = ", ".join(s for s, on in (("in the buy zone", r["in_zone"]), ("sell signal", r["sell_signal"]),
+                                            ("insider buying", r["insider_buyers"] > 0)) if on)
+        t.add_row(ticker, money(r["price"]), money(r["buy_price"]), pct(r["gap"], 0), signals)
+    console.print(t)
+    console.print(f"[dim]saved to {path}[/]")
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -272,6 +304,10 @@ def main():
     p.add_argument("--reuse", action="store_true", help="reuse the last scored panel, only redo the statistics")
     p.add_argument("--returns", action="store_true", help="with --reuse, also work the returns out again")
     p.set_defaults(func=cmd_study)
+
+    p = sub.add_parser("digest")
+    p.add_argument("--no-refresh", action="store_true", help="use the stored prices, fetch nothing")
+    p.set_defaults(func=cmd_digest)
 
     p = sub.add_parser("evals")
     p.add_argument("--tickers", nargs="+", help="only these briefs")

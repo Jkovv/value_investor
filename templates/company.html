@@ -9,7 +9,17 @@
 
 <section class="card hero">
   <div class="hero-id">
-    <h1>{{ c.name | nice_name }}</h1>
+    <div class="hero-title">
+      <h1>{{ c.name | nice_name }}</h1>
+      {% if not config.PUBLIC_DASHBOARD %}
+      <form method="post" action="/watch/{{ c.ticker }}">
+        <button class="watch-btn" type="submit" aria-pressed="{{ 'true' if watched else 'false' }}"
+                aria-label="{{ 'Stop watching' if watched else 'Watch' }} {{ c.ticker }}" title="{{ 'On your watchlist' if watched else 'Add to the watchlist' }}">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/></svg>
+        </button>
+      </form>
+      {% endif %}
+    </div>
     <div class="chips">
       <span class="ticker">{{ c.ticker }}</span>
       {% if c.exchange %}<span class="chip">{{ c.exchange }}</span>{% endif %}
