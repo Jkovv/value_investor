@@ -151,10 +151,8 @@ FIELDS = {
     }),
 }
 
-# values the statements always show as positive amounts, whatever sign the filer used.
-# Yahoo Finance rows, used for every company outside the US. same fields,
-# same preference order rules, so the rest of the pipeline can't tell the
-# difference apart from the shorter history.
+# yahoo finance rows, for every company outside the us: the same lines in the same order of
+# preference, so past this point only the shorter history tells them apart.
 Y = "yahoo"
 YAHOO = {
     "revenue": ["Total Revenue", "Operating Revenue"],
@@ -207,6 +205,7 @@ for _field in FIELDS:
 YAHOO_PER_SHARE_ROWS = {"Diluted EPS", "Basic EPS"}
 YAHOO_SHARE_ROWS = {"Diluted Average Shares", "Basic Average Shares"}
 
+# lines shown as positive amounts, whatever sign the filer used
 ALWAYS_POSITIVE = {"capex", "buybacks", "dividends_paid", "treasury_stock", "interest_expense", "taxes_paid"}
 
 PER_SHARE = {"eps_diluted", "dps_declared"}

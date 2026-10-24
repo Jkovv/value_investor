@@ -13,12 +13,12 @@ load_dotenv()
 
 ROOT = Path(__file__).resolve().parent.parent
 
-## STORAGE
+# storage
 
 DATA_DIR = Path(os.getenv("DATA_DIR", ROOT / "data"))
 DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "value_investor.duckdb"))
 
-## SEC EDGAR
+# sec edgar
 
 # the SEC rejects anonymous traffic. use "Your Name your@email.com".
 SEC_USER_AGENT = os.getenv("SEC_USER_AGENT", "")
@@ -28,11 +28,11 @@ SEC_WORKERS = int(os.getenv("SEC_WORKERS", "6"))
 
 DEFAULT_EXCHANGES = ("NYSE", "Nasdaq")
 
-## WORLD (Yahoo Finance, every market outside the US)
+# world (yahoo finance, every market outside the us)
 
 WORLD_MIN_CAP_USD = float(os.getenv("WORLD_MIN_CAP_USD", "1e9"))
 
-## MACRO (FRED, no key needed for the CSV endpoint)
+# macro (fred, no key needed for the csv endpoint)
 
 FRED_SERIES = {
     "treasury_10y": "DGS10",
@@ -43,7 +43,7 @@ FRED_SERIES = {
     "vix": "VIXCLS",
 }
 
-## LLM
+# llm
 # local first. Groq and Hugging Face only kick in if their keys are set.
 
 LLM_PRIMARY = os.getenv("LLM_PRIMARY", "ollama")  # ollama | groq | huggingface
@@ -63,30 +63,30 @@ HF_BASE_URL = os.getenv("HF_BASE_URL", "https://router.huggingface.co/v1")
 
 LLM_TEMPERATURE = 0
 
-## WEB SEARCH (research agents)
+# web search (research agents)
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 # counted here and kept under tavily's free 1,000 a month; 0 means never use tavily
 TAVILY_MONTHLY_CREDITS = int(os.getenv("TAVILY_MONTHLY_CREDITS", "900"))
 
-## DASHBOARD
+# dashboard
 
 # true when other people can open the dashboard: no research runs and no questions,
 # since those spend your api credits.
 PUBLIC_DASHBOARD = os.getenv("PUBLIC_DASHBOARD", "false").strip().lower() == "true"
 
-## LANGSMITH (optional tracing)
+# langsmith (optional tracing)
 
 LANGSMITH_TRACING = os.getenv("LANGSMITH_TRACING", "false")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT", "value-investor")
 
-## SCREENING: history
+# screening: history
 
 HISTORY_YEARS = 10           # the window every consistency check looks at
 MIN_HISTORY_YEARS = 4        # below this, consistency checks report "n/a"; Yahoo gives four or five years
 
-## SCREENING: income statement
+# screening: income statement
 
 GROSS_MARGIN_GOOD = 0.40
 GROSS_MARGIN_POOR = 0.20
@@ -108,7 +108,7 @@ EPS_UP_YEARS_POOR = 0.50
 TAX_RATE_LOW = 0.10                # effective rates outside this band get a second look
 TAX_RATE_HIGH = 0.35
 
-## SCREENING: balance sheet
+# screening: balance sheet
 
 ROE_GOOD = 0.15
 ROE_POOR = 0.10
@@ -119,7 +119,7 @@ ADJ_DEBT_TO_EQUITY_GOOD = 0.80
 ADJ_DEBT_TO_EQUITY_POOR = 2.0
 SHARE_COUNT_DILUTION_POOR = 0.10   # +10% shares over the window
 
-## SCREENING: cash flow
+# screening: cash flow
 
 CAPEX_TO_EARNINGS_GOOD = 0.25
 CAPEX_TO_EARNINGS_POOR = 0.50
@@ -128,7 +128,7 @@ FCF_CONVERSION_POOR = 0.50
 RETAINED_EARNINGS_RETURN_GOOD = 0.15
 RETAINED_EARNINGS_RETURN_POOR = 0.08
 
-## VALUATION
+# valuation
 
 PROJECTION_YEARS = 10
 HURDLE_RATE = float(os.getenv("HURDLE_RATE", "0.15"))
@@ -139,7 +139,7 @@ SELL_PE = 40.0
 # a quality business on a P/E under 3 is almost always bad data: a currency label or a share count
 MIN_SANE_PE = 3.0
 
-## RANKING
+# ranking
 
 MIN_QUALITY = float(os.getenv("MIN_QUALITY", "70"))
 MIN_COMPLETENESS = 0.60
@@ -148,7 +148,7 @@ MIN_COMPLETENESS = 0.60
 # mean something else there, so they get their own (smaller) checklist.
 FINANCIAL_SIC_RANGE = (6000, 6799)
 
-## QUARTERS, PEERS, INSIDERS
+# quarters, peers, insiders
 
 QUARTERS_SHOWN = 12
 PEERS_SHOWN = 10
