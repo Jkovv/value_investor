@@ -26,6 +26,8 @@ research houses don't cover the market. Fewer people setting the price is where 
 statements carefully still pays, so the screener also counts who is looking and puts the good
 companies nobody covers on a page of their own.
 
+![Off the radar](docs/img/radar.png)
+
 The rules are written out in **[knowledge/principles.md](knowledge/principles.md)**.
 
 ## What it does
@@ -36,7 +38,7 @@ The rules are written out in **[knowledge/principles.md](knowledge/principles.md
 | Ten years of statements | 4,366 companies, from local free sources in 9 markets plus SEC filings |
 | Data stored | 3.5M annual and 2.4M quarterly statement facts, 14.3M daily prices, 19k insider trades |
 | Ranked | 1,546 companies pass the quality gate and get priced |
-| Off the radar | The ones that pass with three analysts or fewer, and the markets where coverage is thinnest |
+| Off the radar | 469 of the 1,543 that pass have three analysts or fewer, 186 have none; coverage is thinnest in Israel, China, Argentina and Kuwait, against 21 analysts on the median US company |
 | Valuation lenses | Piotroski F-score, Altman Z, Graham number, Lynch PEG, Magic Formula, owner-earnings DCF, dividend discount, Monte Carlo |
 | Market level | Market Cap / GDP for 50 countries, each against its own trend |
 | Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model; started from its own page, a queue, or a company's header |
