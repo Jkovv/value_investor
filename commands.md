@@ -81,6 +81,18 @@ python main.py show KO
 python main.py macro
 ```
 
+## Watchlist
+
+```bash
+# Star a company on its page, then: fresh prices for the starred ones and what changed since last time
+python main.py digest
+python main.py digest --no-refresh    # from the stored prices, fetching nothing
+
+# Every Monday at 8 on Windows (Task Scheduler), with the paths of this folder
+schtasks /Create /SC WEEKLY /D MON /ST 08:00 /TN "Value Investor digest" ^
+  /TR "C:\path\to\value_investor\.venv\Scripts\python.exe C:\path\to\value_investor\main.py digest"
+```
+
 ## Checking the work
 
 ```bash
@@ -119,7 +131,7 @@ Questions about a company are asked on its Research tab.
 
 ```bash
 uvicorn app:app --port 8001
-# http://127.0.0.1:8001: ranking, company pages, markets, data
+# http://127.0.0.1:8001: ranking, research, watchlist, company pages, markets, data
 
 # Showing it to other people: PUBLIC_DASHBOARD=true in .env turns off research runs
 # and questions, so nobody else can spend your API credits

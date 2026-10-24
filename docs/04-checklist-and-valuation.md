@@ -70,4 +70,42 @@ checklist, that's the thing to look into.
 
 The ranking also carries the **F-score** column, so both can be sorted on.
 
+## What the price assumes
+
+The ten-year projection run backwards (`valuation.implied_growth`): the yearly EPS growth today's
+price needs to return 15% a year, with the same exit P/E and dividends. It sits on the company page
+next to the growth of the last decade and the growth the projection used:
+
+- needed below what the projection uses: room for things to go worse than planned;
+- needed within the last decade's growth: the business has to keep its best pace;
+- needed above the last decade's growth: the price is a bet on a better decade than the last.
+
+The sum is per unit of price, so the currency drops out and it works for every listing.
+
+## Moat (`moat.py`)
+
+The books sort durable advantages three ways, and each leaves its own mark on ten years of
+statements:
+
+| Kind | What it is | What the numbers show |
+|---|---|---|
+| Unique product | people come back for it and pay up: a brand | gross margin of 40% or more, moving less than 5 points, net margin of 10% or more, no loss years |
+| Unique service | others can't easily do without it: a toll bridge | no cost of sales filed, operating margin of 25% or more and steady, capex under half of earnings |
+| Low-cost operator | buys and sells cheaper than anyone, year after year | a thin margin that moves less than 3 points, ROE above 15% in 80% of years, EPS up in 70%, fast asset turnover |
+| None | | none of the above: margins that swing, loss years, capex that eats the profit |
+
+Banks, insurers and REITs aren't classified, and neither are companies with under five years.
+The company page lists the signs behind the call; the ranking has a **Moat** column; and the
+research writer is told which kind the numbers point to, to confirm or dispute from the sources.
+The numbers only point: a high, steady gross margin can also come from a patent that runs out.
+
+## Watchlist
+
+A star on the company page puts it on the watchlist (`data/watchlist.json`): a ticker and the day
+it went on, no positions and no amounts. `python main.py digest` fetches fresh prices for those
+companies, scores them again and records what changed since the previous digest: entered or left
+the buy zone, a new sell signal, insiders buying (clustered or not), falling below the gate. Each
+digest is saved in `data/digests/`; the **Watchlist** page shows the latest changes and sorts the
+companies by how far the price is above buy below.
+
 Next: **[05 Market regime](05-market-regime.md)**.

@@ -38,6 +38,8 @@
     36 audit           every history source against yahoo, line by line
     37 study           each june since 2010 scored again, against what the shares did next
     38 evals           research briefs checked sentence by sentence against their sources
+    39 moat            product, service, low cost or none, from ten years of statements
+    40 watchlist       companies to watch, and what changed since the last digest
 
 entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
 """

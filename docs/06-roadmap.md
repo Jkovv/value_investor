@@ -15,9 +15,10 @@ feeding the same facts table:
 
 ## Alerts
 
-A scheduled run (ingest, screen, then a short digest of what entered or left the buy zone, new
-sell signals, new insider buying). Insider trades themselves are in: US only, since EDGAR is the
-one free and complete source.
+`python main.py digest` already records what changed on the watchlist; scheduled weekly it does the
+job of an alert (see [commands.md](../commands.md)). What's missing is delivery: it writes to the
+terminal, a file and the dashboard, not to email or a phone. Insider trades are US only, since
+EDGAR is the one free and complete source.
 
 ## A fuller test
 

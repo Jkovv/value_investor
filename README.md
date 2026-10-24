@@ -31,7 +31,8 @@ The rules are written out in **[knowledge/principles.md](knowledge/principles.md
 | Ranked | 1,546 companies pass the quality gate and get priced |
 | Valuation lenses | Piotroski F-score, Altman Z, Graham number, Lynch PEG, Magic Formula, owner-earnings DCF, dividend discount, Monte Carlo |
 | Market level | Market Cap / GDP for 50 countries, each against its own trend |
-| Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model |
+| Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model; started from its own page, a queue, or a company's header |
+| Decision aids | The growth today's price needs for 15% a year against the last decade; the kind of moat the statements point to; a watchlist with a digest of what changed |
 | Checked | Every source against a second one, line by line; the ranking against what followed, each June since 2010; the briefs sentence by sentence against their sources |
 | Cost | Nothing: SEC EDGAR, Yahoo Finance, regulator open data, FRED, World Bank, a local LLM |
 
