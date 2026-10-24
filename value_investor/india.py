@@ -1,4 +1,4 @@
-"""30 · india: twelve years of statements for nse and bse listings, from screener.in.
+"""twelve years of statements for nse and bse listings, from screener.in.
 
 screener.in shows a company's consolidated profit and loss, balance sheet and
 cash flow for the last twelve years on a public page (robots.txt allows it).

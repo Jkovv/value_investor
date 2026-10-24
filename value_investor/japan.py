@@ -1,4 +1,4 @@
-"""34 · japan: up to twenty years of headline figures for tse listings, from irbank.
+"""up to twenty years of headline figures for tse listings, from irbank.
 
 irbank.net puts the yearly results of every company filing with the fsa's edinet
 on one public page: sales, operating profit, net income, eps, book value per

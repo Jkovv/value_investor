@@ -1,4 +1,4 @@
-"""ingest.py: filings, statements, prices and macro series for every market, into duckdb.
+"""filings, statements, prices and macro series for every market, into duckdb.
 
 us companies come from sec edgar (10+ years of xbrl, plus 10-qs and form 4s).
 everything else comes from yahoo finance (about five years and five quarters),
@@ -26,7 +26,6 @@ from value_investor.logging_config import configure_logging
 
 
 def insider_targets(con) -> list:
-    """us companies that pass the gate."""
     return sorted(r[0] for r in con.execute(
         "SELECT a.cik FROM analyses a JOIN companies c USING (cik) WHERE a.passes_gate AND c.source = 'sec'").fetchall())
 

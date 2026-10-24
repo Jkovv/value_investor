@@ -1,4 +1,4 @@
-"""app.py: the dashboard.
+"""the dashboard.
 
   uvicorn app:app --port 8001        then open http://127.0.0.1:8001
 
@@ -104,7 +104,6 @@ def ordinal(n) -> str:
 
 
 def measure(v, kind: str = "num"):
-    """a value in the format its metric uses."""
     if _missing(v):
         return "-"
     return {"pct": pct(v), "int": whole(v), "times": times(v)}.get(kind, f"{v:.1f}")

@@ -1,4 +1,4 @@
-"""03 · http: one shared, rate-limited session for the SEC APIs.
+"""one shared, rate-limited session for the SEC APIs.
 
 data.sec.gov allows 10 requests/second per client and answers 403 to
 anything without a contact User-Agent. every SEC call goes through get_json()

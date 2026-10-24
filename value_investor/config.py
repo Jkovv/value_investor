@@ -1,4 +1,4 @@
-"""01 · config: every setting, read from .env. everything imports this.
+"""every setting, read from .env. everything imports this.
 
 thresholds come from knowledge/principles.md. if you change one here,
 change the principle there too, so the docs and the score never disagree.

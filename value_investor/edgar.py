@@ -1,4 +1,4 @@
-"""05 · edgar: company list, profiles and raw xbrl facts, all free.
+"""company list, profiles and raw xbrl facts, all free.
 
 annual and quarterly forms go to separate tables, so the yearly pipeline
 never sees a 10-Q.

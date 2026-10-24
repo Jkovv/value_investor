@@ -1,4 +1,4 @@
-"""32 · brazil: annual statements for b3 listings, from the cvm's open data.
+"""annual statements for b3 listings, from the cvm's open data.
 
 the securities regulator (cvm) publishes every listed company's annual
 statements (dfp) as one zip a year, with fixed account codes, and a register

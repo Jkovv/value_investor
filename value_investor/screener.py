@@ -1,4 +1,4 @@
-"""14 · screener: one company end to end, then the ranking.
+"""one company end to end, then the ranking.
 
     facts -> statements -> ratios -> checklist -> score -> valuation, lenses, quarters
 
@@ -123,7 +123,6 @@ def _splits(facts: pd.DataFrame, priced: pd.DataFrame, as_of, lead: "str | None"
 
 
 def _fetched(con, cik: int, comp: dict, lead: "str | None"):
-    """when the lead source was last fetched for a company."""
     if lead in concepts.CANONICAL:
         return store.fetched_at(con, cik, lead) or comp.get("facts_updated_at")
     return comp.get("facts_updated_at")

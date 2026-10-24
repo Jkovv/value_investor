@@ -1,4 +1,4 @@
-"""31 · hongkong: up to twenty years of statements for hkex listings, from eastmoney.
+"""up to twenty years of statements for hkex listings, from eastmoney.
 
 eastmoney's hong kong main-indicator table gives the headline lines (revenue,
 profits, eps, assets, equity, operating cash flow) for every year in one call,

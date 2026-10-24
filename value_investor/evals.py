@@ -1,4 +1,4 @@
-"""38 · evals: do the research briefs say what their sources say?
+"""do the research briefs say what their sources say?
 
 a brief cites numbered sources. every sentence that cites one is checked against the
 excerpts the writer was actually given for those sources, by a larger model than the
@@ -125,7 +125,6 @@ def excerpts(items: list, cited: list, numbers: str = "") -> str:
 
 
 def kind_of(item: dict) -> str:
-    """what sort of source a piece of evidence is."""
     where, title = item.get("where", ""), item.get("title", "")
     if where.startswith("http"):
         return "web page or search result"

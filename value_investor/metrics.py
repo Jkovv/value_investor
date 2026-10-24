@@ -1,4 +1,4 @@
-"""10 · metrics: yearly ratios, then one summary over the last ten years.
+"""yearly ratios, then one summary over the last ten years.
 
 per-share figures are rebuilt from totals and every share count is moved to
 today's units, undoing the splits that came after it was filed.

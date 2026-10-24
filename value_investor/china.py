@@ -1,4 +1,4 @@
-"""27 · china: ten years of statements for shanghai, shenzhen and beijing listings.
+"""ten years of statements for shanghai, shenzhen and beijing listings.
 
 yahoo stops at four years. eastmoney's f10 pages (the data behind akshare)
 go back to the listing, are free and need no key. the json endpoints take

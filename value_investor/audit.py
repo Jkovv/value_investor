@@ -1,4 +1,4 @@
-"""36 · audit: how far each history source agrees with another, line by line.
+"""how far each history source agrees with another, line by line.
 
 every source that adds years outside the us is compared with yahoo finance on the
 years both report. the share of years within 2% is how much a line from that source

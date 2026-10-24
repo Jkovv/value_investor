@@ -1,4 +1,4 @@
-"""29 · foreign: home listings that also file 20-F, 40-F or 10-K reports with the sec.
+"""home listings that also file 20-F, 40-F or 10-K reports with the sec.
 
 large companies listed in the us through adrs (toyota, infosys, sap, petrobras,
 canadian banks) file xbrl with the sec, about ten years of it. those facts can

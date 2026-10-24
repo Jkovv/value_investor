@@ -1,4 +1,4 @@
-"""26 · peers: the closest competitors in the same industry, and where the company stands among them.
+"""the closest competitors in the same industry, and where the company stands among them.
 
 competitors come from every market: yahoo's industry label is shared by both
 sources once sec filers are tagged (ingestion.tag_industries); untagged sec

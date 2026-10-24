@@ -1,4 +1,4 @@
-"""21 · prompts: the briefs the research agents work from, kept apart so they read like documents."""
+"""the briefs the research agents work from, kept apart so they read like documents."""
 
 STYLE = (
     "Write plain, direct English. Never use em dashes or en dashes; use commas, colons or "

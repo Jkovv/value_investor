@@ -1,4 +1,4 @@
-"""07 · statements: raw facts -> one row per fiscal year, as known on a date.
+"""raw facts -> one row per fiscal year, as known on a date.
 
 years are keyed by period end (`fy` is the filing's year, not the number's),
 restatements keep the latest value filed by `as_of`, and per-share figures

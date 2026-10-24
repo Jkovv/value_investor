@@ -1,4 +1,4 @@
-"""main.py: command line: screen, rank, look at one company, check the market.
+"""command line: screen, rank, look at one company, check the market.
 
 run `python ingest.py` first, then:
 

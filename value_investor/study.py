@@ -1,14 +1,8 @@
-"""37 · study: would the ranking have picked the better companies?
+"""would the ranking have picked the better companies?
 
-every june from 2010 each company is scored again with only what was known then:
-statements filed by that day, prices up to it, that month's bond yield. the score is
-set against what the shares returned over the next one and three years, dividends
-reinvested, in the currency they trade in. a company is only compared with the others
-in its market that year, so how the whole market did drops out.
-
-free price data only has companies that are still listed. one that went bust or was
-taken over since is missing, which flatters every group and the weak ones most, as
-they disappear more often; the gaps measured here are between survivors.
+every june from 2010 each company is scored again with only what was known then, and
+set against what its shares returned over the next one and three years, within its own
+market. free prices only cover companies still listed, so these are survivors.
 """
 
 import json

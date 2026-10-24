@@ -1,4 +1,4 @@
-"""04 · store: the DuckDB file everything reads from and writes to.
+"""the DuckDB file everything reads from and writes to.
 
 raw facts are kept with their filing date and accession number, so any
 statement can be rebuilt as it looked on a past date (see statements.py).

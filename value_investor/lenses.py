@@ -1,9 +1,7 @@
-"""23 · lenses: the other schools, worked out from the same statements.
+"""the other schools, worked out from the same statements.
 
-Piotroski, Altman, Graham, Lynch, the Magic Formula, an owner-earnings dcf,
-a dividend discount model and a Monte Carlo run of the ten-year projection.
-kept out of the quality score on purpose: when they disagree with the
-checklist, that's the thing to look into.
+kept out of the quality score on purpose: when they disagree with the checklist,
+that's the thing to look into.
 """
 
 import math

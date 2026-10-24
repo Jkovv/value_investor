@@ -1,4 +1,4 @@
-"""17 · fx: currency conversion through Yahoo's FX pairs, cached like prices.
+"""currency conversion through Yahoo's FX pairs, cached like prices.
 
 some exchanges quote in a subunit: London in pence (GBp), Johannesburg in
 cents (ZAc), Tel Aviv in agorot (ILA), Kuwait in fils (KWF). everything is moved to the major

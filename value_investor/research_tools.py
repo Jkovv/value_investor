@@ -1,4 +1,4 @@
-"""20 · research_tools: what the research agents are allowed to do. all read-only.
+"""what the research agents are allowed to do. all read-only.
 
     company_numbers        our own analysis (the agents never compute numbers)
     quarterly_results      the last quarters against a year earlier

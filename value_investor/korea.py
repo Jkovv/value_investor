@@ -1,4 +1,4 @@
-"""35 · korea: twelve years of statements for krx listings, from the fss's dart.
+"""twelve years of statements for krx listings, from the fss's dart.
 
 every annual report (사업보고서) filed with dart since 2011 comes with its
 statements in xbrl, three years each: the year and the two before it. dart's

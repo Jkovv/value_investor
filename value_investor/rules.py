@@ -1,4 +1,4 @@
-"""11 · rules: the quality checklist, one check per principle.
+"""the quality checklist, one check per principle.
 
 each check is pass, warn, fail or n/a. quality is the weighted share of points
 over the checks that could run; completeness is how much could run at all.

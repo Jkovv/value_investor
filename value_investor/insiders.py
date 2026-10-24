@@ -1,4 +1,4 @@
-"""25 · insiders: open-market buys and sells by officers and directors (form 4).
+"""open-market buys and sells by officers and directors (form 4).
 
 US only: EDGAR is the one free, complete source. what counts is open-market
 buying (code P) with the insider's own money, and sales that weren't set up

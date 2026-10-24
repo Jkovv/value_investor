@@ -1,4 +1,4 @@
-"""28 · taiwan: ten years of statements for twse and tpex listings, from finmind.
+"""ten years of statements for twse and tpex listings, from finmind.
 
 finmind republishes the exchanges' filings (mops) as an open api: free, no key
 needed (an optional FINMIND_TOKEN raises the hourly limit). income lines are

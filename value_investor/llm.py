@@ -1,4 +1,4 @@
-"""15 · llm: every model call goes through get_llm().
+"""every model call goes through get_llm().
 
 a LiteLLM router behind a langchain chat model: config.LLM_PRIMARY first
 (local ollama by default), then whichever of groq and hugging face have keys.

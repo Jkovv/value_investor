@@ -1,4 +1,4 @@
-"""19 · markets: the 50 markets we screen and Market Cap / GDP for each.
+"""the 50 markets we screen and Market Cap / GDP for each.
 
 world bank history, rolled forward with the local benchmark and gdp growth.
 each market is judged against its own trend only: Switzerland looks huge next

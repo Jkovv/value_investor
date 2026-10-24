@@ -1,4 +1,4 @@
-"""40 · watchlist: companies to keep an eye on, and what changed since the last look.
+"""companies to keep an eye on, and what changed since the last look.
 
 a name and the day it was added, nothing more: no positions, no amounts. a digest
 compares each name with the previous digest: did the price fall under buy below,

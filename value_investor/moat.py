@@ -1,13 +1,5 @@
-"""39 · moat: what kind of durable advantage the numbers point to, if any.
-
-the books sort durable advantages three ways: a unique product people come back
-for (a brand), a unique service others can't do without (a toll bridge), or being
-the low-cost buyer and seller of something people always need. each leaves its own
-mark on ten years of statements: a high gross margin that barely moves; a high
-operating margin with no cost of sales and little capex; a thin but steady margin
-turned into a high return on equity every year. margins that swing, loss years and
-capex that eats the profit are how a commodity business looks. the numbers only
-point; the research brief has to find the reason in the sources.
+"""what kind of durable advantage ten years of statements point to: a product people
+come back for, a service others can't do without, being the low-cost operator, or none.
 """
 
 from value_investor import config

@@ -1,4 +1,4 @@
-"""09 · macro: us rates, Market Cap / GDP and the cash regime.
+"""us rates, Market Cap / GDP and the cash regime.
 
 Market Cap / GDP sets how much cash to hold, never what to buy. it is read
 against its own log trend (a fixed 140% line would have kept you in cash for

@@ -1,4 +1,4 @@
-"""33 · poland: annual statements for gpw listings, from biznesradar.
+"""annual statements for gpw listings, from biznesradar.
 
 biznesradar.pl shows each company's profit and loss, balance sheet and cash
 flow year by year, most of them back to the mid 2000s, with the date each

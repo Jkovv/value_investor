@@ -1,4 +1,4 @@
-"""06 · concepts: which xbrl tags feed which statement line.
+"""which xbrl tags feed which statement line.
 
 tags are listed in order of preference and the first one filed for a period
 wins, so a tag change mid-history (revenue in 2018) doesn't drop years.

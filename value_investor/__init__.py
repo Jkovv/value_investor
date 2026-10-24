@@ -1,45 +1,4 @@
-"""value investor. modules are numbered in reading order:
+"""value investor: a screener for good businesses at fair prices, in every market with free data.
 
-    01 config          settings and thresholds
-    02 logging_config  console logging
-    03 http            rate-limited client for the sec apis
-    04 store           duckdb schema, reads and writes
-    05 edgar           company list, profiles and xbrl facts
-    06 concepts        xbrl tag -> statement line
-    07 statements      facts -> annual statements, point in time
-    08 prices          prices, dividends, splits
-    09 macro           us rates and Market Cap / GDP
-    10 metrics         yearly ratios and the ten-year summary
-    11 rules           the quality checklist and its score
-    12 valuation       expected return, buy price, sell signal
-    13 ingestion       edgar and yahoo into duckdb
-    14 screener        one company end to end, and the ranking
-    15 llm             model router: ollama first, groq and hugging face after
-    16 tracing         optional langsmith tracing
-    17 fx              exchange rates and quote subunits
-    18 yahoo           every market outside the us
-    19 markets         50 markets, Market Cap / GDP each
-    20 research_tools  what the agents may read
-    21 prompts         the agents' briefs
-    22 research        the deep agents, and questions
-    23 lenses          Piotroski, Altman, Graham, Lynch, Magic Formula, dcf, ddm, Monte Carlo
-    24 quarterly       the last quarters against a year earlier
-    25 insiders        form 4 buys and sells
-    26 peers           the closest companies in the same industry
-    27 china           ten years for a-shares, from eastmoney
-    28 taiwan          ten years for twse and tpex listings, from finmind
-    29 foreign         sec filings of companies listed elsewhere
-    30 india           twelve years for nse and bse listings, from screener.in
-    31 hongkong        up to twenty years of headline figures for hkex listings
-    32 brazil          eleven years for b3 listings, from the cvm
-    33 poland          up to twenty years for gpw listings, from biznesradar
-    34 japan           up to nineteen years of headline figures for tse listings, from irbank
-    35 korea           twelve years for krx listings, from dart's xbrl
-    36 audit           every history source against yahoo, line by line
-    37 study           each june since 2010 scored again, against what the shares did next
-    38 evals           research briefs checked sentence by sentence against their sources
-    39 moat            product, service, low cost or none, from ten years of statements
-    40 watchlist       companies to watch, and what changed since the last digest
-
-entry points sit at the repo root: ingest.py, main.py, research.py, app.py.
+the entry points sit at the repo root: ingest.py, main.py, research.py and app.py.
 """

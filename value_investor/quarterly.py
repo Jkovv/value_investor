@@ -1,4 +1,4 @@
-"""24 · quarterly: the last quarters, each against the same one a year earlier.
+"""the last quarters, each against the same one a year earlier.
 
 10-Qs file three-month and year-to-date figures and there's no 10-Q for the
 fourth quarter, so missing quarters come from running totals (Q4 = year

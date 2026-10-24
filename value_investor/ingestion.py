@@ -1,4 +1,4 @@
-"""13 · ingestion: edgar and yahoo into duckdb.
+"""edgar and yahoo into duckdb.
 
 threads fetch, the main thread writes. a company is refetched only when it
 has filed something new, so re-running over the whole market is cheap.

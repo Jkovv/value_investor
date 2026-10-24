@@ -1,4 +1,4 @@
-"""12 · valuation: what today's price buys over the next ten years.
+"""what today's price buys over the next ten years.
 
 the share is a bond whose coupon is EPS, growing at the lower of its past
 growth and ROE × retention. ten years out, times the company's usual P/E,

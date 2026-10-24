@@ -1,4 +1,4 @@
-"""research.py: run the deep research agent on one or more companies.
+"""run the deep research agent on one or more companies.
 
   python research.py KO                 # one company
   python research.py PKN.WA ASML.AS     # several, one after another

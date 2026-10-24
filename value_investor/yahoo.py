@@ -1,4 +1,4 @@
-"""18 · yahoo: every listed company outside the us.
+"""every listed company outside the us.
 
 the universe is yahoo's screener, region by region, one home listing per
 company (the one quoted in the currency it reports in). about five years of

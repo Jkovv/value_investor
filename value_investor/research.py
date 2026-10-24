@@ -1,4 +1,4 @@
-"""22 · research: deep agents on one company, its competitors and its demand.
+"""deep agents on one company, its competitors and its demand.
 
     gather   code collects our numbers, quarters, peers, insiders, the annual
              report, attention and news trends and a few web pages
@@ -486,7 +486,6 @@ def _drain(names: dict) -> None:
 
 
 def waiting() -> list:
-    """tickers queued behind the one being researched."""
     with _lock:
         return list(_queue[1:])
 
