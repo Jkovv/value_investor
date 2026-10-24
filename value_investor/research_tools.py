@@ -290,7 +290,8 @@ def news_trend(query: str) -> str:
     monthly = volume["value"].resample("MS").sum().iloc[1:]
     monthly = monthly[monthly.index < this_month]
     tone_m = tone["value"].resample("MS").mean() if not tone.empty else pd.Series(dtype=float)
-    tone_m = tone_m[(tone_m.index < this_month) & (tone_m.index >= monthly.index.min())] if not monthly.empty else tone_m
+    if not tone_m.empty and not monthly.empty:
+        tone_m = tone_m[(tone_m.index < this_month) & (tone_m.index >= monthly.index.min())]
     if len(monthly) < 4:
         return f"Too little news history for {query}."
     recent, earlier = monthly.tail(3).mean(), monthly.iloc[:-3].mean() if len(monthly) > 3 else None
