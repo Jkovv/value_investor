@@ -29,6 +29,9 @@ DIR = config.DATA_DIR / "evals"
 VERDICTS = ("supported", "partly", "not_in_source", "contradicted")
 TOKENS_PER_MINUTE = 7000            # groq's free tier allows 8,000; leave some room
 FLAG = "*(not found in the cited source)*"
+# places and titles everyone knows; not the kind of name a model makes up
+COMMON = {"united states", "north america", "south america", "latin america", "central america", "southeast asia",
+          "middle east", "asia pacific", "vice chairman"}
 
 JUDGE = """You check one sentence from a research brief against the sources it cites.
 
@@ -75,11 +78,25 @@ def claims(report: str) -> list:
     return out
 
 
-def unsourced_names(report: str, items: list) -> list:
+def evidence(ticker: str) -> tuple:
+    """the sources a brief was written from, and the numbers block the writer saw with them.
+    briefs saved before the numbers were kept get them rebuilt from the stored data."""
+    data = json.loads((RESEARCH_DIR / f"{ticker}.evidence.json").read_text(encoding="utf-8"))
+    if isinstance(data, dict):
+        return data["items"], data.get("numbers") or ""
+    try:
+        from value_investor.research_tools import company_numbers
+        return data, company_numbers.invoke({"ticker": ticker})
+    except Exception:
+        return data, ""
+
+
+def unsourced_names(report: str, items: list, numbers: str = "") -> list:
     """sentences that cite nothing and name someone or something no source mentions; a small
-    model fills gaps with names it remembers (a ceo who left years ago)."""
+    model fills gaps with names it remembers."""
     body = re.split(r"\n## Sources\b", report)[0]
-    haystack = " ".join((e["title"] + " " + e["text"]).lower() for e in items)
+    haystack = numbers + " " + " ".join(e["title"] + " " + e["text"] for e in items)
+    haystack = re.sub(r"\s+", " ", re.sub(r"[()]", "", haystack)).lower()     # "Zhang (Xiulan)"
     out = []
     for block in body.split("\n"):
         if block.startswith("#"):
@@ -87,7 +104,7 @@ def unsourced_names(report: str, items: list) -> list:
         for sentence in re.split(r"(?<=[.!?])\s+", block):
             if re.search(r"\[\d+\]", sentence):
                 continue
-            missing = [n for n in NAME.findall(sentence) if n.lower() not in haystack]
+            missing = [n for n in NAME.findall(sentence) if n.lower() not in haystack and n.lower() not in COMMON]
             if missing:
                 out.append({"sentence": sentence.strip()[:300], "names": missing})
     return out
@@ -178,7 +195,7 @@ def grade(tickers=None, judge: "Judge | None" = None) -> list:
     rows = []
     for ticker in tickers or briefs():
         report = (RESEARCH_DIR / f"{ticker}.md").read_text(encoding="utf-8")
-        items = json.loads((RESEARCH_DIR / f"{ticker}.evidence.json").read_text(encoding="utf-8"))
+        items, _ = evidence(ticker)
         for c in claims(report):
             sources = excerpts(items, c["cited"])
             verdict = judge(ticker, c["claim"], sources) if sources else None
@@ -204,10 +221,10 @@ def summarise(rows: list, tickers=None) -> dict:
     cited_share, unsourced = {}, {}
     for t in tickers:
         report = (RESEARCH_DIR / f"{t}.md").read_text(encoding="utf-8")
-        items = json.loads((RESEARCH_DIR / f"{t}.evidence.json").read_text(encoding="utf-8"))
+        items, numbers = evidence(t)
         total = sentences(report)
         cited_share[t] = len([r for r in rows if r["ticker"] == t]) / total if total else None
-        unsourced[t] = unsourced_names(report, items)
+        unsourced[t] = unsourced_names(report, items, numbers)
     by_kind = {}
     for r in rows:
         for k in r["kinds"]:
@@ -242,7 +259,7 @@ def write_sample(rows: list, n: int = 60, seed: int = 7) -> "str | None":
         w = csv.writer(fh)
         w.writerow(["id", "ticker", "claim", "sources", "your_verdict"])
         for r in sample:
-            items = json.loads((RESEARCH_DIR / f"{r['ticker']}.evidence.json").read_text(encoding="utf-8"))
+            items, _ = evidence(r["ticker"])
             w.writerow([r["id"], r["ticker"], r["claim"], excerpts(items, r["cited"]), ""])
     return str(path)
 

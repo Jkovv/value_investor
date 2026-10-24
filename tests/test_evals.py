@@ -47,7 +47,7 @@ def test_a_brief_is_graded_sentence_by_sentence(monkeypatch, tmp_path):
     (tmp_path / "ACME.md").write_text(BRIEF, encoding="utf-8")
     items = [{"title": "Annual report, business", "where": "page 1", "text": "Acme holds the only licence."},
              {"title": "Peer comparison, ACME", "where": "computed from stored statements", "text": "margin 30%"}]
-    (tmp_path / "ACME.evidence.json").write_text(json.dumps(items), encoding="utf-8")
+    (tmp_path / "ACME.evidence.json").write_text(json.dumps({"items": items, "numbers": ""}), encoding="utf-8")
     verdicts = iter(["supported", "supported", "not_in_source"])
     rows = evals.grade(["ACME"], judge=lambda t, c, s: {"verdict": next(verdicts), "reason": ""})
     s = evals.summarise(rows, ["ACME"])
@@ -74,3 +74,10 @@ def test_names_no_source_mentions_are_caught_in_uncited_sentences():
               "Revenue grew [1]. Someone Else said so [1].\n\n## Sources\n\n1. Annual report\n")
     found = evals.unsourced_names(report, items)
     assert [f["names"] for f in found] == [["Ajay Banga"]]
+
+
+def test_names_from_the_numbers_block_or_in_brackets_count_as_sourced():
+    items = [{"title": "Insider trades", "where": "web", "text": "Zhang (Xiulan) Independent Director bought"}]
+    report = "# X\n\nZhang Xiulan bought shares in North America. The Magic Formula likes it. It is chaired by Hua Chen.\n"
+    found = evals.unsourced_names(report, items, numbers="Magic Formula: earnings yield 7.5%")
+    assert [f["names"] for f in found] == [["Hua Chen"]]

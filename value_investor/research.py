@@ -425,7 +425,8 @@ def run(ticker: str, name: "str | None" = None, dig: bool = True, resume: bool =
         reply = llm.get_llm().invoke(llm.tune(prompt))
         text = _finish(getattr(reply, "content", str(reply)), cp.evidence, title, cp.numbers)
         evidence_path = RESEARCH_DIR / f"{_safe(ticker)}.evidence.json"
-        evidence_path.write_text(json.dumps(cp.evidence.items, ensure_ascii=False, indent=1), encoding="utf-8")
+        evidence_path.write_text(json.dumps({"items": cp.evidence.items, "numbers": cp.numbers, "notes": cp.notes},
+                                            ensure_ascii=False, indent=1), encoding="utf-8")
         report_path(ticker).write_text(text, encoding="utf-8")
         cp.clear()
         _write_status(ticker, state="done", finished_at=datetime.now(), sources=len(cp.evidence.items),
