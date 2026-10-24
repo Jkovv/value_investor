@@ -15,12 +15,13 @@ there is a free one. re-running only fetches what can have changed.
   python ingest.py --insiders               # form 4s only, for ranked us companies
   python ingest.py --quarters               # quarters for stored non-us companies that lack them
   python ingest.py --history                # ten years from local sources and sec filings of foreign companies
+  python ingest.py --coverage               # analysts and fund ownership for analysed companies (resumes)
   python ingest.py --macro-only             # rates, gdp, market cap / gdp, inflation
 """
 
 import argparse
 
-from value_investor import config, foreign, ingestion, insiders, macro, markets, store
+from value_investor import config, coverage, foreign, ingestion, insiders, macro, markets, store
 from value_investor.logging_config import configure_logging
 
 
@@ -56,6 +57,17 @@ def extend_history(refresh: bool = False) -> None:
     print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
 
 
+def refresh_coverage() -> None:
+    with store.connect(read_only=True) as con:
+        targets = coverage.stale(con)
+    if not targets:
+        print("Coverage is up to date (or nothing is analysed yet: run main.py screen first).")
+        return
+    print(f"Analysts and fund ownership for {len(targets)} companies...")
+    counts = coverage.refresh(targets)
+    print("  done:", ", ".join(f"{k} {v}" for k, v in counts.items() if v))
+
+
 def main():
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -70,6 +82,7 @@ def main():
     parser.add_argument("--insiders", action="store_true", help="only form 4s")
     parser.add_argument("--quarters", action="store_true", help="only quarters for stored non-us companies")
     parser.add_argument("--history", action="store_true", help="only the longer histories from local sources")
+    parser.add_argument("--coverage", action="store_true", help="only analyst counts and fund ownership")
     parser.add_argument("--macro-only", action="store_true", help="skip companies, refresh macro series only")
     args = parser.parse_args()
 
@@ -84,6 +97,9 @@ def main():
         return
     if args.history:
         extend_history(args.refresh)
+        return
+    if args.coverage:
+        refresh_coverage()
         return
 
     print("Refreshing macro series (FRED, World Bank, benchmarks)...")

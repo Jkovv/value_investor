@@ -128,6 +128,14 @@ CREATE TABLE IF NOT EXISTS insider_trades (
     planned BOOLEAN
 );
 
+CREATE TABLE IF NOT EXISTS coverage (
+    cik INTEGER PRIMARY KEY,
+    analysts INTEGER,
+    institutions DOUBLE,
+    insiders DOUBLE,
+    fetched_at TIMESTAMP
+);
+
 """
 
 # added after the first release; ALTER keeps existing databases working.
