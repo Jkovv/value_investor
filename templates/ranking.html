@@ -45,6 +45,7 @@
       <option value="general" {% if profile == 'general' %}selected{% endif %}>Operating companies</option>
       <option value="financial" {% if profile == 'financial' %}selected{% endif %}>Banks, insurers, REITs</option>
     </select>
+    <input type="hidden" name="full" value="false">
     <label class="switch">
       <input type="checkbox" name="full" value="true" {% if full %}checked{% endif %} onchange="this.form.submit()">
       <span class="track"></span>

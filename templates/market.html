@@ -13,6 +13,7 @@
     <span class="stat-label">{{ reading.name }} · Market Cap / GDP · {{ reading.date }}</span>
     <span class="hero-value" style="margin-top: 6px">{{ reading.value | pct(0) }}</span>
     <span class="hero-range">trend {{ reading.trend | pct(0) }} · {{ "%+.1f" | format(reading.z) }}σ from it · {{ reading.source }}</span>
+    {% if chosen == best and not picked %}<span class="hero-range">Shown first: the market furthest below its own trend. Pick another in the table.</span>{% endif %}
   </div>
   <div class="hero-figure">
     <span class="pill pill-{{ regime_tone[reading.regime] }}">{{ reading.regime | capitalize }}</span>
@@ -68,9 +69,9 @@
     <thead>
       <tr>
         {{ sort_head("Market", "text", "") }}
-        {{ sort_head("Market Cap / GDP") }}
+        {{ sort_head("Market Cap / GDP", tip="The value of every listed share in the country against the size of its economy (GDP). High means the stock market is priced richly for what the economy produces. A market is only compared with its own history: some countries list far more of their companies than others.") }}
         {{ sort_head("Trend") }}
-        {{ sort_head("Distance", initial="descending") }}
+        {{ sort_head("Distance", initial="descending", tip="How far today's Market Cap / GDP sits from this market's long-run trend, in standard deviations (σ). Around 0 is normal for it. Below -1σ reads as cheap, above +1.5σ as very expensive, and the suggested cash share rises with it.") }}
         {{ sort_head("Reading", align="") }}
         {{ sort_head("Cash") }}
         {{ sort_head("10y bond") }}

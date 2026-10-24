@@ -152,7 +152,7 @@ def render_report(text: str) -> Markup:
 
 
 @app.get("/", response_class=HTMLResponse)
-def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = False):
+def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = True):
     try:
         with store.connect(read_only=True) as con:
             df = screener.ranking(con)
@@ -290,6 +290,13 @@ def data(request: Request):
                                                              "names": names})
 
 
+def cheapest(readings: dict) -> "str | None":
+    """the market furthest below its own trend, among those with a current or recently rolled figure."""
+    scored = [r for r in readings.values() if r.get("value") is not None and r.get("z") is not None]
+    sound = [r for r in scored if r.get("confidence") in ("high", "medium")] or scored
+    return min(sound, key=lambda r: r["z"])["iso3"] if sound else None
+
+
 @app.get("/market", response_class=HTMLResponse)
 def market(request: Request, m: str = ""):
     try:
@@ -299,7 +306,8 @@ def market(request: Request, m: str = ""):
             bonds = {iso: markets.bond_yield(con, iso) for iso in readings}
     except duckdb.IOException:
         return _busy(request, "market")
-    chosen = (m or "USA").upper()
+    best = cheapest(readings)
+    chosen = (m or best or "USA").upper()
     reading = readings.get(chosen)
     chart, table = None, []
     if reading and reading.get("value") is not None:
@@ -315,5 +323,5 @@ def market(request: Request, m: str = ""):
     rows = sorted(readings.values(), key=lambda r: (r.get("z") is None, -(r.get("z") or 0)))
     return templates.TemplateResponse(request, "market.html", {
         "snap": snap, "readings": rows, "chosen": chosen, "reading": reading, "chart": chart,
-        "table": table, "bonds": bonds,
+        "table": table, "bonds": bonds, "best": best, "picked": bool(m),
     })
