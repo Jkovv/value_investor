@@ -8,7 +8,7 @@ thing lives here, or why it doesn't.
 | One agent per famous investor, each giving a buy or sell signal | ai-hedge-fund | The same schools are computed, not role-played: Graham, Lynch, Piotroski, Greenblatt, Altman, an owner-earnings DCF, a dividend discount model and a Monte Carlo range on the **Lenses** tab. Agents then do the qualitative part from sources. |
 | Analyst team: fundamentals, news | TradingAgents | Four deep agents per company: filings, competitors, demand trends (alternative data), web. |
 | Bull researcher against bear researcher | TradingAgents, FinRobot | Every brief has a **Bull case and bear case** section and must say which one the evidence supports and what would change its mind. |
-| Sourced equity research report | FinRobot | The **Research** tab: every claim numbered, the source list added by code rather than by the model. |
+| Sourced equity research report | FinRobot | The **Research** tab: claims cite numbered sources, the source list is added by code rather than by the model, and every cited sentence can be graded against its source. |
 | Free-form questions about a ticker | FinRobot | The **Ask** box on the Research tab, answered by an agent with sources. |
 | Comparable companies | FinRobot | The **Competitors** tab: the ten closest companies in the same industry from any market, compared on 19 measures, with the company's place on each and a side-by-side sheet. |
 | Quarterly results | FinRobot | The **Quarters** tab: each quarter against a year earlier, trailing twelve months, a flag when the last two quarters slip. |

@@ -3,10 +3,11 @@
 [![tests](https://github.com/Jkovv/value_investor/actions/workflows/tests.yml/badge.svg)](https://github.com/Jkovv/value_investor/actions/workflows/tests.yml)
 
 A screener for the whole world's stock markets that looks for one thing: businesses with a durable
-competitive advantage, at a price that still leaves a good return. It reads ten years of financial
-statements for about 8,000 companies in 47 markets, scores each one against a written checklist,
-works out what today's price returns over the next ten years, and sends research agents to read
-up on the ones that rank highest. Every source it uses is free.
+competitive advantage, at a price that still leaves a good return, and above all the ones hardly
+anyone is looking at. It reads ten years of financial statements for about 8,000 companies in 47
+markets, scores each one against a written checklist, works out what today's price returns over the
+next ten years, counts the analysts who follow it, and sends research agents to read up on the ones
+that rank highest. Every source it uses is free.
 
 ![The ranking](docs/img/ranking.png)
 
@@ -19,6 +20,12 @@ of annual reports per company, and the free screeners only cover a few countries
 So the goal was a tool that does the reading for every listed company above $1B, in every market
 with data, and prices each one in the currency its shares trade in, without paying for data.
 
+The interesting finds are rarely in the S&P 500. A US large cap has thirty analysts pricing it; a
+well-run builder in Warsaw or a chemicals maker in Taipei may have a handful, or none, because the big
+research houses don't cover the market. Fewer people setting the price is where reading the
+statements carefully still pays, so the screener also counts who is looking and puts the good
+companies nobody covers on a page of their own.
+
 The rules are written out in **[knowledge/principles.md](knowledge/principles.md)**.
 
 ## What it does
@@ -29,6 +36,7 @@ The rules are written out in **[knowledge/principles.md](knowledge/principles.md
 | Ten years of statements | 4,366 companies, from local free sources in 9 markets plus SEC filings |
 | Data stored | 3.5M annual and 2.4M quarterly statement facts, 14.3M daily prices, 19k insider trades |
 | Ranked | 1,546 companies pass the quality gate and get priced |
+| Off the radar | The ones that pass with three analysts or fewer, and the markets where coverage is thinnest |
 | Valuation lenses | Piotroski F-score, Altman Z, Graham number, Lynch PEG, Magic Formula, owner-earnings DCF, dividend discount, Monte Carlo |
 | Market level | Market Cap / GDP for 50 countries, each against its own trend |
 | Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model; started from its own page, a queue, or a company's header |
@@ -110,6 +118,7 @@ ollama pull qwen3:8b                # for the research agents
 
 python ingest.py --markets USA POL DEU JPN --limit 50   # a quick taste
 python main.py screen                                   # score, price the ones that pass, rank
+python ingest.py --coverage                             # how many analysts follow each one
 uvicorn app:app --port 8001                             # dashboard at http://127.0.0.1:8001
 python research.py --top 3                              # research briefs for the top three
 ```
@@ -121,15 +130,15 @@ and only matter for the research agents.
 
 | Command | What it does |
 |---|---|
-| `python ingest.py` | Every market: US companies from EDGAR (annual, quarterly, form 4), every other market from Yahoo Finance (one home listing per company, above a $1B floor), plus FRED, World Bank and benchmark series. Only fetches what can have changed. `--us`, `--world`, `--markets`, `--tickers`, `--min-cap`, `--limit`, `--refresh`, `--insiders`, `--quarters`, `--history`, `--macro-only`. |
+| `python ingest.py` | Every market: US companies from EDGAR (annual, quarterly, form 4), every other market from Yahoo Finance (one home listing per company, above a $1B floor), plus FRED, World Bank and benchmark series. Only fetches what can have changed. `--us`, `--world`, `--markets`, `--tickers`, `--min-cap`, `--limit`, `--refresh`, `--insiders`, `--quarters`, `--history`, `--coverage`, `--macro-only`. |
 | `python main.py screen` | Scores every ingested company, prices the ones that pass the gate, and ranks them by expected return. |
 | `python main.py rank` | Prints the last ranking. `--all` includes companies below the gate. |
 | `python main.py show KO` | Checklist, valuation steps and ten years of ratios for one company. |
 | `python main.py macro` | US rates, the yield curve, Sahm rule and Market Cap / GDP. |
 | `python research.py KO` | Deep research agents: filings, competitors, demand trends and the web, then a sourced brief. Resumes an unfinished run. `--top N` for the top of the ranking. |
-| `uvicorn app:app --port 8001` | The dashboard: ranking, company pages (quarters, competitors, insiders, checklist, lenses, research and questions), markets. |
+| `uvicorn app:app --port 8001` | The dashboard: ranking, off the radar, company pages (quarters, competitors, insiders, checklist, lenses, research and questions), research, watchlist, markets, data. |
 | `python -m value_investor.llm` | Checks the model router (local Ollama first, then Groq / Hugging Face if keyed). |
-| `pytest` | The test suite (110 tests). |
+| `pytest` | The test suite (155 tests). |
 
 ## Documentation
 
@@ -168,3 +177,10 @@ Every command, in order: **[commands.md](commands.md)**.
       turns up ([06 Roadmap](docs/06-roadmap.md)).
 - [ ] Briefs: check every figure against its source in code before a sentence is kept, and mark the
       judge's sample by hand ([09 Does it work?](docs/09-evidence.md)).
+- [ ] Move the research agents to AWS, or at least experiment with it: Amazon Bedrock as one more
+      backend in the model router, a larger writer than the local 8B model, keys only in `.env`.
+      `python main.py evals` then shows whether the briefs cite more and get less wrong.
+- [ ] Off the radar, further down: lower the $1B floor in the least-covered markets, since the
+      companies nobody follows are mostly smaller.
+- [ ] Keep every month's analyst counts instead of only the latest, so that in a year or two it can
+      be tested whether the good companies nobody covered did better. No free source keeps past counts.

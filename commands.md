@@ -81,6 +81,17 @@ python main.py show KO
 python main.py macro
 ```
 
+## Off the radar
+
+```bash
+# After a screen: how many analysts follow each analysed company, and how much of it funds own.
+# Under an hour for 8,000 companies; it backs off when Yahoo refuses and picks up where it stopped.
+python ingest.py --coverage
+```
+
+Then the **Off the radar** page lists the companies that pass the checklist with three analysts or
+fewer, and the markets where coverage is thinnest.
+
 ## Watchlist
 
 ```bash
@@ -131,7 +142,7 @@ Questions about a company are asked on its Research tab.
 
 ```bash
 uvicorn app:app --port 8001
-# http://127.0.0.1:8001: ranking, research, watchlist, company pages, markets, data
+# http://127.0.0.1:8001: ranking, off the radar, research, watchlist, company pages, markets, data
 
 # Showing it to other people: PUBLIC_DASHBOARD=true in .env turns off research runs
 # and questions, so nobody else can spend your API credits

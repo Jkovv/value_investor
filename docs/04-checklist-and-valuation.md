@@ -108,4 +108,24 @@ the buy zone, a new sell signal, insiders buying (clustered or not), falling bel
 digest is saved in `data/digests/`; the **Watchlist** page shows the latest changes and sorts the
 companies by how far the price is above buy below.
 
+## Off the radar (`coverage.py`)
+
+`python ingest.py --coverage` reads two numbers from Yahoo Finance for every analysed company: how
+many analysts publish estimates for it, and how much of it institutions hold. A company that passes
+the checklist, has a price, and that three analysts or fewer follow is **off the radar**: fewer
+people set its price, so a careful reading of the statements is worth more there. The page of that
+name lists them by expected return and ranks the markets by how thinly they are covered; the
+ranking has an **Analysts** column and a switch for three or fewer; the research writer is told the
+count, so a brief can weigh it under *Why it might be cheap*.
+
+What the counts can't do:
+
+- Yahoo's analysts are those in its data vendor's feed. A Polish or Israeli broker that publishes
+  only locally isn't counted, so zero means nobody in the international feed, not nobody at all.
+- A second listing (a Cboe copy of a London line, a Toronto share whose estimates sit on the US
+  one) can show zero analysts for a company thirty follow. London copies are read on the London
+  line; a zero on a company funds own more than half of is treated as unknown.
+- There is no free record of past counts, so whether off-the-radar companies did better can't be
+  tested on the past the way the ranking is in [09](09-evidence.md).
+
 Next: **[05 Market regime](05-market-regime.md)**.
