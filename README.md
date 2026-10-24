@@ -32,11 +32,29 @@ The rules are written out in **[knowledge/principles.md](knowledge/principles.md
 | Valuation lenses | Piotroski F-score, Altman Z, Graham number, Lynch PEG, Magic Formula, owner-earnings DCF, dividend discount, Monte Carlo |
 | Market level | Market Cap / GDP for 50 countries, each against its own trend |
 | Research | Four agents (filings, competitors, demand, web) and a writer that cites its evidence, on a local model |
+| Checked | Every source against a second one, line by line; the ranking against what followed, each June since 2010; the briefs sentence by sentence against their sources |
 | Cost | Nothing: SEC EDGAR, Yahoo Finance, regulator open data, FRED, World Bank, a local LLM |
 
 Figures as of October 2026.
 
 ![A company page](docs/img/company.png)
+
+## Does it work?
+
+Every company was scored again on 30 June of each year since 2010, with only what was public that
+day, and set against what its shares returned next, within its own market (37,255 company-years,
+20 markets). Method and caveats: **[09 Does it work?](docs/09-evidence.md)**.
+
+- **The valuation ranks in the right order.** Companies that passed the checklist and whose price
+  promised less than nothing returned 7.7% a year over the next three years; those promising over
+  20% returned 12.2%. Each step up in the promise was a step up in the result. It promises too
+  much, so it reads better as a ranking than as a forecast.
+- **The checklist alone barely separates winners from losers** (rank correlation 0.03 to 0.05, not
+  significant). It narrows the field; the price decides.
+- **The sources hold up.** Net income agrees with a second source in 84% to 99% of years for every
+  source but India's (74%). Lines that didn't agree were taken out.
+
+![Promised against delivered](docs/img/study_calibration.png)
 
 ## How it works
 
@@ -70,6 +88,10 @@ flowchart LR
   free source, and each source is checked against Yahoo before anything is stored: Biznesradar
   converts euro reporters into zloty, IRBANK's debt figures were off by multiples, Korean banks
   only file XBRL from 2023. Korea's filings come from DART's public website, without an API key.
+- **Testing on the past without seeing the future.** Yahoo moves every old price into today's share
+  units, while an old filing is in the units of its day: NVIDIA's 2020 P/E came out 40 times off.
+  Old prices are put back into the units of their date, and a price that triples in a day is
+  treated as a broken split adjustment, not a return. [09 Does it work?](docs/09-evidence.md)
 - **Agents on a laptop.** One big agent on an 8B local model skipped steps, so research runs in
   stages: code gathers the evidence, four agents dig, one writer cites numbered sources.
   [07 Research agents](docs/07-research-agents.md)
