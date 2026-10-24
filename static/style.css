@@ -676,6 +676,9 @@ pre {
 .back:hover svg { transform: translateX(-2px); }
 
 .hero-id { min-width: 0; }
+.hero-research { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 14px; font-size: 13px; color: var(--ink-2); }
+.hero-research form { display: contents; }
+.hero-reason { max-width: 70ch; }
 .hero-id .chips { margin-top: 8px; align-items: center; }
 .avatar {
   flex: none;
@@ -815,6 +818,10 @@ th[aria-sort="descending"] .sort-icon .down { opacity: 1; }
 /* research */
 
 .research-card .card-head { align-items: center; }
+.research-start { display: flex; flex-direction: column; gap: 12px; }
+.research-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.research-form .input { flex: 1 1 260px; max-width: 420px; }
+.brief-why { min-width: 280px; max-width: 60ch; font-size: 13px; color: var(--ink-2); }
 .button[disabled] { opacity: 0.45; cursor: default; }
 .research-meta { margin: 0 0 4px; color: var(--ink-2); font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .spinner {

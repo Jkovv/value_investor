@@ -39,8 +39,10 @@ EVIDENCE_BUDGET = 30_000     # characters of evidence the writer sees; keeps a 1
 RESUME_DAYS = 7
 STALLED_AFTER = 30 * 60
 _running: dict = {}
+_queue: list = []
 _lock = threading.Lock()
 _status_lock = threading.Lock()
+VERDICTS = ("Strong candidate", "Worth watching", "Pass")
 
 
 def _safe(ticker: str) -> str:
@@ -112,6 +114,32 @@ def resumable(ticker: str) -> "list | None":
 def report(ticker: str) -> "str | None":
     path = report_path(ticker)
     return path.read_text(encoding="utf-8") if path.exists() else None
+
+
+def verdict(text: "str | None") -> "dict | None":
+    """the brief's opening call, one of VERDICTS, and the sentence after it."""
+    m = re.search(r"\*\*Verdict:\*\*\s*(.+)", text or "")
+    if not m:
+        return None
+    line = m.group(1).strip()
+    label = next((v for v in VERDICTS if line.lower().startswith(v.lower())), None)
+    if label is None:
+        return None
+    reason = line[len(label):].lstrip(" .,:;").strip()
+    return {"label": label, "reason": reason[:1].upper() + reason[1:]}
+
+
+def library() -> list:
+    """every finished brief, newest first, with its verdict and how it was made."""
+    out = []
+    for path in RESEARCH_DIR.glob("*.md"):
+        ticker = path.stem.upper()
+        st = _read_json(status_path(ticker), {}) if status_path(ticker).exists() else {}
+        out.append({"ticker": ticker, "verdict": verdict(path.read_text(encoding="utf-8")),
+                    "finished": st.get("finished_at") or datetime.fromtimestamp(path.stat().st_mtime).isoformat(),
+                    "minutes": st.get("minutes"), "sources": st.get("sources"), "backends": st.get("backends") or [],
+                    "has_evidence": (RESEARCH_DIR / f"{_safe(ticker)}.evidence.json").exists()})
+    return sorted(out, key=lambda r: str(r["finished"]), reverse=True)
 
 
 @dataclass
@@ -425,10 +453,48 @@ def start_in_background(ticker: str, name: "str | None" = None, resume: bool = T
         return True
 
 
+def enqueue(tickers: list, names: "dict | None" = None) -> list:
+    """research several companies one after another in a single background thread; the ones
+    already waiting are skipped. returns the tickers added."""
+    names = names or {}
+    with _lock:
+        new = [t.upper() for t in tickers if t and t.upper() not in _queue]
+        _queue.extend(new)
+        for t in new:
+            _write_status(t, state="queued", started_at=datetime.now(), error=None)
+        if new and not any(th.is_alive() for th in _running.values()):
+            thread = threading.Thread(target=_drain, args=(names,), daemon=True, name="research-queue")
+            _running["queue"] = thread
+            thread.start()
+    return new
+
+
+def _drain(names: dict) -> None:
+    while True:
+        with _lock:
+            if not _queue:
+                return
+            ticker = _queue[0]
+        try:
+            run(ticker, names.get(ticker))
+        finally:
+            with _lock:
+                if _queue and _queue[0] == ticker:
+                    _queue.pop(0)
+
+
+def waiting() -> list:
+    """tickers queued behind the one being researched."""
+    with _lock:
+        return list(_queue[1:])
+
+
 def busy() -> "str | None":
     with _lock:
+        if _queue and _running.get("queue") and _running["queue"].is_alive():
+            return _queue[0]
         for ticker, thread in _running.items():
-            if thread.is_alive():
+            if ticker != "queue" and thread.is_alive():
                 return ticker
     return None
 

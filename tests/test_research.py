@@ -113,3 +113,37 @@ def test_starting_over_drops_the_saved_work(tmp_path, monkeypatch):
     research.Checkpoint("KO", resume=False).save("gather")
     assert research.Checkpoint("KO", resume=False).done == []
     assert research.resumable("KO") is None
+
+
+def test_a_brief_opens_with_one_of_three_verdicts():
+    from value_investor import research
+    assert research.verdict("# X\n\n**Verdict:** Strong candidate. Durable brand, fair price.") == {
+        "label": "Strong candidate", "reason": "Durable brand, fair price."}
+    assert research.verdict("**Verdict:** worth watching, the price is high")["label"] == "Worth watching"
+    assert research.verdict("**Verdict:** Buy now") is None
+    assert research.verdict(None) is None
+
+
+def test_queued_companies_wait_for_the_one_running(monkeypatch, tmp_path):
+    import threading
+    from value_investor import research
+    monkeypatch.setattr(research, "RESEARCH_DIR", tmp_path)
+    started, gate = [], threading.Event()
+    monkeypatch.setattr(research, "run", lambda ticker, name=None: (started.append(ticker), gate.wait(5)))
+    assert research.enqueue(["ma", "KO"]) == ["MA", "KO"]
+    assert research.enqueue(["KO"]) == []                   # already waiting
+    assert research.busy() == "MA" and research.waiting() == ["KO"]
+    gate.set()
+    research._running["queue"].join(5)
+    assert started == ["MA", "KO"] and research.busy() is None
+
+
+def test_news_without_a_tone_series_still_counts_articles(monkeypatch):
+    import pandas as pd
+    from value_investor import research_tools
+    months = pd.date_range("2025-09-01", periods=13, freq="MS")
+    volume = pd.DataFrame({"value": range(10, 23)}, index=months)
+    monkeypatch.setattr(research_tools, "_gdelt",
+                        lambda q, mode: volume if mode == "timelinevolraw" else pd.DataFrame())
+    out = research_tools.news_trend.invoke({"query": '"Adobe"'})
+    assert out.startswith('[GDELT news: "Adobe"]') and "Articles a month" in out

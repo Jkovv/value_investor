@@ -118,7 +118,8 @@ templates.env.filters.update(pct=pct, money=money, compact=compact, times=times,
 templates.env.globals.update(config=config, asset_version=ASSET_VERSION)
 
 TONE = {"cheap": "pass", "fair": "pass", "expensive": "warn", "very expensive": "fail"}
-templates.env.globals.update(regime_tone=TONE)
+VERDICT_TONE = {"Strong candidate": "pass", "Worth watching": "warn", "Pass": "na"}
+templates.env.globals.update(regime_tone=TONE, verdict_tone=VERDICT_TONE)
 
 
 def _busy(request: Request, page: str):
@@ -234,6 +235,7 @@ def company(request: Request, ticker: str):
         "yearly": payload["yearly"][-12:], "reading": reading,
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
+        "brief_verdict": research.verdict(text),
         "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
         "insiders": payload.get("insiders"),
         "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)
@@ -260,6 +262,52 @@ def start_research(ticker: str, mode: str = Form("resume")):
     _owner_only()
     research.start_in_background(ticker, _name(ticker), resume=mode == "resume")
     return RedirectResponse(f"/company/{ticker}#research", status_code=303)
+
+
+def _grades() -> dict:
+    """how each brief did when its sentences were checked against its sources, if they were."""
+    path = config.DATA_DIR / "evals" / "results.json"
+    try:
+        return json.loads(path.read_text(encoding="utf-8")).get("by_brief", {})
+    except (OSError, ValueError):
+        return {}
+
+
+@app.get("/research", response_class=HTMLResponse)
+def research_desk(request: Request):
+    try:
+        with store.connect(read_only=True) as con:
+            names = dict(con.execute("SELECT ticker, name FROM companies").fetchall())
+            top = screener.ranking(con).head(10)
+    except duckdb.IOException:
+        return _busy(request, "research")
+    current = research.busy()
+    briefs = research.library()
+    done = {b["ticker"] for b in briefs}
+    return templates.TemplateResponse(request, "research.html", {
+        "briefs": briefs, "names": names, "grades": _grades(), "current": current,
+        "current_status": research.status(current) if current else None, "waiting": research.waiting(),
+        "top": [{"ticker": t, "name": n, "ret": r, "done": t in done}
+                for t, n, r in zip(top["ticker"], top["name"], top["expected_return"])],
+        "backends": llm.backends(),
+    })
+
+
+@app.post("/research")
+def queue_research(tickers: str = Form(""), top: int = Form(0)):
+    _owner_only()
+    wanted = [t for t in re.split(r"[\s,;]+", tickers.upper()) if t]
+    names = {}
+    try:
+        with store.connect(read_only=True) as con:
+            if top:
+                ranked = screener.ranking(con).head(min(top, 20))
+                wanted += ranked["ticker"].tolist()
+            names = dict(con.execute("SELECT ticker, name FROM companies").fetchall())
+    except duckdb.IOException:
+        pass
+    research.enqueue([t for t in wanted if t in names], names)
+    return RedirectResponse("/research", status_code=303)
 
 
 @app.post("/company/{ticker}/ask")

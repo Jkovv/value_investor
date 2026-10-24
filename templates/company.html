@@ -27,6 +27,24 @@
         {% else %}<span class="pill pill-na">Below the gate</span>{% endif %}
       {% endif %}
     </div>
+    {% set rst = research_status or {} %}
+    <div class="hero-research">
+      {% if rst.state in ("queued", "running") %}
+        <span class="spinner" aria-hidden="true"></span>
+        <span>Agents are researching it{% if rst.last_step %}: {{ rst.last_step }}{% endif %}</span>
+        <a href="#research">Follow it</a>
+      {% elif brief_verdict %}
+        <span class="pill pill-{{ verdict_tone[brief_verdict.label] }}">{{ brief_verdict.label }}</span>
+        <span class="hero-reason">{{ brief_verdict.reason }}</span>
+        <a href="#research">Read the brief</a>
+      {% elif not config.PUBLIC_DASHBOARD %}
+        <form method="post" action="/company/{{ c.ticker }}/research">
+          <input type="hidden" name="mode" value="fresh">
+          <button class="button" type="submit" {% if research_busy %}disabled{% endif %}>Research this company</button>
+        </form>
+        <span class="muted">{% if research_busy %}{{ research_busy }} is being researched first{% else %}four agents and a writer; every claim cites a source{% endif %}</span>
+      {% endif %}
+    </div>
   </div>
   <div class="hero-figure">
     {% if v.available %}
@@ -91,12 +109,12 @@
 
 <div class="segmented" role="tablist" aria-label="Company sections">
   <button role="tab" type="button" data-tab="overview" aria-selected="true">Overview</button>
+  <button role="tab" type="button" data-tab="research" aria-selected="false">Research</button>
   <button role="tab" type="button" data-tab="quarters" aria-selected="false">Quarters</button>
   <button role="tab" type="button" data-tab="competitors" aria-selected="false">Competitors</button>
   <button role="tab" type="button" data-tab="checklist" aria-selected="false">Checklist</button>
   <button role="tab" type="button" data-tab="lenses" aria-selected="false">Lenses</button>
   <button role="tab" type="button" data-tab="financials" aria-selected="false">Financials</button>
-  <button role="tab" type="button" data-tab="research" aria-selected="false">Research</button>
 </div>
 
 <div class="tab-panel" data-panel="overview">

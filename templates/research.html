@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sort_head %}
+{% block title %}Research · Value Investor{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Research</h1>
+  <p class="sub">Four agents read a company's annual report, its competitors, the signs of demand and the web.
+    A writer then puts the brief together, every claim numbered to its source. Runs on {{ backends | join(", then ") }}.</p>
+</div>
+
+{% set strong = briefs | selectattr("verdict") | selectattr("verdict.label", "equalto", "Strong candidate") | list %}
+<section class="stats" aria-label="Briefs">
+  <div class="stat">
+    <span class="stat-label"># Briefs</span>
+    <span class="stat-value">{{ briefs | length }}</span>
+    <span class="stat-note">{{ strong | length }} strong {{ "candidate" if strong | length == 1 else "candidates" }}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Running now</span>
+    <span class="stat-value small-list">{{ current or "-" }}</span>
+    <span class="stat-note">{% if waiting %}{{ waiting | length }} waiting{% else %}nothing waiting{% endif %}</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Checked against sources</span>
+    <span class="stat-value">{{ grades | length }}</span>
+    <span class="stat-note"><code>python main.py evals</code></span>
+  </div>
+</section>
+
+{% if not config.PUBLIC_DASHBOARD %}
+<section class="card section">
+  <div class="card-head">
+    <h2>Start</h2>
+    <span class="hint">one company at a time, the rest wait their turn</span>
+  </div>
+  <div class="card-body research-start">
+    <form class="research-form" method="post" action="/research">
+      <input class="input" name="tickers" placeholder="Tickers, like MA 6861.T DNP.WA" aria-label="Tickers to research">
+      <button class="button" type="submit">Research</button>
+    </form>
+    <form class="research-form" method="post" action="/research">
+      <select class="select" name="top" aria-label="How many from the top">
+        <option value="3">Top 3</option>
+        <option value="5" selected>Top 5</option>
+        <option value="10">Top 10</option>
+      </select>
+      <button class="button button-quiet" type="submit">Research the top of the ranking</button>
+    </form>
+    {% if top %}
+    <div class="chips">
+      {% for t in top %}
+      <a class="chip chip-link" href="/company/{{ t.ticker }}">
+        <span class="mono">{{ t.ticker }}</span> {{ t.ret | pct }}{% if t.done %} <span class="muted">· brief</span>{% endif %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if current %}
+{% set st = current_status or {} %}
+<section class="card section">
+  <div class="card-head">
+    <h2>Running now</h2>
+    <span class="hint">this page refreshes on its own</span>
+  </div>
+  <div class="card-body">
+    <p class="research-meta">
+      <span class="spinner" aria-hidden="true"></span>
+      <a href="/company/{{ current }}#research"><strong>{{ current }}</strong> {{ names.get(current) or "" }}</a>
+      <span class="muted">step {{ st.steps or 0 }}{% if st.last_step %} · {{ st.last_step }}{% endif %}</span>
+    </p>
+    {% if waiting %}<p class="research-meta muted">Next: {{ waiting | join(", ") }}</p>{% endif %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card section">
+  <div class="card-head">
+    <h2>Briefs</h2>
+    <span class="hint">backed: share of cited sentences a larger model found in the source</span>
+  </div>
+  {% if briefs %}
+  <div class="table-scroll">
+  <table class="data sortable" id="briefs">
+    <thead>
+      <tr>
+        {{ sort_head("Company", "text", "") }}
+        {{ sort_head("Verdict", "text", "") }}
+        {{ sort_head("Why", "text", "") }}
+        {{ sort_head("# Sources") }}
+        {{ sort_head("Backed", tip="Of the sentences that cite a source, the share a larger model (gpt-oss-120b) found in that source. Cited is the share of all sentences that cite one at all.") }}
+        {{ sort_head("Written", initial="descending") }}
+      </tr>
+    </thead>
+    <tbody>
+    {% for b in briefs %}
+      {% set g = grades.get(b.ticker) %}
+      <tr>
+        <td data-value="{{ b.ticker }}">
+          <a class="company-cell" href="/company/{{ b.ticker }}#research">
+            <span class="ticker">{{ b.ticker }}</span><span class="company-name">{{ names.get(b.ticker) or "" }}</span>
+          </a>
+        </td>
+        <td data-value="{{ b.verdict.label if b.verdict else '' }}">
+          {% if b.verdict %}<span class="pill pill-{{ verdict_tone[b.verdict.label] }}">{{ b.verdict.label }}</span>{% else %}-{% endif %}
+        </td>
+        <td class="brief-why">{{ b.verdict.reason if b.verdict else "" }}</td>
+        <td class="num" data-value="{{ b.sources or 0 }}">{{ b.sources or "-" }}</td>
+        <td class="num" data-value="{{ g.supported if g and g.supported is not none else -1 }}">
+          {% if g and g.supported is not none %}{{ g.supported | pct(0) }}<span class="years">{{ g.cited_share | pct(0) }} cited</span>{% else %}-{% endif %}
+        </td>
+        <td class="num" data-value="{{ b.finished }}">{{ b.finished | string | truncate(10, True, "") }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <div class="empty">No briefs yet. Start one above, or run <code>python research.py --top 5</code>.</div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/sort.js?v={{ asset_version }}" defer></script>
+{% if current %}<script>setTimeout(() => location.reload(), 20000);</script>{% endif %}
+{% endblock %}
