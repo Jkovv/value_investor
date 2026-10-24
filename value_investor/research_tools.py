@@ -27,7 +27,7 @@ import requests
 from bs4 import BeautifulSoup
 from langchain_core.tools import tool
 
-from value_investor import config, peers, store
+from value_investor import config, moat, peers, rules, store, valuation
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +89,20 @@ def company_numbers(ticker: str) -> str:
             f"Expected yearly return: {er.get('mid', 0) * 100:.1f}% local "
             f"(range {er.get('low', 0) * 100:.1f}% to {er.get('high', 0) * 100:.1f}%)",
         ]
+        need = v.get("implied_growth")
+        if need is None and v.get("initial_return"):
+            need = valuation.implied_growth(v["initial_return"], v["pe"]["mid"], v["payout"])
+        hist = (v.get("growth_inputs") or {}).get("historical")
+        if need is not None:
+            lines.append(f"Growth the price needs for {config.HURDLE_RATE:.0%} a year: {need * 100:.1f}% a year"
+                         + (f" (the last ten years: {hist * 100:.1f}%)" if hist is not None else ""))
     elif v:
         lines.append(f"No valuation: {v.get('reason')}")
+    m = moat.classify(p.get("summary") or {}, rules.profile_for(comp.get("sic")), comp.get("industry"))
+    if m["kind"]:
+        signs = "; ".join(f"{label} {reading}" for label, reading, _ in m["evidence"])
+        lines.append(f"Kind of advantage the numbers point to: {m['kind']}. {m['why']} Signs: {signs}. "
+                     "Confirm or dispute it from the sources.")
     lines += lens_lines(p.get("lenses") or {}, v.get("currency") or p.get("currency"))
     q = (p.get("quarters") or {}).get("summary") or {}
     if q:

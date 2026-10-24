@@ -22,7 +22,7 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Undefined
 from markupsafe import Markup
 
-from value_investor import audit, config, llm, macro, markets, peers, research, screener, store, valuation
+from value_investor import audit, config, llm, macro, markets, moat, peers, research, screener, store, valuation
 from value_investor.research_tools import RESEARCH_DIR
 
 ROOT = Path(__file__).parent
@@ -152,14 +152,31 @@ def render_report(text: str) -> Markup:
     return Markup(html)
 
 
+_moat_cache: dict = {}
+
+
+def _moat_kinds(con) -> dict:
+    """cik -> moat kind for every company that passes the gate, worked out again only after a screen."""
+    stamp = con.execute("SELECT max(analysed_at), count(*) FROM analyses").fetchone()
+    if _moat_cache.get("stamp") != stamp:
+        rows = con.execute("SELECT a.cik, json_extract(a.payload, '$.summary'), a.profile, c.industry "
+                           "FROM analyses a JOIN companies c USING (cik) WHERE a.passes_gate").fetchall()
+        _moat_cache.update(stamp=stamp, kinds={cik: moat.classify(json.loads(s) if s else {}, prof, ind)["short"]
+                                               for cik, s, prof, ind in rows})
+    return _moat_cache["kinds"]
+
+
 @app.get("/", response_class=HTMLResponse)
 def ranking(request: Request, q: str = "", profile: str = "", market: str = "", full: bool = True):
     try:
         with store.connect(read_only=True) as con:
             df = screener.ranking(con)
             readings = _market_readings(con)
+            kinds = _moat_kinds(con)
     except duckdb.IOException:
         return _busy(request, "ranking")
+    if not df.empty:
+        df = df.assign(moat=df["cik"].map(kinds).fillna("-"))
 
     present = sorted({m for m in df["market"].dropna()}) if not df.empty else []
     if q:
@@ -226,6 +243,8 @@ def company(request: Request, ticker: str):
                 charts.append({"title": title, "format": fmt, "series": json.dumps([
                     {"name": title, "points": json.loads(_series(zip(years, values)))}])})
 
+    advantage = moat.classify(payload["summary"], (row or {}).get("profile") or "general",
+                              payload["company"].get("industry"))
     v = payload["valuation"]
     if v.get("available") and "implied_growth" not in v:
         v["implied_growth"] = valuation.implied_growth(v["initial_return"], v["pe"]["mid"], v["payout"])
@@ -238,7 +257,7 @@ def company(request: Request, ticker: str):
         "yearly": payload["yearly"][-12:], "reading": reading,
         "report": render_report(text) if text else None,
         "research_status": research.status(ticker), "research_busy": research.busy(),
-        "brief_verdict": research.verdict(text),
+        "brief_verdict": research.verdict(text), "moat": advantage,
         "backends": llm.backends(), "quarters": quarters, "q_chart": q_chart, "peers": peer,
         "insiders": payload.get("insiders"),
         "questions": [dict(q, html=render_report(q["answer"]) if q.get("answer") else None)

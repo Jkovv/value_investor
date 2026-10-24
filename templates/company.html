@@ -130,7 +130,7 @@
           <span class="step-n">1</span>
           <span class="step-value">{{ v.initial_return | pct }}</span>
           <span class="step-title">Initial return</span>
-          Earnings over price. The 10-year bond pays {{ v.bond_yield | pct(2) }}.
+          Earnings over price.{% if v.bond_yield %} The 10-year bond pays {{ v.bond_yield | pct(2) }}.{% endif %}
           {% if v.pretax_yield %}Pre-tax {{ v.pretax_yield | pct }}.{% endif %}
         </li>
         <li class="step">
@@ -188,6 +188,37 @@
         {% elif need <= v.growth %}<span class="tone-pass">The price asks for less growth than the projection already assumes,</span> so there is room for things to go worse than planned.
         {% elif had is not none and need <= had %}<span class="tone-warn">The price asks for growth the business has managed before,</span> but more than the cautious projection: it has to keep its best pace.
         {% else %}<span class="tone-fail">The price asks for more growth than the last ten years delivered.</span> Paying it means betting on a better decade than the last.{% endif %}
+      </p>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if moat.kind or moat.evidence %}
+  <section class="card section">
+    <div class="card-head">
+      <h2>Moat</h2>
+      <span class="hint">what ten years of statements point to</span>
+    </div>
+    <div class="card-body">
+      <p class="moat-head">
+        {% if moat.kind %}<span class="pill pill-{{ 'na' if moat.kind == 'none' else 'pass' }}">{{ moat.kind | capitalize }}</span>{% endif %}
+        {{ moat.why }}
+      </p>
+      {% if moat.evidence %}
+      <ul class="lens-tests moat-signs">
+        {% for label, reading, tone in moat.evidence %}
+        {% set state = "ok" if tone == "pass" else ("no" if tone == "fail" else "na") %}
+        <li class="{{ state }}">
+          <span class="mark" aria-hidden="true">{% if state == "ok" %}&#10003;{% elif state == "no" %}&#10005;{% else %}&#183;{% endif %}</span>
+          <span>{{ label }}: <strong>{{ reading }}</strong></span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      <p class="assume-note">
+        The numbers only point the way.
+        {% if report %}The brief's <a href="#research">competitive advantage</a> section looks for the reason in the sources.
+        {% else %}A research brief looks for the reason in the sources.{% endif %}
       </p>
     </div>
   </section>
